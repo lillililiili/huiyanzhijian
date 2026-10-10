@@ -1,0 +1,241 @@
+{
+  "project": "慧眼智检·线缆质量管控平台原生原型",
+  "date": "2026-10-09",
+  "offline": true,
+  "referenceNotes": "10 user-supplied 1920×1080 reference pages. References 03 and 04 duplicate the monitoring screen. Original logo and product pixels preserved by lossless crop.",
+  "items": [
+    {
+      "file": "images/logo.png",
+      "source": "references/reference-01.png",
+      "type": "user-reference-crop",
+      "crop": [
+        70,
+        28,
+        306,
+        106
+      ],
+      "license": "User-provided brand / product reference; original pixel content preserved. No new license granted.",
+      "sha256": "c6039c1f19d70fc196e87d3f480f7010ed9d4a660288068df44ae683a352ddf4"
+    },
+    {
+      "file": "images/device-family.png",
+      "source": "references/reference-01.png",
+      "type": "user-reference-crop",
+      "crop": [
+        260,
+        385,
+        944,
+        772
+      ],
+      "license": "User-provided brand / product reference; original pixel content preserved. No new license granted.",
+      "sha256": "fbcf2ff2352461f80e9f226469bdd87481dcd69516558795918f5e1540e68cef"
+    },
+    {
+      "file": "images/device-dg.png",
+      "source": "references/reference-03.png",
+      "type": "user-reference-crop",
+      "crop": [
+        357,
+        336,
+        467,
+        530
+      ],
+      "license": "User-provided brand / product reference; original pixel content preserved. No new license granted.",
+      "sha256": "386cc90ab464482bb5c372b4962d26148c0e859c63813063b63fd0ec3fadf9ad"
+    },
+    {
+      "file": "images/device-jx.png",
+      "source": "references/reference-03.png",
+      "type": "user-reference-crop",
+      "crop": [
+        905,
+        336,
+        1008,
+        530
+      ],
+      "license": "User-provided brand / product reference; original pixel content preserved. No new license granted.",
+      "sha256": "12e3d6e7a9fda262ca2da812d2d13d9779ca55b7e6f5c2d0cdda5f3930c7da02"
+    },
+    {
+      "file": "images/device-by.png",
+      "source": "references/reference-03.png",
+      "type": "user-reference-crop",
+      "crop": [
+        1436,
+        336,
+        1564,
+        530
+      ],
+      "license": "User-provided brand / product reference; original pixel content preserved. No new license granted.",
+      "sha256": "4a4fa852e2ceb06f92544d9dd9ca812875b38df009f492ef7eda87d43d4da792"
+    },
+    {
+      "file": "images/products.png",
+      "source": "images/device-family.png",
+      "type": "compatibility-alias",
+      "license": "Same as source.",
+      "sha256": "fbcf2ff2352461f80e9f226469bdd87481dcd69516558795918f5e1540e68cef"
+    },
+    {
+      "file": "images/login-background.png",
+      "type": "ai-generated",
+      "generator": "OpenAI image generation tool",
+      "originalFile": "exec-8e3f52ce-4c2a-4716-9cfd-98a76a2782e1.png",
+      "sourcePreserved": true,
+      "purpose": "演示素材，非现场实测图像。",
+      "license": "AI-generated for this project; governed by applicable OpenAI terms. No third-party license asserted.",
+      "sha256": "3f5cfd0e41dc1d860cdede0096dbbaeb28c764774738a17353271c4aed5d99db"
+    },
+    {
+      "file": "images/copper-inspection.png",
+      "type": "ai-generated",
+      "generator": "OpenAI image generation tool",
+      "originalFile": "exec-73cd690e-9b67-4cc1-8791-b85068bfd185.png",
+      "sourcePreserved": true,
+      "purpose": "演示素材，非现场实测图像。",
+      "license": "AI-generated for this project; governed by applicable OpenAI terms. No third-party license asserted.",
+      "sha256": "9a791b55c228a8000953e09cbb6378330287e3593fc4fc93bf7246b0e693825d"
+    },
+    {
+      "file": "images/wire-inspection.png",
+      "type": "ai-generated",
+      "generator": "OpenAI image generation tool",
+      "originalFile": "exec-42cc6b62-2428-4fae-824b-d3e6cd8c3b6e.png",
+      "sourcePreserved": true,
+      "purpose": "演示素材，非现场实测图像。",
+      "license": "AI-generated for this project; governed by applicable OpenAI terms. No third-party license asserted.",
+      "sha256": "415a55bb5c2b469f322a2dcb81ea6dcf2f4fdb0136c0139126757052215816e0"
+    },
+    {
+      "file": "images/roundness.png",
+      "type": "ai-generated",
+      "generator": "OpenAI image generation tool",
+      "originalFile": "exec-2ce62212-0811-4ddc-ac79-98f79c964346.png",
+      "sourcePreserved": true,
+      "purpose": "演示素材，非现场实测图像。",
+      "license": "AI-generated for this project; governed by applicable OpenAI terms. No third-party license asserted.",
+      "sha256": "c13e6c3130060db5360ff5e83b7e28c3c0a83146871d7f929f132102628ad819"
+    },
+    {
+      "file": "images/metric-dg.png",
+      "type": "ai-generated",
+      "generator": "OpenAI image generation tool",
+      "originalFile": "exec-46e21117-0398-493d-9505-9c0fd569ada5.png",
+      "sourcePreserved": true,
+      "purpose": "演示素材，非现场实测图像。",
+      "license": "AI-generated for this project; governed by applicable OpenAI terms. No third-party license asserted.",
+      "sha256": "09ac66c79d440a747050eaf6aefe9951a7490594ccf4e369c509704a9334a7d8"
+    },
+    {
+      "file": "images/metric-jx.png",
+      "type": "ai-generated",
+      "generator": "OpenAI image generation tool",
+      "originalFile": "exec-07891540-7ea0-4512-a1cb-bcad0e2102c1.png",
+      "sourcePreserved": true,
+      "purpose": "演示素材，非现场实测图像。",
+      "license": "AI-generated for this project; governed by applicable OpenAI terms. No third-party license asserted.",
+      "sha256": "06af46c33b5ffe24cdc7f22b8470d911c88c0c0a25b90faddda6eb3f0c3ce710"
+    },
+    {
+      "file": "images/metric-by.png",
+      "type": "ai-generated",
+      "generator": "OpenAI image generation tool",
+      "originalFile": "exec-80c19387-cf82-4169-91fc-8e31cca14950.png",
+      "sourcePreserved": true,
+      "purpose": "演示素材，非现场实测图像。",
+      "license": "AI-generated for this project; governed by applicable OpenAI terms. No third-party license asserted.",
+      "sha256": "897afee9fecb5bced89c8a572ab99a0342ef44c906c5afd31417c7b1ad53e0a9"
+    },
+    {
+      "file": "icons/*.svg",
+      "type": "third-party",
+      "name": "Tabler Icons",
+      "version": "3.35.0",
+      "source": "https://www.npmjs.com/package/@tabler/icons",
+      "license": "MIT",
+      "licenseFile": "vendor/tabler-icons-LICENSE.txt",
+      "count": 4964
+    },
+    {
+      "file": "vendor/echarts.min.js",
+      "type": "third-party",
+      "name": "Apache ECharts",
+      "version": "6.0.0",
+      "source": "https://www.npmjs.com/package/echarts/v/6.0.0",
+      "license": "Apache-2.0",
+      "licenseFile": "vendor/echarts-LICENSE.txt",
+      "noticeFile": "vendor/echarts-NOTICE.txt",
+      "sha256": "baa8dfe7e1d9336b98e8986ba7e20ea15e7cdbea1ef42a59d59478632fa45a1d"
+    },
+    {
+      "file": "references/reference-01.png",
+      "type": "user-provided-reference",
+      "source": "用户在本次对话中上传的页面截图",
+      "license": "用户提供的原型参考；保留原始内容。",
+      "sha256": "79aef9e6e53f199c30936dabc94c0551d6549f420fb16c54dd68b79aeeee9771"
+    },
+    {
+      "file": "references/reference-02.png",
+      "type": "user-provided-reference",
+      "source": "用户在本次对话中上传的页面截图",
+      "license": "用户提供的原型参考；保留原始内容。",
+      "sha256": "99a4911211637d97e5b41154741eb678093a91f92586d55fa8065dcbe3d19513"
+    },
+    {
+      "file": "references/reference-03.png",
+      "type": "user-provided-reference",
+      "source": "用户在本次对话中上传的页面截图",
+      "license": "用户提供的原型参考；保留原始内容。",
+      "sha256": "9cccc2398015ddaca5e65523de25c4d89daee4dcdc940d758824549ea577729c"
+    },
+    {
+      "file": "references/reference-04.png",
+      "type": "user-provided-reference",
+      "source": "用户在本次对话中上传的页面截图",
+      "license": "用户提供的原型参考；保留原始内容。",
+      "sha256": "9cccc2398015ddaca5e65523de25c4d89daee4dcdc940d758824549ea577729c"
+    },
+    {
+      "file": "references/reference-05.png",
+      "type": "user-provided-reference",
+      "source": "用户在本次对话中上传的页面截图",
+      "license": "用户提供的原型参考；保留原始内容。",
+      "sha256": "a85789c6a2bb23f7ad693df7bf926f673e1c5215d7febac9176fc0af00839671"
+    },
+    {
+      "file": "references/reference-06.png",
+      "type": "user-provided-reference",
+      "source": "用户在本次对话中上传的页面截图",
+      "license": "用户提供的原型参考；保留原始内容。",
+      "sha256": "c7b3bec74cc0743a5b07e8213bbbc13f136181a2e7af165228bde266d7ec390e"
+    },
+    {
+      "file": "references/reference-07.png",
+      "type": "user-provided-reference",
+      "source": "用户在本次对话中上传的页面截图",
+      "license": "用户提供的原型参考；保留原始内容。",
+      "sha256": "5985d6dfa3cb45fb60fc4b87e427b1a8989463dc16387f0b2a53dfe9954c8711"
+    },
+    {
+      "file": "references/reference-08.png",
+      "type": "user-provided-reference",
+      "source": "用户在本次对话中上传的页面截图",
+      "license": "用户提供的原型参考；保留原始内容。",
+      "sha256": "2253e20d840eedbd92c5794e69b28ead8ffc3bf32f73c24578d0f5bd98b4009c"
+    },
+    {
+      "file": "references/reference-09.png",
+      "type": "user-provided-reference",
+      "source": "用户在本次对话中上传的页面截图",
+      "license": "用户提供的原型参考；保留原始内容。",
+      "sha256": "24b3096ae2185198cb215f586cc139ae74cf8d92cfe595a1d549eef6ba9fc3ac"
+    },
+    {
+      "file": "references/reference-10.png",
+      "type": "user-provided-reference",
+      "source": "用户在本次对话中上传的页面截图",
+      "license": "用户提供的原型参考；保留原始内容。",
+      "sha256": "b8b48fdf9dd38cd7e2f86ae4b4fbb347b4f4c86f3980db16081e93332c303fc7"
+    }
+  ]
+}

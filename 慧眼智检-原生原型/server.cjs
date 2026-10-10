@@ -1,0 +1,5 @@
+/* Optional local-only preview server. No dependency installation needed. */
+const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
+const root=__dirname,port=Number(process.argv[2])||4174;
+const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.json':'application/json; charset=utf-8'};
+http.createServer((req,res)=>{let target;try{target=path.resolve(root,'.'+decodeURIComponent(new URL(req.url,'http://localhost').pathname));}catch(_){res.writeHead(400);return res.end('Bad request');}if(target!==root&&!target.startsWith(root+path.sep)){res.writeHead(403);return res.end('Forbidden');}if(target===root||req.url.endsWith('/'))target=path.join(target,'index.html');fs.readFile(target,(err,body)=>{if(err){res.writeHead(404);return res.end('Not found');}res.writeHead(200,{'Content-Type':mime[path.extname(target)]||'application/octet-stream','Cache-Control':'no-cache'});res.end(body);});}).listen(port,'127.0.0.1',()=>console.log('慧眼智检预览 http://127.0.0.1:'+port));

@@ -1,0 +1,817 @@
+{
+  "result": "passed",
+  "desktopPages": 27,
+  "desktopViewports": [
+    [
+      1920,
+      1080
+    ],
+    [
+      1440,
+      900
+    ],
+    [
+      1366,
+      768
+    ]
+  ],
+  "mobilePages": 7,
+  "mobileViewport": [
+    390,
+    844
+  ],
+  "screenshots": [
+    {
+      "file": "01-login-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 91160,
+      "sha256": "bace08326d7f1f0f20dc642baa11f40c964fe1af74a57b628dd36fac70d1fb29"
+    },
+    {
+      "file": "01-login-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 101142,
+      "sha256": "070745ffac3d0c78da8a6b43a8d98b0b3679c88288d1d2647d052a9e46eb4f5f"
+    },
+    {
+      "file": "01-login-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 119856,
+      "sha256": "348f750a47f71e2e26708bcf4d0c70d691366f0378382e62dd1f93ce83904627"
+    },
+    {
+      "file": "01-login-final-mobile.jpg",
+      "pixels": [
+        390,
+        844
+      ],
+      "bytes": 35441,
+      "sha256": "f62a50f5253ef2f086c66368a92fdaafb7d4a23d0b98695f5bbb5f5dbfb4720d"
+    },
+    {
+      "file": "02-dashboard-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 100797,
+      "sha256": "490c471cb8370d37becad8aeb40e074de8645362e71d5c47058bf1a767256a9a"
+    },
+    {
+      "file": "02-dashboard-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 127010,
+      "sha256": "c71a2df362972a56d6d20250d8d24abe446c008a4b82dea5354f45125a4dd8c3"
+    },
+    {
+      "file": "02-dashboard-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 158415,
+      "sha256": "3b839d9c0a6199121cdcb53a3237c480e53708fadff658446f143c91b611ee00"
+    },
+    {
+      "file": "02-dashboard-final-mobile.jpg",
+      "pixels": [
+        390,
+        844
+      ],
+      "bytes": 31962,
+      "sha256": "b70c5147a09d4c8588fd0ecf01b4af8749be3f4210d90aa29dc22b367943228c"
+    },
+    {
+      "file": "03-monitor-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 101273,
+      "sha256": "3e13b0f7d1f9d4d974059374125a4fac14d24d26bcffbbd9ac5a652f30c8d600"
+    },
+    {
+      "file": "03-monitor-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 116514,
+      "sha256": "c7c08c2c0de6a8013c7c1e6bba53bce3483a16b435bc7af6611e540c9cd10da8"
+    },
+    {
+      "file": "03-monitor-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 156895,
+      "sha256": "3788b7c7937c6912e80ddfae17014a8bd97359c0fbd6ce67925690e206d40d9d"
+    },
+    {
+      "file": "04-dg-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 102573,
+      "sha256": "9b81b3e349c756276e470550e68862643081c7dc1f775b51c357da4c888f297e"
+    },
+    {
+      "file": "04-dg-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 117666,
+      "sha256": "0b418c3817c5e7bceea9798d04983768e99a470ba2b3bea7572f25c749724201"
+    },
+    {
+      "file": "04-dg-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 165307,
+      "sha256": "1caceabd9d55610b8b8622e0c6947e6f4c22ae4acfcb330194ff44b59f079310"
+    },
+    {
+      "file": "04-dg-final-mobile.jpg",
+      "pixels": [
+        390,
+        844
+      ],
+      "bytes": 35956,
+      "sha256": "6d6bf72ef841d363c4aa70a0cf3016856a519705e4cf545e4f5e69f996cc7673"
+    },
+    {
+      "file": "05-jx-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 110449,
+      "sha256": "b7758c3575fc137ba7a02030024d687171a7fbee7c699fbc3bef868e4593ef59"
+    },
+    {
+      "file": "05-jx-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 125773,
+      "sha256": "b11ce083cabe88ff016015b960d979b894ed89245d74ded80e6a759d0f0247e8"
+    },
+    {
+      "file": "05-jx-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 174992,
+      "sha256": "61cbda5c16bded2287555f19cf159bd1a8f7b6b7e204703133fbd053200cfe78"
+    },
+    {
+      "file": "06-by-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 95380,
+      "sha256": "65a8f1dab4b7b819a6800a1c7c4cf2612260a5fbead40d13c56a5724c5b64c5a"
+    },
+    {
+      "file": "06-by-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 110279,
+      "sha256": "a1a03a805704881ece40c9ea0666a171f8b63efbdc30f444cca23f40bb3d2b26"
+    },
+    {
+      "file": "06-by-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 154791,
+      "sha256": "24ee6f91cc812a2a61ed5eaf31316662c4e60cbead88436d09dd2562ee8893ea"
+    },
+    {
+      "file": "07-tasks-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 101258,
+      "sha256": "35388acf14f691d9a76ed3a019ca1dac4f27508115a51fb857fca0b8bd5ed043"
+    },
+    {
+      "file": "07-tasks-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 124846,
+      "sha256": "a6889d10c8829c2d3d667f66df17a323d846fd20cf9af3df60304605f780a3ee"
+    },
+    {
+      "file": "07-tasks-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 156953,
+      "sha256": "820c4786e868ffc7ee5e2d8161452b7e9e5d8b699f2e3a1c62ae3c67c4dc4fed"
+    },
+    {
+      "file": "07-tasks-final-mobile.jpg",
+      "pixels": [
+        390,
+        844
+      ],
+      "bytes": 36076,
+      "sha256": "1121f9e158d540d3c95303b9f829cfabe29e54b552f9b4b203e97dbfcaa5f7f8"
+    },
+    {
+      "file": "08-task-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 93962,
+      "sha256": "17b29cdc57e1a00dc3d522ace7a9ac3d42d3534454ea6c2bec35d38136bbe948"
+    },
+    {
+      "file": "08-task-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 111310,
+      "sha256": "60359bf37c341c1bf6e411419d01709a8541061b6d754758f13ba3a8e8d267ff"
+    },
+    {
+      "file": "08-task-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 145992,
+      "sha256": "bc766c2eed66877dc81d2497d647eabb2a9f28d5991e43ccc3846287d68482b4"
+    },
+    {
+      "file": "09-specs-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 102800,
+      "sha256": "c5c34bc05e09450e99541c3ff5f288bc3a57fd4adca53fc77983a8ddcf157037"
+    },
+    {
+      "file": "09-specs-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 120561,
+      "sha256": "46b2bb0d18a77e0d1422d5bd35ac4254c365205b490cc6e94fda5e9b7cc8ba8a"
+    },
+    {
+      "file": "09-specs-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 151305,
+      "sha256": "599cc329198afe5d4d9444651f38c0dc0152393be5fa162ea6723ae253e73a84"
+    },
+    {
+      "file": "10-history-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 100651,
+      "sha256": "78e49bc936e01f1fb8651be68b7b66a9f0794f2a25235aa559160a31fcef0872"
+    },
+    {
+      "file": "10-history-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 122944,
+      "sha256": "adb75d8206be07be904f7f9e0ffee8b89e330ce01ec714ae6677e89df3c816a2"
+    },
+    {
+      "file": "10-history-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 181356,
+      "sha256": "b0bcf2877e326aebf35f416b285890f076181b89a65707bfc25553753bf08b64"
+    },
+    {
+      "file": "10-history-final-mobile.jpg",
+      "pixels": [
+        390,
+        844
+      ],
+      "bytes": 35298,
+      "sha256": "a5d17ad60e5893db55ba84847584ba438acdd8be841e9a8aa4885fe2607c2709"
+    },
+    {
+      "file": "11-trace-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 80365,
+      "sha256": "9c7c1e661d121cbb7a56a3ce99a02261b5085defda2e5c45afb4566586915d43"
+    },
+    {
+      "file": "11-trace-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 96529,
+      "sha256": "14b02cbac2b390154aa28d898d6f7c5b5df9312be672aa91eb0b78671aebb376"
+    },
+    {
+      "file": "11-trace-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 128188,
+      "sha256": "2832215848073d06208bf61823b45dcf9b3df27c453c8b82955fd964a37822f7"
+    },
+    {
+      "file": "12-import-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 81922,
+      "sha256": "066308ff81be303e14d620afc01e21140edd26367fa17ea386ff157d54615159"
+    },
+    {
+      "file": "12-import-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 94519,
+      "sha256": "85cc3ae4a6059dc302cffcb774b6548a6bb5c58f5e8518164701ad82a7bf0037"
+    },
+    {
+      "file": "12-import-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 111523,
+      "sha256": "358c422652b0b1bd8c33ba6ec12708a474da774d214ef92039af024a48786887"
+    },
+    {
+      "file": "13-alarms-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 86656,
+      "sha256": "1d1e548784b6114d0d3c9a5258b8358706302173cad9678b4eade5ba9f86aa7c"
+    },
+    {
+      "file": "13-alarms-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 95221,
+      "sha256": "048c0ba343eae950fbf5456882258a41e277269bfe048d1219f0de9dc07c87d9"
+    },
+    {
+      "file": "13-alarms-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 113809,
+      "sha256": "129beda58428efc55afbae06fd5b8ac3c4980ba65d75be30ae29fac6e9688e7b"
+    },
+    {
+      "file": "14-alarm-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 88624,
+      "sha256": "6a60db3135544297528598395b079a9cef5770c9e1bb9a46012590d0eb5e612b"
+    },
+    {
+      "file": "14-alarm-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 105462,
+      "sha256": "08f89ee81cc92fe989ede27c5b2d44dcfcf400a4c1e776a80b5b07b61419d1df"
+    },
+    {
+      "file": "14-alarm-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 139241,
+      "sha256": "90c1397b5ceb4adbec865c7f117d2604c9b890464591a4c1829d3fd81f6783d4"
+    },
+    {
+      "file": "15-analytics-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 97816,
+      "sha256": "1478724d3fad87a34ca36a37e46e23749b91afa47ef39a54f4f3e7883ca3bd53"
+    },
+    {
+      "file": "15-analytics-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 112560,
+      "sha256": "98e5ce403452e70b168c872d459deb37380eb84fd62003fa108c7815c2d8d0bb"
+    },
+    {
+      "file": "15-analytics-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 148912,
+      "sha256": "f15a5d7fe94daa3e2b4ad5aa0f4ad599e3d160319ed59041662a5d9aaf771542"
+    },
+    {
+      "file": "16-reports-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 88739,
+      "sha256": "f2c78ad23e08abd90b2818b55c90bace5028c9254bd29719f15889cf63b0b6f0"
+    },
+    {
+      "file": "16-reports-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 107948,
+      "sha256": "4282ad266a5a9fa15e5bf000c7005ffb3be28398787145a615786dc7e90d9def"
+    },
+    {
+      "file": "16-reports-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 147688,
+      "sha256": "8f578e5e6f3f578185ec267a397b57417f3b90d13f157cb761591c6f643b6584"
+    },
+    {
+      "file": "17-report-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 88660,
+      "sha256": "09738036140322a9d1a4855256e7e06d0877a45fdb4dfcc0624d579ff28d1f43"
+    },
+    {
+      "file": "17-report-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 97478,
+      "sha256": "c922a0ec931e97a2d3136e150e0be934a138a1371302928d2bac03d21c658ef6"
+    },
+    {
+      "file": "17-report-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 119827,
+      "sha256": "14363fae67d39d9d2171501e0f08015eabbcf5d769c7ffec0f900aabeeea698d"
+    },
+    {
+      "file": "17-report-final-mobile.jpg",
+      "pixels": [
+        390,
+        844
+      ],
+      "bytes": 42342,
+      "sha256": "38f97ade59590ea00195fc6ea980e3fcb17541fc565fa55c7a096df471ba76f5"
+    },
+    {
+      "file": "18-metrics-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 94078,
+      "sha256": "18dbe685781b6fc31aac11da6c03c18d5e48833e7a8f4dfa98369f1370cc3038"
+    },
+    {
+      "file": "18-metrics-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 110817,
+      "sha256": "f2af3e9b0ca9bace33d47688e8af04775e6dd03e4e82971ab4e24b71b92d3c7f"
+    },
+    {
+      "file": "18-metrics-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 138123,
+      "sha256": "4596827abcd45e6cf1c2148efa9839eef0a463ce84e6d00305e710ed3829aa9f"
+    },
+    {
+      "file": "19-recipes-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 86305,
+      "sha256": "679fe869cee5f95bf885e9d22444eb92220fc661865026c4693d950fabed776a"
+    },
+    {
+      "file": "19-recipes-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 98681,
+      "sha256": "13551fbbf9b26c1bac0a2d23bc66e2cf2d209638848c40c66801ff5b8f04dd1b"
+    },
+    {
+      "file": "19-recipes-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 119474,
+      "sha256": "3a42673c549ff15d23bb7c27900b0c35b37b9ea5eb944301fa991798369ddff9"
+    },
+    {
+      "file": "20-templates-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 87798,
+      "sha256": "786e7143bb0f0c8e7001215984256c67c39e57ca2fb72d19bf89b3d5cae7adc6"
+    },
+    {
+      "file": "20-templates-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 94619,
+      "sha256": "2562414b8ee7889257de71932940df2ccd1e2093ec427a7c250ae6b3cd39c3e5"
+    },
+    {
+      "file": "20-templates-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 111515,
+      "sha256": "e0955a8dca3a3fb2638c5c7c82d2907d9e1d25b7c65324d3a40c37cb50972837"
+    },
+    {
+      "file": "21-devices-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 111179,
+      "sha256": "af8f3234dec7e2b24515924ead328fc530b0a5babec24d9da926a00828cebd50"
+    },
+    {
+      "file": "21-devices-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 124164,
+      "sha256": "78a2a5a2c3218a79290d02ff32026a2c93dde3e1acc817ad6f747d7e128c8d97"
+    },
+    {
+      "file": "21-devices-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 139658,
+      "sha256": "cae2d778ca6c67ebdbbc6bbe1985681ff3227ee9c340069645fcbcba2435f784"
+    },
+    {
+      "file": "22-connections-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 88140,
+      "sha256": "33123348e3a828b2fe41c434e99d2b631ccb6d5b3a6258fd71031619c0c1a577"
+    },
+    {
+      "file": "22-connections-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 104969,
+      "sha256": "a1f305f989e9b7cead5d98ae70239422bea37f2f2d721173619ded78c6d8a005"
+    },
+    {
+      "file": "22-connections-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 136691,
+      "sha256": "2a00a077b2c8f9129380a19b646339032c5940268178a256ef7faf01c37bbd1b"
+    },
+    {
+      "file": "23-mes-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 90449,
+      "sha256": "1607e6ed3ef6d2e3709f19d8615ee2d999cbdd96c32ac591786730a8d11d1071"
+    },
+    {
+      "file": "23-mes-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 106631,
+      "sha256": "9fe0e1dcd8460bc9452123b013978406c41502d2a6833625c993a606ad086d24"
+    },
+    {
+      "file": "23-mes-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 137467,
+      "sha256": "867c5f4117d0adb4102c5012503e79277eeeb33009a9f9b7b56a6699d13f4818"
+    },
+    {
+      "file": "24-sync-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 96006,
+      "sha256": "36496dcbaca67570540925e6c617cc88f0d867c72c012d7f4e6ff535b58261a2"
+    },
+    {
+      "file": "24-sync-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 116727,
+      "sha256": "83ba1e055990fc062a3eb2f294e97389c2453d3b40362c45cdc920b07e0ee75f"
+    },
+    {
+      "file": "24-sync-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 157773,
+      "sha256": "add98a1bd55fe742bae57f032ea2103e372758e1759ad23b19f16eb10d51de97"
+    },
+    {
+      "file": "25-users-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 86094,
+      "sha256": "6a4c3d79c8c67becda3f885e4a7aaa19650dd57e9f37ec2ea8be2b3e876d9aae"
+    },
+    {
+      "file": "25-users-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 99201,
+      "sha256": "8cd8e42a10a61e6c10cc783aa115170fce521ab33c6a94910ecfa6872b27c466"
+    },
+    {
+      "file": "25-users-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 115827,
+      "sha256": "5bfee3614b4b88387dcf0a16eb148a353c201b5a18c31dbeefee28448c0664fd"
+    },
+    {
+      "file": "26-audit-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 85961,
+      "sha256": "545baa99693f94c54e2f7a5167bb75a5688f80ed8725a088b1e7a7ec6fca2d68"
+    },
+    {
+      "file": "26-audit-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 98156,
+      "sha256": "a5575da6789ad10b501a6d686abb8a3b01d860e0eb3b76d31ac933c7bae17cad"
+    },
+    {
+      "file": "26-audit-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 117878,
+      "sha256": "c8605f15304a4cf2634871814ca760475d71315c8970749c61b2f00652dc9d54"
+    },
+    {
+      "file": "27-settings-final-1366.jpg",
+      "pixels": [
+        1366,
+        768
+      ],
+      "bytes": 87844,
+      "sha256": "9b50b4a93bef0e095a1bf55e6e1156ac73424153ce9040ce67b1109f00d75bc4"
+    },
+    {
+      "file": "27-settings-final-1440.jpg",
+      "pixels": [
+        1440,
+        900
+      ],
+      "bytes": 112172,
+      "sha256": "aa1013dafef23e1f1c7719f7c2b88749a9499224d371cf2747c21e5530748f3c"
+    },
+    {
+      "file": "27-settings-final-1920.jpg",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "bytes": 137793,
+      "sha256": "d208751e7a8a67cc0764e0fb4b56d32348141a5942cc9b7a3ce67684366afa01"
+    },
+    {
+      "file": "27-settings-final-mobile.jpg",
+      "pixels": [
+        390,
+        844
+      ],
+      "bytes": 38820,
+      "sha256": "812823c2bf24aced66c3fe97a9c1bd3cbf18081d7b51dcf172ac94e50a211747"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "generator": "OpenAI built-in imagegen",
+  "date": "2026-10-09",
+  "purpose": "Local demo assets; never live inspection evidence",
+  "prompts": [
+    [
+      "login-background",
+      "A refined very pale blue and white background image for a Chinese high voltage cable inspection enterprise software login page, wide 16:9 landscape. Photorealistic clean modern cable factory hall, distant production line silhouettes, softly diffused daylight, exceptionally subtle low contrast, main empty pale space across center and right for readable UI. The actual machines and brand will be placed separately in code. No text, no logos, no icons, no people, no foreground machines. Sophisticated restrained industrial photography, cool off-white #f4f7fc and soft ice blue, no neon, no cyberpunk, no dark sections."
+    ],
+    [
+      "copper-inspection",
+      "Scientific industrial inspection photograph, horizontal 2.2:1 crop. Close-up of a high voltage cable wrapped tightly with a single continuous thin copper tape helically, a smooth continuous cylindrical copper surface extending horizontally left to right on dark navy near-black machine-vision background. Thin flat overlapping seam edges diagonally around cylinder, broad smooth copper tape faces with fine realistic metallic grain. One central clearly visible lap joint of adjacent turns with a thin flat overlap edge. The wrap covers all of the cylinder; no black gaps between copper turns, no separated bars, no ropes, no raised corrugations, no coarse threads, no collection of copper rods. Precisely focused mid region with soft natural specular studio highlights, credible machine vision factory photo. No arrows, no lines, no measurements, no lettering, no watermark. Leave space at top and bottom for code measurement overlays."
+    ],
+    [
+      "wire-inspection",
+      "Photorealistic industrial inspection macro photograph, horizontal 2.2:1. Surface of high voltage cable copper wire screen: many separate smooth slender round copper wires laid side by side at the same slight diagonal angle across a dark navy cylindrical underlayer. Show narrow measurable dark gaps between adjacent cylindrical wires, clear crisp parallel boundaries, consistent realistic round wire highlights, fine copper texture. Central five wires well separated and sharp for later measurement arrows. Professional machine vision camera lighting, restrained copper orange and dark navy, no inscriptions, no arrows, no scales, no diagram labels, no text, no logos."
+    ],
+    [
+      "roundness",
+      "A high quality scientific cutaway illustration of the cross section of a single-core high voltage cable, centered, straight-on orthographic view. Circular black outer sheath, dark navy screening ring, pale gray insulation ring, dense golden copper strands at the center. Dark navy #172c42 background, cable fills 68 percent of image height with generous space around it for X/Y dimension overlays added separately. Subtle physically plausible material shading, clean precise geometry, professional industrial technical visualization, no perspective, no 3D scan suggestion, no instruments. Landscape 2:1. No text, no arrows, no dimensions, no logo, no watermark."
+    ],
+    [
+      "metric-dg",
+      "A small premium enterprise software topic icon showing one short smooth cylindrical copper tape wrapped cable with thin overlapping flat seams, simple refined isometric 3D product illustration, blue and copper palette, clean minimal silhouette readable at 64 pixels, centered with generous padding, transparent background, no letters no text no measurements no border. Fits a restrained blue white industrial dashboard."
+    ],
+    [
+      "metric-jx",
+      "A small premium enterprise software topic icon showing a short group of three slim round copper screen wires with a small clear gap between them, simple refined isometric 3D illustration, copper and teal accents, clean minimal silhouette readable at 64 pixels, centered with generous padding, transparent background, no letters no text no measurements no border. Fits a restrained blue white industrial dashboard."
+    ],
+    [
+      "metric-by",
+      "A small premium enterprise software topic icon showing a single round cable cross-section with dark navy outer sheath light gray insulation and copper stranded center, simple refined isometric 3D illustration, clean minimal silhouette readable at 64 pixels, centered with generous padding, transparent background, no letters no text no measurements no border. Fits a restrained blue white industrial dashboard."
+    ]
+  ]
+}

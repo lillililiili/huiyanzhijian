@@ -1,0 +1,596 @@
+[
+  {
+    "page": "03-monitor",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "产线与设备实时总览",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "04-dg",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "金属屏蔽搭盖率检测",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "05-jx",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "铜丝屏蔽相邻铜丝间隙检测",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "06-by",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "电缆不圆度检测",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "07-tasks",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "检测任务列表",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "08-task",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "检测任务详情",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "09-specs",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "高压电缆产品规格档案",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "10-history",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "历史检测数据查询",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "11-trace",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "盘号追溯详情",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "12-import",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1440,
+    "heading": "数据导入与补录",
+    "mainWidth": 1216,
+    "scroll": 1440,
+    "width": 1440
+  },
+  {
+    "page": "13-alarms",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1440,
+    "heading": "报警事件",
+    "mainWidth": 1216,
+    "scroll": 1440,
+    "width": 1440
+  },
+  {
+    "page": "14-alarm",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "报警详情与处置",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "15-analytics",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "质量统计分析",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "16-reports",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "质量报告管理",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "17-report",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "报告预览与导出",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "18-metrics",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "三项检测指标配置",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "19-recipes",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1440,
+    "heading": "配方与判定规则",
+    "mainWidth": 1216,
+    "scroll": 1440,
+    "width": 1440
+  },
+  {
+    "page": "20-templates",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1440,
+    "heading": "报告模板配置",
+    "mainWidth": 1216,
+    "scroll": 1440,
+    "width": 1440
+  },
+  {
+    "page": "21-devices",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1440,
+    "heading": "设备档案",
+    "mainWidth": 1216,
+    "scroll": 1440,
+    "width": 1440
+  },
+  {
+    "page": "22-connections",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "数据接入配置",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "23-mes",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "MES 接口配置",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "24-sync",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "MES 同步监控",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "25-users",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1440,
+    "heading": "用户角色与权限",
+    "mainWidth": 1216,
+    "scroll": 1440,
+    "width": 1440
+  },
+  {
+    "page": "26-audit",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1440,
+    "heading": "操作审计",
+    "mainWidth": 1216,
+    "scroll": 1440,
+    "width": 1440
+  },
+  {
+    "page": "27-settings",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1425,
+    "heading": "系统设置与运行状态",
+    "mainWidth": 1201,
+    "scroll": 1425,
+    "width": 1440
+  },
+  {
+    "page": "02-dashboard",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "工作台首页",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "03-monitor",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "产线与设备实时总览",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "04-dg",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "金属屏蔽搭盖率检测",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "05-jx",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "铜丝屏蔽相邻铜丝间隙检测",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "06-by",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "电缆不圆度检测",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "07-tasks",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "检测任务列表",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "08-task",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "检测任务详情",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "09-specs",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "高压电缆产品规格档案",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "10-history",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "历史检测数据查询",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "11-trace",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "盘号追溯详情",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "12-import",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "数据导入与补录",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "13-alarms",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "报警事件",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "14-alarm",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "报警详情与处置",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "15-analytics",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "质量统计分析",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "16-reports",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "质量报告管理",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "17-report",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "报告预览与导出",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "18-metrics",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "三项检测指标配置",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "19-recipes",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "配方与判定规则",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "20-templates",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "报告模板配置",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "21-devices",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "设备档案",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "22-connections",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "数据接入配置",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "23-mes",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "MES 接口配置",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "24-sync",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "MES 同步监控",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "25-users",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "用户角色与权限",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "26-audit",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "操作审计",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "27-settings",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1351,
+    "heading": "系统设置与运行状态",
+    "mainWidth": 1127,
+    "scroll": 1351,
+    "width": 1366
+  },
+  {
+    "page": "02-dashboard",
+    "viewport": 390,
+    "broken": 0,
+    "client": 375,
+    "heading": "工作台首页",
+    "mainWidth": 375,
+    "scroll": 375,
+    "width": 390
+  },
+  {
+    "page": "04-dg",
+    "viewport": 390,
+    "broken": 0,
+    "client": 375,
+    "heading": "金属屏蔽搭盖率检测",
+    "mainWidth": 375,
+    "scroll": 375,
+    "width": 390
+  },
+  {
+    "page": "07-tasks",
+    "viewport": 390,
+    "broken": 0,
+    "client": 375,
+    "heading": "检测任务列表",
+    "mainWidth": 375,
+    "scroll": 375,
+    "width": 390
+  },
+  {
+    "page": "10-history",
+    "viewport": 390,
+    "broken": 0,
+    "client": 375,
+    "heading": "历史检测数据查询",
+    "mainWidth": 375,
+    "scroll": 375,
+    "width": 390
+  },
+  {
+    "page": "17-report",
+    "viewport": 390,
+    "broken": 0,
+    "client": 375,
+    "heading": "报告预览与导出",
+    "mainWidth": 375,
+    "scroll": 375,
+    "width": 390
+  },
+  {
+    "page": "27-settings",
+    "viewport": 390,
+    "broken": 0,
+    "client": 375,
+    "heading": "系统设置与运行状态",
+    "mainWidth": 375,
+    "scroll": 375,
+    "width": 390
+  },
+  {
+    "page": "01-login",
+    "viewport": 1366,
+    "broken": 0,
+    "client": 1366,
+    "scroll": 1366,
+    "width": 1366
+  },
+  {
+    "page": "01-login",
+    "viewport": 1440,
+    "broken": 0,
+    "client": 1440,
+    "scroll": 1440,
+    "width": 1440
+  },
+  {
+    "page": "01-login",
+    "viewport": 1920,
+    "broken": 0,
+    "client": 1920,
+    "scroll": 1920,
+    "width": 1920
+  }
+]

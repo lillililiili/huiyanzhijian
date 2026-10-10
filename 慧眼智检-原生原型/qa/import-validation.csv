@@ -1,0 +1,4 @@
+taskId,metric,time,meter,value,validity
+T20261009002,jx,2026-10-09 14:25:30,2216.5,1.8,valid
+T20261009002,thickness,2026-10-09 14:25:40,2217,2.3,valid
+T20261009003,by,2026-10-09 14:25:30,3180,,invalid
