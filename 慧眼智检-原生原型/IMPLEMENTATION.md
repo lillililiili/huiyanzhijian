@@ -1,5 +1,7 @@
 # Implementation contracts
 
+This file describes the existing local prototype at cbd8c76, not production API contracts. Production design and known differences are in [page mapping](../docs/07_原型页面与开发映射.md), [business rules](../docs/08_业务规则与验收基线.md), and [review log](../docs/09_文档审查与开发任务.md). Demo roles, state, storage and measurement rules are not approved production behavior.
+
 Buildless native HTML/CSS/JS. Namespace `window.HY = { Pages:{}, Actions:{} }` created in data.js. Scripts load data.js, ui.js, pages-core.js, pages-management.js, app.js in that order.
 
 ## Store (data.js)
