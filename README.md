@@ -38,6 +38,8 @@ React 演示前端与第11份 R01 的 Vue 正式方案分开记录；本次同�
 
 ## 开发准备与启动
 
+Windows 10/11 64 位电脑可使用免安装交付包：完整解压后双击 `启动平台.bat`，自动打开 `http://127.0.0.1:4188/`；双击 `停止平台.bat` 结束服务。包内自带 Node.js 和前端资源，目标电脑无需安装 Node、npm、Docker 或数据库。演示账号 `admin` / `1234`，数据仍保存在浏览器本地；不包含原电脑浏览器数据。制作脚本与运行约定见 [免安装包说明](deploy/portable/README.md)，本机实测见 [交付验证](docs/verification/2026-10-20_Windows免安装包.md)。
+
 React 演示前端在仓库根目录执行（Windows PowerShell 使用 `npm.cmd`）：
 
 ```powershell

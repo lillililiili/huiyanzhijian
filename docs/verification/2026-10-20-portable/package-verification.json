@@ -1,0 +1,28 @@
+{
+  "archive": "E:\\huiyanzhijian\\release\\慧眼智检-Windows免安装版-20261020.zip",
+  "zip_bytes": 45100464,
+  "sha256": "7eec6c50ff26881386ef75ae28f078f825543ed856e122e008872fee46911e23",
+  "manifest_files_verified": 104,
+  "extracted_root": "C:\\Users\\ADMIN~1\\AppData\\Local\\Temp\\慧眼 部署验收-p32lh133\\慧眼智检-Windows免安装版-20261020",
+  "minimal_path": "C:\\Windows\\System32",
+  "bat_exit_code": 0,
+  "health": {
+    "app": "huiyan-portable",
+    "instance": "d4b58319838059df1bc0da16d63624c7627fc45add2f9b018390bb72e1bb4132",
+    "version": "ae5fe0b80dfb471a80b1f7b05c77cacf4efbb64e",
+    "pid": 4632,
+    "port": 4188
+  },
+  "all_site_files_http_verified": 83,
+  "repeat_start_same_pid": true,
+  "stop_refuses_connection": true,
+  "repeat_stop_exit_zero": true,
+  "restart_new_pid": 12844,
+  "browser_auto_open_observed": true,
+  "browser_login": "admin demo role successful",
+  "browser_create_then_restart_readback": "PORTABLE-20261020 still visible after service restart and page reload",
+  "browser_console_errors": 0,
+  "verification_service_stopped": true,
+  "desktop_zip": "C:\\Users\\Admin（无密码）\\Desktop\\慧眼智检-Windows免安装版-20261020.zip",
+  "desktop_copy_sha256_matches": true
+}
