@@ -1,0 +1,40 @@
+:root {
+  --navy: #091f52;
+  --blue: #155ab6;
+  --green: #11836f;
+  --red: #d34858;
+  --amber: #b7781a;
+  --muted: #74829a;
+  --line: #e7edf5;
+  --bg: #f4f7fc;
+  --font: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: #263650;
+  font-family: var(--font);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell-proof {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 17px;
+}
+
+.shell-proof h1 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 29px;
+  font-weight: 700;
+}

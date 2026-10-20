@@ -1,0 +1,115 @@
+Browser tab: 1, Title: "工作台首页 · 慧眼智检", URL: "http://127.0.0.1:4180/#dashboard".
+1 AXWebArea 工作台首页 · 慧眼智检, URL: 127.0.0.1:4180/#dashboard
+	2 container root
+		3 container
+			4 button (collapsed) Description: 展开导航, Secondary Actions: Expand
+			5 text 慧眼智检 / 工作台首页
+			6 button 查看待复核报警
+				7 text 1
+			8 button 当前账户与退出登录
+		9 container main-content
+			10 heading 工作台首页, Value: 1
+				11 text 工作台首页
+			12 text 35–220kV高压电缆 · 三项检测运行概况与待办事项
+			13 text 数据更新
+			14 text 14:30:00
+			15 container
+				16 text 今日检测任务 12
+			17 container
+				18 text 在线检测设备 3 /  3
+			19 container
+				20 text 当前任务超限事件 2
+			21 container
+				22 text 待复核事件 1
+			23 container
+				24 text MES记录同步 100 %
+			25 container
+				26 heading 金属屏蔽搭盖率, Value: 2
+					27 text 金属屏蔽搭盖率
+				28 link Description: 查看检测 ›, Value: 127.0.0.1:4180/#detection?metric=dg&task=T20261009001
+				29 container
+					30 text 12.36 %
+				31 text 搭盖率 ≥ 10 % 符合阈值 HY-DG-01  ·  30  条有效记录
+				32 container 金属屏蔽搭盖率趋势，可点击数据点查看原始记录
+			33 container
+				34 heading 铜丝屏蔽相邻铜丝间隙, Value: 2
+					35 text 铜丝屏蔽相邻铜丝间隙
+				36 link Description: 查看检测 ›, Value: 127.0.0.1:4180/#detection?metric=jx&task=T20261009002
+				37 container
+					38 text 1.52 mm
+				39 text 铜丝间隙 ≤ 3 mm 符合阈值 HY-JX-01  ·  30  条有效记录
+				40 container 铜丝屏蔽相邻铜丝间隙趋势，可点击数据点查看原始记录
+			41 container
+				42 heading 电缆不圆度, Value: 2
+					43 text 电缆不圆度
+				44 link Description: 查看检测 ›, Value: 127.0.0.1:4180/#detection?metric=by&task=T20261009003
+				45 container
+					46 text 4.37 %
+				47 text 不圆度 ≤ 8 % 符合阈值 HY-BY-01  ·  30  条有效记录
+				48 container 电缆不圆度趋势，可点击数据点查看原始记录
+			49 container
+				50 heading 当前检测任务, Value: 2
+					51 text 当前检测任务
+				52 link Description: 全部任务 →, Value: 127.0.0.1:4180/#tasks
+				53 table
+					54 row
+						55 cell
+							56 text 任务编号
+						57 cell
+							58 text 检测项目
+						59 cell
+							60 text 规格
+						61 cell
+							62 text 盘号
+						63 cell
+							64 text 任务状态
+						65 cell
+							66 text 操作
+					67 row
+						68 cell
+							69 link Description: T20261009001, Value: 127.0.0.1:4180/#task?id=T20261009001
+						70 cell
+							71 text 金属屏蔽搭盖率
+						72 cell
+							73 text 35kV · 1×400mm²
+						74 cell
+							75 link Description: P20261009001, Value: 127.0.0.1:4180/#trace?reel=P20261009001
+						76 cell
+							77 text 检测中
+						78 cell
+							79 link Description: 进入检测, Value: 127.0.0.1:4180/#detection?metric=dg&task=T20261009001
+					80 row
+						81 cell
+							82 link Description: T20261009002, Value: 127.0.0.1:4180/#task?id=T20261009002
+						83 cell
+							84 text 铜丝屏蔽相邻铜丝间隙
+						85 cell
+							86 text 110kV · 1×800mm²
+						87 cell
+							88 link Description: P20261009002, Value: 127.0.0.1:4180/#trace?reel=P20261009002
+						89 cell
+							90 text 检测中
+						91 cell
+							92 link Description: 进入检测, Value: 127.0.0.1:4180/#detection?metric=jx&task=T20261009002
+					93 row
+						94 cell
+							95 link Description: T20261009003, Value: 127.0.0.1:4180/#task?id=T20261009003
+						96 cell
+							97 text 电缆不圆度
+						98 cell
+							99 text 220kV · 1×1200mm²
+						100 cell
+							101 link Description: P20261009003, Value: 127.0.0.1:4180/#trace?reel=P20261009003
+						102 cell
+							103 text 检测中
+						104 cell
+							105 link Description: 进入检测, Value: 127.0.0.1:4180/#detection?metric=by&task=T20261009003
+			106 container
+				107 heading 待办与同步状态, Value: 2
+					108 text 待办与同步状态
+				109 link Description: 查看报警, Value: 127.0.0.1:4180/#alarms
+				110 link Description: 搭盖率低于控制下限, Value: 127.0.0.1:4180/#alarm?id=AL20261009001
+				111 text P20261009001  ·  14:06:00  ·  9.20 % 待处理 已处理超限事件 1  项 平台接收当前窗口记录 90  /  90  条 MES确认接收记录 90  /  90  条 检测状态、数据判定和 MES 接收状态分别记录。
+			112 text 当前值符合阈值不代表整盘最终合格；过程超限保留原始记录，完成复核后形成质量结论。
+
+The focused UI element is 1 AXWebArea 工作台首页 · 慧眼智检, URL: 127.0.0.1:4180/#dashboard

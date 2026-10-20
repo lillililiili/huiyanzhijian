@@ -1,0 +1,19 @@
+name: huiyan-local
+
+services:
+  web:
+    image: huiyan-web:local
+    pull_policy: never
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      pull: false
+    ports:
+      - "127.0.0.1:${HUIYAN_PORT:-4181}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
