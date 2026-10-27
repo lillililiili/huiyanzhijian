@@ -1,0 +1,390 @@
+Browser tab: 1277231279, Title: "工作台首页 · 慧眼智检", URL: "http://127.0.0.1:4188/#dashboard".
+0 AXWebArea 工作台首页 · 慧眼智检, URL: 127.0.0.1:4188/#dashboard
+	1 container root
+		2 container Description: 主导航, ID: primary-navigation
+			3 link Description: 慧眼智检 AI线缆智能检测装备, Value: 127.0.0.1:4188/#dashboard
+			4 text 线缆质量管控平台
+			5 container
+				6 link Description: 工作台, Value: 127.0.0.1:4188/#dashboard
+				7 link Description: 综合监控, Value: 127.0.0.1:4188/#monitor
+				8 button (expanded) 检测中心, Secondary Actions: Collapse
+				9 link Description: 金属屏蔽搭盖率检测, Value: 127.0.0.1:4188/#detection?metric=dg
+				10 link Description: 铜丝屏蔽相邻铜丝间隙检测, Value: 127.0.0.1:4188/#detection?metric=jx
+				11 link Description: 电缆不圆度检测, Value: 127.0.0.1:4188/#detection?metric=by
+				12 link Description: 检测任务, Value: 127.0.0.1:4188/#tasks
+				13 link Description: 产品规格档案, Value: 127.0.0.1:4188/#specs
+				14 button (collapsed) 历史与数据追溯, Secondary Actions: Expand
+				15 link Description: 报警事件, Value: 127.0.0.1:4188/#alarms
+				16 button (collapsed) 分析与质量报告, Secondary Actions: Expand
+				17 button (collapsed) 质量配置, Secondary Actions: Expand
+				18 button (collapsed) 设备与接口, Secondary Actions: Expand
+				19 button (collapsed) 系统管理, Secondary Actions: Expand
+			20 text 慧眼智检 · 质见未来
+			21 text 35–220kV 高压电缆
+			22 text 聚焦三项关键量测指标
+			23 text 山东沉积岩信息科技有限公司
+		24 container
+			25 text 慧眼智检 / 工作台首页
+			26 link Description: 演示数据 · 非现场实测, Value: 127.0.0.1:4188/#settings
+			27 text 2026-10-09 14:30:00
+			28 button 查看待复核报警
+				29 text 1
+			30 button 当前账户与退出登录
+		31 container main-content
+			32 heading 工作台首页, Value: 1
+				33 text 工作台首页
+			34 text 35–220kV高压电缆 · 三项检测运行概况与待办事项
+			35 text 数据更新
+			36 text 14:30:00
+			37 container
+				38 text 今日检测任务 12 检测中 3 · 已完成 9
+			39 container
+				40 text 在线检测设备 3 /  3 三款设备连接状态
+			41 container
+				42 text 当前任务超限事件 2 原始超限记录持续保留
+			43 container
+				44 text 待复核事件 1 恢复正常后仍需人工复核
+			45 container
+				46 text MES记录同步 100 % 当前窗口 90 / 90 条
+			47 container
+				48 heading 金属屏蔽搭盖率, Value: 2
+					49 text 金属屏蔽搭盖率
+				50 link Description: 查看检测 ›, Value: 127.0.0.1:4188/#detection?metric=dg&task=T20261009001
+				51 container
+					52 text 12.36 %
+				53 text 搭盖率 ≥ 10 % 符合阈值 HY-DG-01  ·  30  条有效记录
+				54 container 金属屏蔽搭盖率趋势，可点击数据点查看原始记录
+			55 container
+				56 heading 铜丝屏蔽相邻铜丝间隙, Value: 2
+					57 text 铜丝屏蔽相邻铜丝间隙
+				58 link Description: 查看检测 ›, Value: 127.0.0.1:4188/#detection?metric=jx&task=T20261009002
+				59 container
+					60 text 1.52 mm
+				61 text 铜丝间隙 ≤ 3 mm 符合阈值 HY-JX-01  ·  30  条有效记录
+				62 container 铜丝屏蔽相邻铜丝间隙趋势，可点击数据点查看原始记录
+			63 container
+				64 heading 电缆不圆度, Value: 2
+					65 text 电缆不圆度
+				66 link Description: 查看检测 ›, Value: 127.0.0.1:4188/#detection?metric=by&task=T20261009003
+				67 container
+					68 text 4.37 %
+				69 text 不圆度 ≤ 8 % 符合阈值 HY-BY-01  ·  30  条有效记录
+				70 container 电缆不圆度趋势，可点击数据点查看原始记录
+			71 container
+				72 heading 当前检测任务, Value: 2
+					73 text 当前检测任务
+				74 link Description: 全部任务 →, Value: 127.0.0.1:4188/#tasks
+				75 table
+					76 row
+						77 cell
+							78 text 任务编号
+						79 cell
+							80 text 检测项目
+						81 cell
+							82 text 规格
+						83 cell
+							84 text 盘号
+						85 cell
+							86 text 任务状态
+						87 cell
+							88 text 操作
+					89 row
+						90 cell
+							91 link Description: T20261009001, Value: 127.0.0.1:4188/#task?id=T20261009001
+						92 cell
+							93 text 金属屏蔽搭盖率
+						94 cell
+							95 text 35kV · 1×400mm²
+						96 cell
+							97 link Description: P20261009001, Value: 127.0.0.1:4188/#trace?reel=P20261009001
+						98 cell
+							99 text 检测中
+						100 cell
+							101 link Description: 进入检测, Value: 127.0.0.1:4188/#detection?metric=dg&task=T20261009001
+					102 row
+						103 cell
+							104 link Description: T20261009002, Value: 127.0.0.1:4188/#task?id=T20261009002
+						105 cell
+							106 text 铜丝屏蔽相邻铜丝间隙
+						107 cell
+							108 text 110kV · 1×800mm²
+						109 cell
+							110 link Description: P20261009002, Value: 127.0.0.1:4188/#trace?reel=P20261009002
+						111 cell
+							112 text 检测中
+						113 cell
+							114 link Description: 进入检测, Value: 127.0.0.1:4188/#detection?metric=jx&task=T20261009002
+					115 row
+						116 cell
+							117 link Description: T20261009003, Value: 127.0.0.1:4188/#task?id=T20261009003
+						118 cell
+							119 text 电缆不圆度
+						120 cell
+							121 text 220kV · 1×1200mm²
+						122 cell
+							123 link Description: P20261009003, Value: 127.0.0.1:4188/#trace?reel=P20261009003
+						124 cell
+							125 text 检测中
+						126 cell
+							127 link Description: 进入检测, Value: 127.0.0.1:4188/#detection?metric=by&task=T20261009003
+			128 container
+				129 heading 待办与同步状态, Value: 2
+					130 text 待办与同步状态
+				131 link Description: 查看报警, Value: 127.0.0.1:4188/#alarms
+				132 link Description: 搭盖率低于控制下限, Value: 127.0.0.1:4188/#alarm?id=AL20261009001
+				133 text P20261009001  ·  14:06:00  ·  9.20 % 待处理 已处理超限事件 1  项 平台接收当前窗口记录 90  /  90  条 MES确认接收记录 90  /  90  条 检测状态、数据判定和 MES 接收状态分别记录。
+			134 text 当前值符合阈值不代表整盘最终合格；过程超限保留原始记录，完成复核后形成质量结论。
+
+The focused UI element is 0 AXWebArea 工作台首页 · 慧眼智检, URL: 127.0.0.1:4188/#dashboard
+
+服务停止后重新启动，再刷新页面：
+Browser tab: 1277231279, Title: "高压电缆产品规格档案 · 慧眼智检", URL: "http://127.0.0.1:4188/#specs?id=PORTABLE-20261020".
+1 AXWebArea 高压电缆产品规格档案 · 慧眼智检, URL: 127.0.0.1:4188/#specs?id=PORTABLE-20261020
+	2 container root
+		3 container Description: 主导航, ID: primary-navigation
+			4 link Description: 慧眼智检 AI线缆智能检测装备, Value: 127.0.0.1:4188/#dashboard
+			5 text 线缆质量管控平台
+			6 container
+				7 link Description: 工作台, Value: 127.0.0.1:4188/#dashboard
+				8 link Description: 综合监控, Value: 127.0.0.1:4188/#monitor
+				9 button (expanded) 检测中心, Secondary Actions: Collapse
+				10 link Description: 金属屏蔽搭盖率检测, Value: 127.0.0.1:4188/#detection?metric=dg
+				11 link Description: 铜丝屏蔽相邻铜丝间隙检测, Value: 127.0.0.1:4188/#detection?metric=jx
+				12 link Description: 电缆不圆度检测, Value: 127.0.0.1:4188/#detection?metric=by
+				13 link Description: 检测任务, Value: 127.0.0.1:4188/#tasks
+				14 link Description: 产品规格档案, Value: 127.0.0.1:4188/#specs
+				15 button (collapsed) 历史与数据追溯, Secondary Actions: Expand
+				16 link Description: 报警事件, Value: 127.0.0.1:4188/#alarms
+				17 button (collapsed) 分析与质量报告, Secondary Actions: Expand
+				18 button (collapsed) 质量配置, Secondary Actions: Expand
+				19 button (collapsed) 设备与接口, Secondary Actions: Expand
+				20 button (collapsed) 系统管理, Secondary Actions: Expand
+			21 text 慧眼智检 · 质见未来
+			22 text 35–220kV 高压电缆
+			23 text 聚焦三项关键量测指标
+			24 text 山东沉积岩信息科技有限公司
+		25 container
+			26 text 慧眼智检 / 高压电缆产品规格档案
+			27 link Description: 演示数据 · 非现场实测, Value: 127.0.0.1:4188/#settings
+			28 text 2026-10-09 14:30:00
+			29 button 查看待复核报警
+				30 text 1
+			31 button 当前账户与退出登录
+		32 container main-content
+			33 heading 高压电缆产品规格档案, Value: 1
+				34 text 高压电缆产品规格档案
+			35 text 仅管理35–220kV高压电缆；检测项目按实际屏蔽结构和工序配置。
+			36 button 新增规格
+			37 container
+				38 text 规格编号
+				39 text field (settable) 输入规格编号
+				40 text 电压等级
+				41 pop up button (collapsed, settable) Description: voltage, Value: 35 / 66 / 110 / 220kV, Secondary Actions: Expand
+					42 menu
+						43 (selected) 35 / 66 / 110 / 220kV
+						44 35kV
+						45 66kV
+						46 110kV
+						47 220kV
+				48 text 导体截面积
+				49 pop up button (collapsed, settable) Description: area, Value: 全部截面积, Secondary Actions: Expand
+					50 menu
+						51 (selected) 全部截面积
+						52 300mm²
+						53 400mm²
+						54 630mm²
+						55 800mm²
+						56 1000mm²
+						57 1200mm²
+				58 text 启用状态
+				59 pop up button (collapsed, settable) Description: enabled, Value: 全部状态, Secondary Actions: Expand
+					60 menu
+						61 (selected) 全部状态
+						62 启用
+						63 停用
+				64 button 查询
+				65 button 重置
+			66 container
+				67 heading 规格列表, Value: 2
+					68 text 规格列表
+				69 text 7  项规格
+				70 table
+					71 row
+						72 cell
+							73 text 规格编号
+						74 cell
+							75 text 电压等级
+						76 cell
+							77 text 芯数 × 截面积
+						78 cell
+							79 text 屏蔽结构
+						80 cell
+							81 text 适用检测项目
+						82 cell
+							83 text 状态
+						84 cell
+							85 text 操作
+					86 row
+						87 cell
+							88 link Description: SP035-400, Value: 127.0.0.1:4188/#specs?id=SP035-400
+						89 cell
+							90 text 35kV
+						91 cell
+							92 text 1×400mm²
+						93 cell
+							94 text 铜带屏蔽
+						95 cell
+							96 text 搭盖率 / 不圆度
+						97 cell
+							98 text 启用
+						99 cell
+							100 button 编辑
+					101 row
+						102 cell
+							103 link Description: SP035-300, Value: 127.0.0.1:4188/#specs?id=SP035-300
+						104 cell
+							105 text 35kV
+						106 cell
+							107 text 1×300mm²
+						108 cell
+							109 text 铜带屏蔽
+						110 cell
+							111 text 搭盖率 / 不圆度
+						112 cell
+							113 text 启用
+						114 cell
+							115 button 编辑
+					116 row
+						117 cell
+							118 link Description: SP066-630, Value: 127.0.0.1:4188/#specs?id=SP066-630
+						119 cell
+							120 text 66kV
+						121 cell
+							122 text 1×630mm²
+						123 cell
+							124 text 铜丝屏蔽
+						125 cell
+							126 text 铜丝间隙 / 不圆度
+						127 cell
+							128 text 启用
+						129 cell
+							130 button 编辑
+					131 row
+						132 cell
+							133 link Description: SP110-800, Value: 127.0.0.1:4188/#specs?id=SP110-800
+						134 cell
+							135 text 110kV
+						136 cell
+							137 text 1×800mm²
+						138 cell
+							139 text 铜丝屏蔽
+						140 cell
+							141 text 铜丝间隙 / 不圆度
+						142 cell
+							143 text 启用
+						144 cell
+							145 button 编辑
+					146 row
+						147 cell
+							148 link Description: SP110-1000, Value: 127.0.0.1:4188/#specs?id=SP110-1000
+						149 cell
+							150 text 110kV
+						151 cell
+							152 text 1×1000mm²
+						153 cell
+							154 text 铜丝屏蔽
+						155 cell
+							156 text 铜丝间隙 / 不圆度
+						157 cell
+							158 text 启用
+						159 cell
+							160 button 编辑
+					161 row
+						162 cell
+							163 link Description: SP220-1200, Value: 127.0.0.1:4188/#specs?id=SP220-1200
+						164 cell
+							165 text 220kV
+						166 cell
+							167 text 1×1200mm²
+						168 cell
+							169 text 铜丝屏蔽
+						170 cell
+							171 text 铜丝间隙 / 不圆度
+						172 cell
+							173 text 启用
+						174 cell
+							175 button 编辑
+					176 row
+						177 cell
+							178 link Description: PORTABLE-20261020, Value: 127.0.0.1:4188/#specs?id=PORTABLE-20261020
+						179 cell
+							180 text 35kV
+						181 cell
+							182 text 1×400mm²
+						183 cell
+							184 text 铜带屏蔽
+						185 cell
+							186 text 搭盖率 / 不圆度
+						187 cell
+							188 text 启用
+						189 cell
+							190 button 编辑
+			191 container
+				192 heading 选中规格详情, Value: 2
+					193 text 选中规格详情
+				194 text PORTABLE-20261020 启用
+				195 container
+					196 text 35 kV　1×400mm²
+				197 text 检测对象 高压电缆 屏蔽结构 铜带屏蔽 产品类型 交联聚乙烯绝缘电缆 客户规格代号 HV-35-400 本规格适用项目 金属屏蔽搭盖率 电缆不圆度 检测项目按照屏蔽结构与生产工序配置，不默认全部适用。
+			198 container
+				199 heading 三项检测规则与适用关系, Value: 2
+					200 text 三项检测规则与适用关系
+				201 text 阈值为演示规则 · 适用性按规格配置
+				202 table
+					203 row
+						204 cell
+							205 text 检测项目
+						206 cell
+							207 text 演示规则版本
+						208 cell
+							209 text 量测指标
+						210 cell
+							211 text 演示阈值
+						212 cell
+							213 text 当前规格适用性
+					214 row
+						215 cell
+							216 text 金属屏蔽搭盖率
+						217 cell
+							218 text DG-V1.0
+						219 cell
+							220 text 搭盖率
+						221 cell
+							222 text ≥ 10 %
+						223 cell
+							224 text 本规格适用
+					225 row
+						226 cell
+							227 text 铜丝屏蔽相邻铜丝间隙
+						228 cell
+							229 text JX-V1.0
+						230 cell
+							231 text 铜丝间隙
+						232 cell
+							233 text ≤ 3 mm
+						234 cell
+							235 text 本规格不适用
+					236 row
+						237 cell
+							238 text 电缆不圆度
+						239 cell
+							240 text BY-V1.0
+						241 cell
+							242 text 不圆度
+						243 cell
+							244 text ≤ 8 %
+						245 cell
+							246 text 本规格适用
+			247 text 本页为产品规格管理原型，不表示单台检测硬件覆盖全部规格；实际适用范围需结合设备量程与工艺确认。
+
+The focused UI element is 1 AXWebArea 高压电缆产品规格档案 · 慧眼智检, URL: 127.0.0.1:4188/#specs?id=PORTABLE-20261020

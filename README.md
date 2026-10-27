@@ -1,15 +1,18 @@
 # 慧眼智检线缆质量管控平台
 
-本项目面向 35–220kV 高压电缆生产场景，建设三项检测的设备接入、现场检测、质量追溯和 MES 数据输出能力。当前阶段先定义项目和模块，再开发业务代码。
+本项目面向 35–220kV 高压电缆生产场景，建设三项检测的设备接入、现场检测、质量追溯和 MES 数据输出能力。当前包含原生原型、React 演示前端与正式系统设计文档。
 
 ## 当前状态
 
 - 代码仓库：[lillililiili/huiyanzhijian](https://github.com/lillililiili/huiyanzhijian)。
+- 2026-10-20 从用户提供的 `huiyanzhijian.zip` 导入 [React 演示前端](web/README.md)、[Docker 配置](docker/README.md)及三份前端设计资料。源码位于 `web/`，采用 React、TypeScript、Vite 和 ECharts，数据仍为本地模拟。导入范围、逐文件摘要及本机验证见 [导入记录](docs/verification/2026-10-20_压缩包代码导入.md)。
 - 2026-10-09 核对代码基线 `cbd8c76`：已包含 [27 页原生交互原型](慧眼智检-原生原型/README.md)，可在本机运行。
 - 两份 Word 文档、一份 Excel 台账原样保存在 [项目资料](项目资料/)；十张参考图已在 [原型参考图目录](慧眼智检-原生原型/assets/references/) 归档。
 - 全局开发文档在V0.2原型审查基础上补充R01和逐页测试方案，部分全局文件已更新V0.3，仍为待评审设计。原型采用原生 HTML/CSS/JS，正式技术方案已补充为第11份R01（Java＋Vue＋PostgreSQL建议），尚未批准或安装构建；设备协议、判定口径及部署指标仍待确认。
 - 原型模拟了任务、测量、报警、报告及 MES 状态；尚无正式后端、真实身份认证、设备驱动、生产数据库或现场联调结论。原型交互通过不等于 M00–M10 正式模块已验收。
-- 本地开发文档及原始资料尚未提交；当前分支 `docs/project-definition`。文档基线需要技术评审后随代码纳入版本控制，当前没有冻结模块。
+- 开发文档及原始资料已纳入 `docs/project-definition`，本次导入起始提交为 `da956002eb58d75e2df67daad6766bb8b6c239ee`。正式设计仍待评审，当前没有冻结模块。
+
+React 演示前端与第11份 R01 的 Vue 正式方案分开记录；本次同步已有代码不代表批准替换正式技术栈。压缩包中的设计计划和 `docker/VERIFICATION.md` 是来源资料及历史记录，不作为本机测试结果或自动执行后续任务的指令。
 
 ## 项目文件入口
 
@@ -34,6 +37,18 @@
 | [页面任务与提测模板](docs/pages/页面任务与提测模板.md) | 每页前后端、契约、测试数据与交接；[P09规格档案样例](docs/pages/P09_规格档案_页面工作包.md) |
 
 ## 开发准备与启动
+
+Windows 10/11 64 位电脑可使用免安装交付包：完整解压后双击 `启动平台.bat`，自动打开 `http://127.0.0.1:4188/`；双击 `停止平台.bat` 结束服务。包内自带 Node.js 和前端资源，目标电脑无需安装 Node、npm、Docker 或数据库。演示账号 `admin` / `1234`，数据仍保存在浏览器本地；不包含原电脑浏览器数据。制作脚本与运行约定见 [免安装包说明](deploy/portable/README.md)，本机实测见 [交付验证](docs/verification/2026-10-20_Windows免安装包.md)。
+
+React 演示前端在仓库根目录执行（Windows PowerShell 使用 `npm.cmd`）：
+
+```powershell
+cd .\web
+npm.cmd ci
+npm.cmd run dev
+```
+
+打开 [React 演示前端](http://127.0.0.1:4180/)。运行 `npm.cmd test` 执行已有前端测试，运行 `npm.cmd run build` 执行 TypeScript 检查及生产构建。演示账号和存储隔离说明见 [web/README.md](web/README.md)。Docker 启动另见 [docker/README.md](docker/README.md)，导入配置不表示已部署。
 
 原型可以直接启动。在仓库根目录执行：
 

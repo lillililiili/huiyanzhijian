@@ -1,0 +1,11 @@
+**
+!web/
+!web/**
+!docker/
+!docker/nginx.conf
+web/node_modules
+web/dist
+web/.git
+web/.env*
+web/**/*.tsbuildinfo
+web/.vite
