@@ -8,6 +8,11 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
       pull: false
+      args:
+        VITE_ADMIN_APP_URL: ${ADMIN_APP_URL:-}
+        VITE_BUSINESS_APP_URL: ${BUSINESS_APP_URL:-}
+    environment:
+      API_UPSTREAM: ${API_UPSTREAM:-http://host.docker.internal:4192}
     ports:
       - "127.0.0.1:${HUIYAN_PORT:-4181}:80"
     restart: unless-stopped
@@ -17,3 +22,4 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
+

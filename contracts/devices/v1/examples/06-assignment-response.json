@@ -1,0 +1,33 @@
+{
+  "code": "OK",
+  "message": "成功",
+  "request_id": "request-example-01",
+  "data": {
+    "device_id": "device-test-01",
+    "server_time": "2026-10-21T08:00:00Z",
+    "assignment": {
+      "binding_id": "binding-test-01",
+      "binding_version": "1",
+      "task_id": "task-test-01",
+      "task_version": "1",
+      "task_state": "RUNNING",
+      "factory_id": "factory-test-01",
+      "spool_id": "spool-test-01",
+      "process_id": "process-test-01",
+      "specification_id": "spec-test-01",
+      "metric_code": "WIRE_GAP",
+      "unit": "mm",
+      "recipe_version_id": null,
+      "snapshot_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "evaluation_policy": "VALIDATE_ONLY",
+      "rule_snapshot": {
+        "schema_version": "rule-snapshot.v1",
+        "method_id": null,
+        "method_version": null,
+        "approval_state": "UNAPPROVED",
+        "comparison": null,
+        "parameters": {}
+      }
+    }
+  }
+}

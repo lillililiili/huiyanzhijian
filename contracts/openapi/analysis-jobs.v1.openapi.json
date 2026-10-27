@@ -1,0 +1,979 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "慧眼智检分析任务",
+    "version": "1.0.0-draft.1",
+    "description": "设计未实现；仅人员会话，不接受设备凭据。"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/analysis-jobs": {
+      "post": {
+        "operationId": "createAnalysisJob",
+        "summary": "createAnalysisJob",
+        "security": [
+          {
+            "personSession": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "成功；设计未实现",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/JobResponse"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted version, e.g. \"1\""
+              }
+            }
+          },
+          "400": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/AnalysisRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/analysis-jobs/{id}": {
+      "get": {
+        "operationId": "getAnalysisJob",
+        "summary": "getAnalysisJob",
+        "security": [
+          {
+            "personSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；设计未实现",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/JobResponse"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted version, e.g. \"1\""
+              }
+            }
+          },
+          "400": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/analysis-jobs/{id}:cancel": {
+      "post": {
+        "operationId": "cancelAnalysisJob",
+        "summary": "cancelAnalysisJob",
+        "security": [
+          {
+            "personSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；设计未实现",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/JobResponse"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted version, e.g. \"1\""
+              }
+            }
+          },
+          "400": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/JobCommand"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Quoted job version from response ETag"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/analysis-jobs/{id}:retry": {
+      "post": {
+        "operationId": "retryAnalysisJob",
+        "summary": "retryAnalysisJob",
+        "security": [
+          {
+            "personSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；设计未实现",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/JobResponse"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Quoted version, e.g. \"1\""
+              }
+            }
+          },
+          "400": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/JobCommand"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Quoted job version from response ETag"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/analysis-results/{id}": {
+      "get": {
+        "operationId": "getAnalysisResult",
+        "summary": "getAnalysisResult",
+        "security": [
+          {
+            "personSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；设计未实现",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ResultResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/analysis-results/{id}/segments": {
+      "get": {
+        "operationId": "listDefectSegments",
+        "summary": "listDefectSegments",
+        "security": [
+          {
+            "personSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功；设计未实现",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/SegmentPageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误详见正文，写入未知须原键重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../position-analysis/analysis-jobs.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "metric_code",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "SHIELD_OVERLAP_RATE",
+                "WIRE_GAP",
+                "OVALITY"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "personSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "huiyan_session",
+        "description": "拟定Cookie名，G00锁定；写请求需CSRF。"
+      }
+    }
+  }
+}

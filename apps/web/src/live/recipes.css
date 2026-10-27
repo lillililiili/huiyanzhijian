@@ -1,0 +1,3 @@
+.rule-filters,.rule-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.rule-filters{grid-template-columns:repeat(3,minmax(0,1fr));margin:20px 0}.rule-actions{display:flex;flex-wrap:wrap;gap:8px;min-width:155px}.rule-scope{display:inline-block;max-width:280px;overflow-wrap:anywhere}.rule-reference{white-space:pre-wrap;overflow-wrap:anywhere;max-width:440px}.rule-preset{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0}.rule-editor-grid .field{min-width:0}@media(max-width:760px){.rule-filters,.rule-editor-grid{grid-template-columns:1fr}}
+
+.modal .rule-history .table-wrap{max-height:none;overflow:visible}.rule-history h3{margin:20px 0 12px}.rule-history td{overflow-wrap:anywhere}

@@ -1,0 +1,47 @@
+{
+  "source": "浪潮星耀线缆智能产品手册20260422.pdf",
+  "source_sha256": "d2d5c70c3e2ac1ea7cff233719d0bed024084e3dc0b953678adc8f1a513841e7",
+  "pdf_page": 10,
+  "product": "星耀铠装AI质检一体机 ISA-GD-4120/5120",
+  "usage": "UI reference examples only; not task evidence or defect classification",
+  "embedded_image": "R52.jpg",
+  "source_size": [
+    3508,
+    2396
+  ],
+  "images": [
+    {
+      "file": "dent.jpg",
+      "label": "凹坑",
+      "crop_pixels": [
+        141,
+        1878,
+        617,
+        2222
+      ],
+      "sha256": "7f2a307327d911ab74ac8f388f49bba349c3ac85f7e6fff5af655b1dfdc12cf3"
+    },
+    {
+      "file": "rolled-edge.jpg",
+      "label": "卷边",
+      "crop_pixels": [
+        645,
+        1878,
+        1119,
+        2222
+      ],
+      "sha256": "624da12b265b2fe0b02b5e483d8360cb1f23d16229fb16158dc82cb940df92a7"
+    },
+    {
+      "file": "open-seam.jpg",
+      "label": "闪缝",
+      "crop_pixels": [
+        1148,
+        1878,
+        1624,
+        2222
+      ],
+      "sha256": "0fb73f54ef4d1146a5aeb5d4e849f8d2e6a9084cace7e4866da3a375829b1c9d"
+    }
+  ]
+}

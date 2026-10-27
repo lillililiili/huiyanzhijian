@@ -1,0 +1,54 @@
+.b2-choices{display:flex;flex-wrap:wrap;gap:10px;padding:10px 0}.b2-choices label{display:flex;align-items:center;gap:6px}.b2-choices input{width:auto}.spec-applicability-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px 12px;padding:10px 0}.spec-applicability-choices label{display:flex;align-items:flex-start;gap:7px;min-width:0;line-height:1.45}.spec-applicability-choices input{flex:0 0 auto;margin-top:3px}.spec-applicability-choices span{min-width:0}.spec-applicability-choices small{display:block;color:var(--muted)}.b2-json{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.6;background:var(--bg);padding:12px}.page .detail-grid .meta-item div{overflow-wrap:anywhere}.page .table-wrap td{max-width:360px;overflow-wrap:anywhere}.field textarea{border:1px solid var(--line);border-radius:6px;padding:10px;font:inherit;width:100%}
+@media(max-width:900px){.spec-applicability-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.spec-applicability-choices{grid-template-columns:1fr}}
+
+.b2-group{border:0;padding:0;margin:0 0 16px;min-width:0}.b2-group legend{font-weight:600;margin-bottom:8px}
+
+.b3-tabs { margin-bottom: 18px; gap: 24px; padding: 12px 16px; background: var(--card-bg, #fff); border-radius: 8px; border: 1px solid var(--border, #e5ebf2); }
+
+.b3r1-task-table{min-width:1450px}.b3r1-task-table th:first-child{min-width:160px}.b3r1-task-table td:first-child>a{white-space:nowrap}.b3r1-task-table th:nth-child(7){min-width:220px}.b3r1-task-table th:nth-child(8){min-width:200px}.b3r1-task-table th:last-child{min-width:80px}
+
+.b3r3-samples { min-width: 250px; line-height: 1.7; }
+
+.b3r3-task-table{min-width:1450px}.b3r3-task-table th:first-child{min-width:140px}.b3r3-task-table td:first-child>span{white-space:nowrap}.b3r3-task-table th:nth-child(2){min-width:150px}.b3r3-task-table th:nth-child(9){min-width:200px}.b3r3-task-table th:last-child{min-width:80px}
+
+.b3r3-task-table{min-width:1780px}.b3r3-task-table th:first-child,.b3r3-task-table td:first-child{position:sticky;left:0;background:var(--panel,#fff);z-index:1;box-shadow:1px 0 0 #dce4ee}.b3r3-task-table th:last-child,.b3r3-task-table td:last-child{position:sticky;right:0;background:var(--panel,#fff);z-index:1;min-width:90px;box-shadow:-1px 0 0 #dce4ee}.b3r4-activity{min-width:180px;line-height:1.7}.b3r4-status-table{min-width:1050px}
+
+.admin-json{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:55vh;overflow:auto;background:#f5f8fc;padding:16px;border-radius:8px}.admin-compact td,.admin-compact th{padding-top:7px;padding-bottom:7px}
+
+/* UX01: preserve brand tokens and source precision, allow long identities to wrap. */
+.ux-close{flex-shrink:0;gap:6px}.ux-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ux-advanced{flex-basis:100%;min-width:0}.ux-advanced>summary{cursor:pointer;color:var(--primary,#155ab6);padding:8px 0}.ux-advanced .filters{padding:10px 0;margin:0;border:0;box-shadow:none}.ux-task-table{width:100%;table-layout:fixed}.ux-task-table td,.ux-task-table th{white-space:normal;overflow-wrap:anywhere;vertical-align:top}.ux-task-table th:first-child{width:25%}.ux-task-table th:last-child{width:12%}.ux-task-table .b3r4-activity{min-width:0}.ux-task-table .b3r3-samples{min-width:0}.b3-tabs a[aria-current=page]{font-weight:700;border-bottom:3px solid #155ab6;padding-bottom:7px}.ux-technical{margin:12px 0}.ux-technical summary{cursor:pointer;padding:10px 0;color:#155ab6}.ux-live-summary{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}.ux-live-summary>div{flex:1;min-width:180px;border:1px solid var(--line);background:white;border-radius:8px;padding:12px}.ux-live-summary strong{display:block;font-size:22px;overflow-wrap:anywhere}.page-title{flex-wrap:wrap}.page .filters .field{min-width:140px}.page .filters .ux-advanced .field{min-width:200px}.drawer{max-width:100vw}.modal{max-height:calc(100dvh - 32px)}
+
+.ux-advanced{flex-basis:auto}.ux-advanced[open]{flex-basis:100%}.modal{display:flex;flex-direction:column;overflow:hidden}.modal>form{display:flex;flex-direction:column;min-height:0}.modal .modal-content{overflow:auto;min-height:0}.modal-header,.modal-footer{flex-shrink:0;background:white}.modal-footer{position:sticky;bottom:0;z-index:2}.panel-tools{flex-wrap:wrap}.panel-head{flex-wrap:wrap}
+.overlay .modal{max-height:100%}.drawer-overlay .drawer{height:100%;max-width:100%}
+
+/* DET02: make detection summaries answer task, sampling, result and record questions. */
+.ux-live-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0}
+.ux-live-summary>.ux-summary-card{box-sizing:border-box;min-width:0;min-height:174px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:14px}
+.ux-summary-label{font-size:13px;font-weight:600;color:var(--muted,#65758b)}
+.ux-summary-card strong{font-size:23px;line-height:1.25;color:var(--text,#17324f);overflow-wrap:anywhere}
+.ux-summary-card p{margin:0;overflow-wrap:anywhere}
+.ux-summary-card .muted{line-height:1.5}
+.ux-summary-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px;width:100%;font-size:13px}
+.ux-summary-facts b,.ux-summary-quality b{color:var(--text,#17324f);font-size:15px;margin-left:3px}
+.ux-summary-quality{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%;font-size:12px;line-height:1.4}
+.ux-summary-quality>span{display:flex;flex-direction:column;color:var(--muted,#65758b)}
+.ux-summary-quality .ux-summary-fail,.ux-summary-result-fail{color:#a42b2b}
+.ux-summary-result{font-size:13px;font-weight:600}
+.ux-summary-activity{width:100%;font-size:12px;line-height:1.5}
+.ux-summary-activity .b3r4-activity{min-width:0}
+.ux-summary-card>button{margin-top:auto}
+@media(max-width:1200px){.ux-live-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.ux-live-summary{grid-template-columns:minmax(0,1fr)}.ux-live-summary>.ux-summary-card{min-height:0}}
+
+/* IMG04: clearly separate an illustrative ovality image from the selected measurement evidence. */
+.measurement-illustration{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:#f8fbff}
+.measurement-illustration__header{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px 16px;margin-bottom:12px}
+.measurement-illustration__header h3{margin:0 0 8px;color:var(--text,#17324f);font-size:16px;line-height:1.4}
+.measurement-illustration__header p{flex:1 1 100%;margin:0;color:var(--muted,#65758b);font-size:13px;line-height:1.6}
+.measurement-illustration__tag{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:#eaf2ff;color:#155ab6;font-size:12px;font-weight:600}
+.measurement-illustration figure{margin:0}
+.measurement-illustration img{display:block;width:100%;height:auto;max-height:380px;object-fit:contain;border:1px solid #d7e0eb;border-radius:8px;background:#102a43}
+.measurement-illustration figcaption{margin-top:8px;color:var(--muted,#65758b);font-size:12px;line-height:1.6}
+@media(max-width:560px){.measurement-illustration{padding:12px}.measurement-illustration img{max-height:260px}}
+

@@ -1,0 +1,31 @@
+.work-order-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 18px;
+  white-space: nowrap;
+}
+.work-order-delete { display: inline-flex; border-radius: 4px; }
+.work-order-delete:focus-visible { outline: 2px solid #2364c8; outline-offset: 3px; }
+.work-order-delete:has(:disabled) { cursor: not-allowed; }
+.work-order-delete .work-order-delete-button:disabled {
+  color: #a0a7b3;
+  background: transparent;
+  opacity: 1;
+  box-shadow: none;
+  pointer-events: none;
+}
+.work-order-delete-tooltip {
+  position: fixed;
+  z-index: 2000;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 24px));
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #243b5a;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.6;
+  box-shadow: 0 4px 12px #18345124;
+  pointer-events: none;
+}

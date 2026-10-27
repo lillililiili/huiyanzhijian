@@ -1,0 +1,11 @@
+**
+!tools/
+!tools/simulator/
+!tools/simulator/**
+!contracts/
+!contracts/devices/
+!contracts/devices/v1/
+!contracts/devices/v1/**
+tools/simulator/node_modules
+tools/simulator/dist
+tools/simulator/.env*

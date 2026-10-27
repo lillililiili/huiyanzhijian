@@ -1,0 +1,152 @@
+[
+  {
+    "file": "examples/01-measurements.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/02-ovality-missing.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": true,
+    "note": "结构合法；实际测试必须为该OVALITY设备和任务建立匹配夹具，X/Y不推断全周不圆度。"
+  },
+  {
+    "file": "examples/03-batch-receipt.json",
+    "definition": "BatchReceipt",
+    "schema_valid": true,
+    "note": "演示四类逐条回执，不是01样例的对应响应；与正式资格/判定/MES回执分离。"
+  },
+  {
+    "file": "examples/04-session-request.json",
+    "definition": "SessionRequest",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/05-session-response.json",
+    "definition": "SessionResponse",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/06-assignment-response.json",
+    "definition": "AssignmentResponse",
+    "schema_valid": true,
+    "note": "snapshot_hash为占位，不是已计算摘要；只用于结构校验。"
+  },
+  {
+    "file": "examples/07-assignment-ack.json",
+    "definition": "AssignmentAck",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/08-heartbeat.json",
+    "definition": "Heartbeat",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/09-source-alarm.json",
+    "definition": "AlarmBatch",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/10-receipts-query.json",
+    "definition": "ReceiptQuery",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/11-evidence-metadata.json",
+    "definition": "EvidenceMetadata",
+    "schema_valid": true,
+    "note": "无配套二进制，大小及摘要为占位；不代表实测证据或文件内容校验通过。"
+  },
+  {
+    "file": "examples/12-error-unknown-commit.json",
+    "definition": "ErrorResponse",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/13-profile-response.json",
+    "definition": "ProfileResponse",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/14-ack-response.json",
+    "definition": "AckResponse",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/15-heartbeat-response.json",
+    "definition": "HeartbeatResponse",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/16-query-response.json",
+    "definition": "ReceiptQueryResponse",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/17-evidence-response.json",
+    "definition": "EvidenceResponse",
+    "schema_valid": true,
+    "note": ""
+  },
+  {
+    "file": "examples/negative-01-number-not-decimal.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": false,
+    "note": "只验证格式拒绝；未来合法批次内此项应逐条REJECTED，其余项继续。"
+  },
+  {
+    "file": "examples/negative-02-null-valid.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": false,
+    "note": "只验证格式拒绝；未来合法批次内此项应逐条REJECTED，其余项继续。"
+  },
+  {
+    "file": "examples/negative-03-wrong-unit.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": false,
+    "note": "只验证格式拒绝；未来合法批次内此项应逐条REJECTED，其余项继续。"
+  },
+  {
+    "file": "examples/negative-04-timezone-missing.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": false,
+    "note": "只验证格式拒绝；未来合法批次内此项应逐条REJECTED，其余项继续。"
+  },
+  {
+    "file": "examples/negative-05-two-metrics.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": false,
+    "note": "只验证格式拒绝；未来合法批次内此项应逐条REJECTED，其余项继续。"
+  },
+  {
+    "file": "examples/negative-06-unknown-field.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": false,
+    "note": "只验证格式拒绝；未来合法批次内此项应逐条REJECTED，其余项继续。"
+  },
+  {
+    "file": "examples/negative-07-stale-as-validity.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": false,
+    "note": "只验证格式拒绝；未来合法批次内此项应逐条REJECTED，其余项继续。"
+  },
+  {
+    "file": "examples/negative-08-missing-reason.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": false,
+    "note": "只验证格式拒绝；未来合法批次内此项应逐条REJECTED，其余项继续。"
+  }
+]

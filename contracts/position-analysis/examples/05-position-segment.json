@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.1",
+  "segment_id": "segment-test-01",
+  "device_id": "device-test-01",
+  "task_id": "task-test-01",
+  "pass_id": "pass-test-01",
+  "material_coordinate_id": "coordinate-test-01",
+  "capture_session_id": "capture-run01-d1",
+  "start_capture_sequence": "1",
+  "profile_id": "position-profile-test",
+  "profile_version": "1",
+  "counter_origin": "0",
+  "position_origin_m": "0",
+  "reason": "START"
+}

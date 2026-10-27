@@ -1,0 +1,61 @@
+name: huiyan-b1
+services:
+  database:
+    image: postgis/postgis:16-3.5
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hy_migrator
+      POSTGRES_PASSWORD: ${B1_MIGRATION_PASSWORD:?Run prepare-b1 first}
+      POSTGRES_DB: huiyan_b1
+      B1_RUNTIME_PASSWORD: ${B1_RUNTIME_PASSWORD:?Run prepare-b1 first}
+    ports: ["127.0.0.1:4193:5432"]
+    volumes:
+      - b1-database:/var/lib/postgresql/data
+      - ../infra/databases/postgresql/init/b1-init.sh:/docker-entrypoint-initdb.d/10-b1.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U hy_migrator -d huiyan_b1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: &logging
+      driver: json-file
+      options: {max-size: "10m", max-file: "5"}
+  backend:
+    image: huiyan-backend:b1
+    pull_policy: never
+    build: {context: .., dockerfile: docker/B1.backend.Dockerfile, pull: false}
+    environment:
+      DATABASE_URL: postgres://hy_runtime:${B1_RUNTIME_PASSWORD}@database:5432/huiyan_b1
+      CURSOR_SECRET: ${B1_CURSOR_SECRET}
+      PORT: "4192"
+      BIND_HOST: 0.0.0.0
+      CONTRACT_ROOT: /app/contracts
+    ports: ["127.0.0.1:4192:4192"]
+    depends_on:
+      database: {condition: service_healthy}
+    command: [node, dist/composition/supervisor.js]
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4192/api/v1/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+  simulator:
+    image: huiyan-simulator:b1
+    pull_policy: never
+    profiles: [simulation]
+    build: {context: .., dockerfile: docker/B1.simulator.Dockerfile, pull: false}
+    environment:
+      API_URL: http://backend:4192
+      DEVICE_TOKEN: ${B1_DEVICE_TOKEN}
+      SIM_DB: /data/simulator.sqlite
+    volumes: ["b1-simulator:/data"]
+    command: [node, dist/cli.js, status]
+    init: true
+    logging: *logging
+volumes:
+  b1-database:
+  b1-simulator:

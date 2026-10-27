@@ -1,0 +1,25 @@
+name: huiyan-local
+
+services:
+  web:
+    image: huiyan-web:local
+    pull_policy: never
+    build:
+      context: ..
+      dockerfile: docker/Demo.Dockerfile
+      pull: false
+      args:
+        VITE_ADMIN_APP_URL: ${ADMIN_APP_URL:-}
+        VITE_BUSINESS_APP_URL: ${BUSINESS_APP_URL:-}
+    environment:
+      API_UPSTREAM: ${API_UPSTREAM:-http://host.docker.internal:4192}
+    ports:
+      - "127.0.0.1:${HUIYAN_PORT:-4181}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+

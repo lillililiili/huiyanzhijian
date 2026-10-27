@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "batch_id": "batch-ovality-missing",
+  "sent_at": "2026-10-21T08:00:00Z",
+  "records": [
+    {
+      "record_id": "sim-ovality-01",
+      "device_id": "device-ovality-test-01",
+      "capture_session_id": "capture-ovality-test-01",
+      "capture_sequence": "1",
+      "source_record_id": null,
+      "source_session_id": null,
+      "source_sequence": null,
+      "sample_kind": "NEW_SAMPLE",
+      "task_id": "task-ovality-test-01",
+      "binding_id": "binding-ovality-test-01",
+      "binding_version": "1",
+      "sample_time": "2026-10-21T08:00:00Z",
+      "time_source": "SIMULATOR",
+      "position_m": null,
+      "position_quality": "UNKNOWN",
+      "position_segment_id": null,
+      "source_type": "DEVICE",
+      "data_environment": "SIMULATED",
+      "data_status": "MISSING",
+      "recipe_version_id": null,
+      "values": [
+        {
+          "metric_code": "OVALITY",
+          "value": null,
+          "unit": "%",
+          "data_status": "MISSING",
+          "source_quality_result": "NOT_EVALUATED",
+          "method_id": null,
+          "window": {
+            "kind": "INSTANT",
+            "definition_id": null,
+            "start": null,
+            "end": null,
+            "position_from_m": null,
+            "position_to_m": null
+          },
+          "reason_code": "TARGET_METRIC_NOT_PROVIDED"
+        }
+      ],
+      "raw": {
+        "schema_version": "diameter-aux-sim.v1",
+        "data": {
+          "diameter_x_mm": "40.12",
+          "diameter_y_mm": "40.05",
+          "data_status": "VALID"
+        }
+      },
+      "evidence_refs": []
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "profile_id": "position-profile-test",
+  "version": "1",
+  "device_id": "device-test-01",
+  "position_source_id": "encoder-test-01",
+  "source_kind": "ENCODER",
+  "calibration_ref": "calibration-test-01",
+  "calibration_valid_until": "2027-01-01T00:00:00Z",
+  "scale_m_per_count": "0.001",
+  "direction_sign": "1",
+  "sensor_offset_m": "0",
+  "sync_method": "SHARED_SEQUENCE",
+  "max_sync_error_ms": "2",
+  "max_position_error_m": "0.1",
+  "approval_state": "TEST_ONLY"
+}

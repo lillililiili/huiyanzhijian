@@ -1,0 +1,2143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:huiyan:device-ingestion:1.0",
+  "title": "慧眼智检设备及模拟器接入契约设计稿 1.0",
+  "$comment": "Design only. Cross-field, authorization and state rules are normative in docs/15; schemas do not prove runtime implementation.",
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:[0-5]\\d(?:\\.\\d{1,6})?(?:Z|[+-]\\d{2}:\\d{2})$",
+      "maxLength": 32
+    },
+    "Decimal": {
+      "type": "string",
+      "pattern": "^-?(?:0|[1-9]\\d{0,13})(?:\\.\\d{1,10})?$",
+      "maxLength": 26
+    },
+    "Sequence": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9]\\d{0,19})$",
+      "description": "Unsigned decimal integer string; semantic maximum 18446744073709551615."
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "Environment": {
+      "type": "string",
+      "enum": [
+        "REAL",
+        "SIMULATED"
+      ]
+    },
+    "Metric": {
+      "type": "string",
+      "enum": [
+        "SHIELD_OVERLAP_RATE",
+        "WIRE_GAP",
+        "OVALITY"
+      ]
+    },
+    "Validity": {
+      "type": "string",
+      "enum": [
+        "VALID",
+        "INVALID",
+        "MISSING"
+      ]
+    },
+    "Raw": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "data": {
+          "type": "object",
+          "maxProperties": 128,
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "schema_version",
+        "data"
+      ],
+      "additionalProperties": false,
+      "description": "Versioned vendor payload. Depth<=8, encoded bytes<=65536, measured decimals and integers beyond JS safe range must be strings. Requires registered raw profile; no secrets."
+    },
+    "Window": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "INSTANT",
+            "TIME",
+            "POSITION",
+            "DEVICE_DEFINED"
+          ]
+        },
+        "definition_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "start": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "end": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "position_from_m": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "position_to_m": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "definition_id",
+        "start",
+        "end",
+        "position_from_m",
+        "position_to_m"
+      ],
+      "additionalProperties": false
+    },
+    "Value": {
+      "type": "object",
+      "properties": {
+        "metric_code": {
+          "$ref": "#/$defs/Metric"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "%",
+            "mm"
+          ]
+        },
+        "data_status": {
+          "$ref": "#/$defs/Validity"
+        },
+        "source_quality_result": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL",
+            "NOT_EVALUATED"
+          ]
+        },
+        "method_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "window": {
+          "$ref": "#/$defs/Window"
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "metric_code",
+        "value",
+        "unit",
+        "data_status",
+        "source_quality_result",
+        "method_id",
+        "window",
+        "reason_code"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "data_status": {
+                "const": "VALID"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "$ref": "#/$defs/Decimal"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "null"
+              },
+              "source_quality_result": {
+                "const": "NOT_EVALUATED"
+              },
+              "reason_code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "metric_code": {
+                "const": "WIRE_GAP"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "unit": {
+                "const": "mm"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "unit": {
+                "const": "%"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Measurement": {
+      "type": "object",
+      "properties": {
+        "record_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "device_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "capture_session_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "capture_sequence": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "source_record_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_session_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_sequence": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sample_kind": {
+          "type": "string",
+          "enum": [
+            "NEW_SAMPLE",
+            "READ_SNAPSHOT"
+          ]
+        },
+        "task_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "binding_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "binding_version": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sequence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sample_time": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "time_source": {
+          "type": "string",
+          "enum": [
+            "DEVICE",
+            "ADAPTER",
+            "SIMULATOR"
+          ]
+        },
+        "position_m": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "position_quality": {
+          "type": "string",
+          "enum": [
+            "KNOWN",
+            "UNKNOWN",
+            "INVALID"
+          ]
+        },
+        "position_segment_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "DEVICE",
+            "DERIVED"
+          ]
+        },
+        "data_environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "data_status": {
+          "$ref": "#/$defs/Validity"
+        },
+        "recipe_version_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Value"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "raw": {
+          "$ref": "#/$defs/Raw"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "uniqueItems": true,
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "record_id",
+        "device_id",
+        "capture_session_id",
+        "capture_sequence",
+        "source_record_id",
+        "source_session_id",
+        "source_sequence",
+        "sample_kind",
+        "task_id",
+        "binding_id",
+        "binding_version",
+        "sample_time",
+        "time_source",
+        "position_m",
+        "position_quality",
+        "position_segment_id",
+        "source_type",
+        "data_environment",
+        "data_status",
+        "recipe_version_id",
+        "values",
+        "raw",
+        "evidence_refs"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "position_quality": {
+                "const": "KNOWN"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "position_m": {
+                "$ref": "#/$defs/Decimal"
+              },
+              "position_segment_id": {
+                "$ref": "#/$defs/Id"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "position_m": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MeasurementBatch": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "batch_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "sent_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Measurement"
+          },
+          "minItems": 1,
+          "maxItems": 500
+        }
+      },
+      "required": [
+        "schema_version",
+        "batch_id",
+        "sent_at",
+        "records"
+      ],
+      "additionalProperties": false
+    },
+    "FieldError": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "path",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "ItemReceipt": {
+      "type": "object",
+      "properties": {
+        "input_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 499
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipt_status": {
+          "type": "string",
+          "enum": [
+            "STORED",
+            "DUPLICATE",
+            "QUARANTINED",
+            "REJECTED"
+          ]
+        },
+        "stored_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "initial_status": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "STORED",
+                "QUARANTINED"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "first_received_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "retry_after_ms": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3600000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field_errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldError"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "input_index",
+        "source_id",
+        "receipt_status",
+        "stored_id",
+        "initial_status",
+        "first_received_at",
+        "error_code",
+        "retryable",
+        "retry_after_ms",
+        "field_errors"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "receipt_status": {
+                "const": "REJECTED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "stored_id": {
+                "type": "null"
+              },
+              "initial_status": {
+                "type": "null"
+              },
+              "first_received_at": {
+                "type": "null"
+              },
+              "error_code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "stored_id": {
+                "$ref": "#/$defs/Id"
+              },
+              "initial_status": {
+                "type": "string",
+                "enum": [
+                  "STORED",
+                  "QUARANTINED"
+                ]
+              },
+              "first_received_at": {
+                "$ref": "#/$defs/Timestamp"
+              },
+              "retryable": {
+                "const": false
+              },
+              "retry_after_ms": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "BatchReceipt": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "schema_version": {
+              "const": "1.0"
+            },
+            "batch_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "counts": {
+              "type": "object",
+              "properties": {
+                "total": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500
+                },
+                "stored": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 500
+                },
+                "duplicate": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 500
+                },
+                "quarantined": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 500
+                },
+                "rejected": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 500
+                }
+              },
+              "required": [
+                "total",
+                "stored",
+                "duplicate",
+                "quarantined",
+                "rejected"
+              ],
+              "additionalProperties": false
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ItemReceipt"
+              },
+              "minItems": 1,
+              "maxItems": 500
+            }
+          },
+          "required": [
+            "schema_version",
+            "batch_id",
+            "counts",
+            "items"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "null"
+        },
+        "write_outcome": {
+          "type": "string",
+          "enum": [
+            "NONE",
+            "UNKNOWN"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "retry_after_ms": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3600000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field_errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldError"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data",
+        "write_outcome",
+        "retryable",
+        "retry_after_ms",
+        "field_errors"
+      ],
+      "additionalProperties": false
+    },
+    "Capability": {
+      "type": "object",
+      "properties": {
+        "device_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "metric_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Metric"
+          },
+          "minItems": 1,
+          "maxItems": 3
+        },
+        "raw_schema_versions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "source_identification": {
+          "type": "string",
+          "enum": [
+            "SAMPLE_ID",
+            "SESSION_SEQUENCE",
+            "SNAPSHOT_ONLY"
+          ]
+        },
+        "position_supported": {
+          "type": "boolean"
+        },
+        "image_supported": {
+          "type": "boolean"
+        },
+        "source_alarm_supported": {
+          "type": "boolean"
+        },
+        "offline_replay_supported": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "device_id",
+        "metric_codes",
+        "raw_schema_versions",
+        "source_identification",
+        "position_supported",
+        "image_supported",
+        "source_alarm_supported",
+        "offline_replay_supported"
+      ],
+      "additionalProperties": false
+    },
+    "ProfileResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "schema_versions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 16
+              },
+              "minItems": 1,
+              "maxItems": 8
+            },
+            "server_time": {
+              "$ref": "#/$defs/Timestamp"
+            },
+            "factory_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "data_environment": {
+              "$ref": "#/$defs/Environment"
+            },
+            "devices": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Capability"
+              },
+              "minItems": 1,
+              "maxItems": 100
+            },
+            "limits": {
+              "type": "object",
+              "properties": {
+                "measurements_per_batch": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500
+                },
+                "alarms_per_batch": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "json_body_bytes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1048576
+                },
+                "evidence_bytes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8388608
+                },
+                "heartbeat_interval_seconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 60
+                },
+                "offline_after_seconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 300
+                },
+                "heartbeat_max_age_seconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 60
+                },
+                "clock_skew_seconds": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 300
+                }
+              },
+              "required": [
+                "measurements_per_batch",
+                "alarms_per_batch",
+                "json_body_bytes",
+                "evidence_bytes",
+                "heartbeat_interval_seconds",
+                "offline_after_seconds",
+                "heartbeat_max_age_seconds",
+                "clock_skew_seconds"
+              ],
+              "additionalProperties": false
+            },
+            "rate_limit_policy_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "retention_policy_id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "required": [
+            "schema_versions",
+            "server_time",
+            "factory_id",
+            "data_environment",
+            "devices",
+            "limits",
+            "rate_limit_policy_id",
+            "retention_policy_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "SessionRequest": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "device_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data_environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "client_session_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "producer_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "schema_version",
+        "device_id",
+        "data_environment",
+        "client_session_id",
+        "producer_version"
+      ],
+      "additionalProperties": false
+    },
+    "SessionResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "connection_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "device_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "client_session_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "active": {
+              "const": true
+            },
+            "server_time": {
+              "$ref": "#/$defs/Timestamp"
+            }
+          },
+          "required": [
+            "connection_id",
+            "device_id",
+            "client_session_id",
+            "active",
+            "server_time"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "RuleSnapshot": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "rule-snapshot.v1"
+        },
+        "method_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "method_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_state": {
+          "type": "string",
+          "enum": [
+            "APPROVED",
+            "TEST_ONLY",
+            "UNAPPROVED"
+          ]
+        },
+        "comparison": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "operator": {
+                  "type": "string",
+                  "enum": [
+                    "GE",
+                    "LE",
+                    "BETWEEN"
+                  ]
+                },
+                "lower": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/Decimal"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "upper": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/Decimal"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "operator",
+                "lower",
+                "upper"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": true,
+          "maxProperties": 64
+        }
+      },
+      "required": [
+        "schema_version",
+        "method_id",
+        "method_version",
+        "approval_state",
+        "comparison",
+        "parameters"
+      ],
+      "additionalProperties": false
+    },
+    "Assignment": {
+      "type": "object",
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "binding_version": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "task_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "task_version": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "task_state": {
+          "type": "string",
+          "enum": [
+            "CREATED",
+            "RUNNING",
+            "PAUSED",
+            "ENDED"
+          ]
+        },
+        "factory_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "spool_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "process_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "specification_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "metric_code": {
+          "$ref": "#/$defs/Metric"
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "%",
+            "mm"
+          ]
+        },
+        "recipe_version_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot_hash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "evaluation_policy": {
+          "type": "string",
+          "enum": [
+            "VALIDATE_ONLY",
+            "EVALUATE_APPROVED"
+          ]
+        },
+        "rule_snapshot": {
+          "$ref": "#/$defs/RuleSnapshot"
+        }
+      },
+      "required": [
+        "binding_id",
+        "binding_version",
+        "task_id",
+        "task_version",
+        "task_state",
+        "factory_id",
+        "spool_id",
+        "process_id",
+        "specification_id",
+        "metric_code",
+        "unit",
+        "recipe_version_id",
+        "snapshot_hash",
+        "evaluation_policy",
+        "rule_snapshot"
+      ],
+      "additionalProperties": false
+    },
+    "AssignmentResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "device_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "server_time": {
+              "$ref": "#/$defs/Timestamp"
+            },
+            "assignment": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Assignment"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "device_id",
+            "server_time",
+            "assignment"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "AssignmentAck": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "ack_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "connection_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "binding_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "binding_version": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "snapshot_hash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "result": {
+          "type": "string",
+          "enum": [
+            "APPLIED",
+            "REJECTED"
+          ]
+        },
+        "effective_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capture_session_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "first_capture_sequence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sequence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "ack_id",
+        "connection_id",
+        "binding_id",
+        "binding_version",
+        "snapshot_hash",
+        "result",
+        "effective_at",
+        "capture_session_id",
+        "first_capture_sequence",
+        "reason_code"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "result": {
+                "const": "APPLIED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "effective_at": {
+                "$ref": "#/$defs/Timestamp"
+              },
+              "first_capture_sequence": {
+                "$ref": "#/$defs/Sequence"
+              },
+              "reason_code": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "effective_at": {
+                "type": "null"
+              },
+              "first_capture_sequence": {
+                "type": "null"
+              },
+              "reason_code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            }
+          }
+        }
+      ]
+    },
+    "AckResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "ack_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "binding_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "binding_version": {
+              "$ref": "#/$defs/Sequence"
+            },
+            "result": {
+              "type": "string",
+              "enum": [
+                "APPLIED",
+                "REJECTED"
+              ]
+            },
+            "recorded_at": {
+              "$ref": "#/$defs/Timestamp"
+            },
+            "duplicate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "ack_id",
+            "binding_id",
+            "binding_version",
+            "result",
+            "recorded_at",
+            "duplicate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "Heartbeat": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "device_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data_environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "connection_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "heartbeat_sequence": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "sent_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "capture_session_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "observed_task_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_binding_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_sample_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_record_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "queue_depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "disk_free_bytes": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "instrument_state": {
+          "type": "string",
+          "enum": [
+            "READY",
+            "DISCONNECTED",
+            "FAULT",
+            "UNKNOWN"
+          ]
+        },
+        "config_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "device_id",
+        "data_environment",
+        "connection_id",
+        "heartbeat_sequence",
+        "sent_at",
+        "capture_session_id",
+        "observed_task_id",
+        "observed_binding_id",
+        "last_sample_time",
+        "last_record_id",
+        "queue_depth",
+        "disk_free_bytes",
+        "instrument_state",
+        "config_version"
+      ],
+      "additionalProperties": false
+    },
+    "HeartbeatResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "accepted": {
+              "type": "boolean"
+            },
+            "reason_code": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "server_time": {
+              "$ref": "#/$defs/Timestamp"
+            },
+            "online_until": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Timestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "accepted",
+            "reason_code",
+            "server_time",
+            "online_until"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "SourceAlarm": {
+      "type": "object",
+      "properties": {
+        "source_event_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "device_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "capture_session_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "capture_sequence": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "source_alarm_key": {
+          "$ref": "#/$defs/Id"
+        },
+        "source_sequence": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event_kind": {
+          "type": "string",
+          "enum": [
+            "TRIGGERED",
+            "RECOVERED",
+            "ACKNOWLEDGED"
+          ]
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "time_source": {
+          "type": "string",
+          "enum": [
+            "DEVICE",
+            "ADAPTER",
+            "SIMULATOR"
+          ]
+        },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "DEVICE",
+            "DERIVED"
+          ]
+        },
+        "data_environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "task_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "binding_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "record_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "alarm_type": {
+          "type": "string",
+          "enum": [
+            "QUALITY",
+            "DEVICE",
+            "DATA"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "INFO",
+            "WARNING",
+            "ERROR",
+            "CRITICAL"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "raw": {
+          "$ref": "#/$defs/Raw"
+        }
+      },
+      "required": [
+        "source_event_id",
+        "device_id",
+        "capture_session_id",
+        "capture_sequence",
+        "source_alarm_key",
+        "source_sequence",
+        "event_kind",
+        "occurred_at",
+        "time_source",
+        "source_type",
+        "data_environment",
+        "task_id",
+        "binding_id",
+        "record_id",
+        "alarm_type",
+        "severity",
+        "message",
+        "raw"
+      ],
+      "additionalProperties": false
+    },
+    "AlarmBatch": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "batch_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "sent_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "alarms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceAlarm"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "schema_version",
+        "batch_id",
+        "sent_at",
+        "alarms"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptQuery": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "device_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "MEASUREMENT",
+            "SOURCE_ALARM"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "schema_version",
+        "device_id",
+        "kind",
+        "source_ids"
+      ],
+      "additionalProperties": false
+    },
+    "ReceiptQueryResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "device_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "MEASUREMENT",
+                "SOURCE_ALARM"
+              ]
+            },
+            "as_of": {
+              "$ref": "#/$defs/Timestamp"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "source_id": {
+                    "$ref": "#/$defs/Id"
+                  },
+                  "lookup_status": {
+                    "type": "string",
+                    "enum": [
+                      "FOUND",
+                      "NOT_FOUND"
+                    ]
+                  },
+                  "stored_id": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Id"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "initial_status": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "STORED",
+                          "QUARANTINED"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "first_received_at": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Timestamp"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "source_id",
+                  "lookup_status",
+                  "stored_id",
+                  "initial_status",
+                  "first_received_at"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1,
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "device_id",
+            "kind",
+            "as_of",
+            "items"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceMetadata": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "upload_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "device_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data_environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "source_record_key": {
+          "$ref": "#/$defs/Id"
+        },
+        "captured_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content_type": {
+          "type": "string",
+          "enum": [
+            "image/png",
+            "image/jpeg"
+          ]
+        },
+        "byte_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8388608
+        },
+        "sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "evidence_kind": {
+          "const": "IMAGE"
+        }
+      },
+      "required": [
+        "schema_version",
+        "upload_id",
+        "device_id",
+        "data_environment",
+        "source_record_key",
+        "captured_at",
+        "content_type",
+        "byte_size",
+        "sha256",
+        "evidence_kind"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "evidence_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "upload_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "sha256": {
+              "$ref": "#/$defs/Sha256"
+            },
+            "availability": {
+              "const": "AVAILABLE"
+            },
+            "duplicate": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "evidence_id",
+            "upload_id",
+            "sha256",
+            "availability",
+            "duplicate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

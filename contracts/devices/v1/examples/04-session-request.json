@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0",
+  "device_id": "device-test-01",
+  "data_environment": "SIMULATED",
+  "client_session_id": "client-session-01",
+  "producer_version": "simulator-design-v1"
+}

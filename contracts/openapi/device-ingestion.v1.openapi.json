@@ -1,0 +1,1688 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "慧眼智检模拟器与真实设备统一接入",
+    "version": "1.0.0-draft.1",
+    "description": "ING01契约设计稿。schema_version=1.0。无业务接口实现，当前Docker仅演示前端。"
+  },
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "目标路径，非当前已部署API"
+    }
+  ],
+  "paths": {
+    "/ingestion/profile": {
+      "get": {
+        "operationId": "getIngestionProfile",
+        "summary": "getIngestionProfile",
+        "description": "设计稿，尚未实现。语义及异常优先级见第15份文档。",
+        "tags": [
+          "Device ingestion"
+        ],
+        "security": [
+          {
+            "deviceBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应；批次仍需检查逐条回执",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge; no secret values"
+              }
+            }
+          },
+          "403": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          },
+          "500": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device-sessions": {
+      "post": {
+        "operationId": "openDeviceSession",
+        "summary": "openDeviceSession",
+        "description": "设计稿，尚未实现。语义及异常优先级见第15份文档。",
+        "tags": [
+          "Device ingestion"
+        ],
+        "security": [
+          {
+            "deviceBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应；批次仍需检查逐条回执",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge; no secret values"
+              }
+            }
+          },
+          "403": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          },
+          "500": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/SessionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{device_id}/assignment": {
+      "get": {
+        "operationId": "getDeviceAssignment",
+        "summary": "getDeviceAssignment",
+        "description": "设计稿，尚未实现。语义及异常优先级见第15份文档。",
+        "tags": [
+          "Device ingestion"
+        ],
+        "security": [
+          {
+            "deviceBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          },
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应；批次仍需检查逐条回执",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/AssignmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge; no secret values"
+              }
+            }
+          },
+          "403": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          },
+          "500": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{device_id}/assignment-acks": {
+      "post": {
+        "operationId": "ackDeviceAssignment",
+        "summary": "ackDeviceAssignment",
+        "description": "设计稿，尚未实现。语义及异常优先级见第15份文档。",
+        "tags": [
+          "Device ingestion"
+        ],
+        "security": [
+          {
+            "deviceBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          },
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应；批次仍需检查逐条回执",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/AckResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge; no secret values"
+              }
+            }
+          },
+          "403": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          },
+          "500": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/AssignmentAck"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/measurements:ingest": {
+      "post": {
+        "operationId": "ingestMeasurements",
+        "summary": "ingestMeasurements",
+        "description": "设计稿，尚未实现。语义及异常优先级见第15份文档。",
+        "tags": [
+          "Device ingestion"
+        ],
+        "security": [
+          {
+            "deviceBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应；批次仍需检查逐条回执",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/BatchReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge; no secret values"
+              }
+            }
+          },
+          "403": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          },
+          "500": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/MeasurementBatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/source-alarms:ingest": {
+      "post": {
+        "operationId": "ingestSourceAlarms",
+        "summary": "ingestSourceAlarms",
+        "description": "设计稿，尚未实现。语义及异常优先级见第15份文档。",
+        "tags": [
+          "Device ingestion"
+        ],
+        "security": [
+          {
+            "deviceBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应；批次仍需检查逐条回执",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/BatchReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge; no secret values"
+              }
+            }
+          },
+          "403": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          },
+          "500": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/AlarmBatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device-status:heartbeat": {
+      "post": {
+        "operationId": "heartbeat",
+        "summary": "heartbeat",
+        "description": "设计稿，尚未实现。语义及异常优先级见第15份文档。",
+        "tags": [
+          "Device ingestion"
+        ],
+        "security": [
+          {
+            "deviceBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应；批次仍需检查逐条回执",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/HeartbeatResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge; no secret values"
+              }
+            }
+          },
+          "403": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          },
+          "500": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Heartbeat"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/receipts:query": {
+      "post": {
+        "operationId": "queryDeviceReceipts",
+        "summary": "queryDeviceReceipts",
+        "description": "设计稿，尚未实现。语义及异常优先级见第15份文档。",
+        "tags": [
+          "Device ingestion"
+        ],
+        "security": [
+          {
+            "deviceBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应；批次仍需检查逐条回执",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ReceiptQueryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge; no secret values"
+              }
+            }
+          },
+          "403": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          },
+          "500": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ReceiptQuery"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evidence": {
+      "post": {
+        "operationId": "uploadDeviceEvidence",
+        "summary": "uploadDeviceEvidence",
+        "description": "设计稿，尚未实现。语义及异常优先级见第15份文档。",
+        "tags": [
+          "Device ingestion"
+        ],
+        "security": [
+          {
+            "deviceBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功响应；批次仍需检查逐条回执",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/EvidenceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bearer challenge; no secret values"
+              }
+            }
+          },
+          "403": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          },
+          "500": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "错误及写入结果见ErrorResponse和第15份异常矩阵",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$"
+                },
+                "description": "建议至少等待的秒数"
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "metadata": {
+                    "$ref": "../devices/v1/device-ingestion.schema.json#/$defs/EvidenceMetadata"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "metadata",
+                  "file"
+                ],
+                "additionalProperties": false
+              },
+              "encoding": {
+                "metadata": {
+                  "contentType": "application/json"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "deviceBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "M00签发的受控不透明凭据，限定factory/device/environment；不假定JWT。"
+      }
+    }
+  }
+}

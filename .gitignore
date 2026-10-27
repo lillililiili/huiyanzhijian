@@ -1,1 +1,30 @@
 /release/
+/apps/simulator/
+
+# Local dependencies and generated output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Secrets, local runtime state and database files
+.env
+.env.*
+!.env.example
+!**/.env.example
+**/access.json
+runtime/
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+**/*.dump
+**/backups/
+
+# Local logs and editor/OS files
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,21 @@
+import {createRoot,type Root} from 'react-dom/client';
+import {act,type ReactNode} from 'react';
+import {afterEach,expect,test,vi} from 'vitest';
+import {DateTimeField,ScopedOptions} from '../live/UxFields';
+import {Icon} from '../ui/Icon';
+import {ProductionTasks,PlanPages} from '../live/ProductionPages';
+import {TaskForm} from '../live/TaskForms';
+import {Measurements} from '../live/Measurements';
+import {ApiClient,Commands,emptyWorkspace,type Person} from '../live/api';
+let root:Root,container:HTMLDivElement;
+async function render(node:ReactNode){container=document.createElement('div');document.body.append(container);root=createRoot(container);await act(async()=>root.render(node));}
+afterEach(async()=>{if(root)await act(async()=>root.unmount());container?.remove();vi.restoreAllMocks();});
+const user:Person={id:'u',name:'u',username:'u',factory_id:'f',permissions:['data:read','task:write']};
+function props(params=''){const api=new ApiClient();return {api,commands:new Commands(api),data:emptyWorkspace,user,refresh:async()=>{},params:new URLSearchParams(params)};}
+test('icon mask is document absolute so CSS chunk directory cannot change it',async()=>{await render(<Icon name="x"/>);expect(container.querySelector('span')!.style.getPropertyValue('--icon')).toBe(`url("${new URL('./assets/icons/x.svg',document.baseURI).href}")`);});
+test('unmodified local picker submits exact microsecond and timezone query',async()=>{const raw='2026-10-26T01:02:03.123456Z';await render(<form><DateTimeField name="from" label="开始" value={raw}/></form>);expect(new FormData(container.querySelector('form')!).get('from')).toBe(raw);expect(container.querySelector<HTMLInputElement>('input[type=datetime-local]')!.value).toBe('2026-10-26T09:02:03.123');});
+test('stale scoped filter stays explicit rather than silently becoming all',async()=>{await render(<select defaultValue="old"><option value="">全部</option><ScopedOptions selected="old" options={[{id:'new',label:'当前设备'}]}/></select>);expect(container.querySelector('select')!.value).toBe('old');expect(container.textContent).toContain('原筛选不在当前适用范围');});
+test('selector has five columns and retains page and device in detection back link',async()=>{const p=props('metric=dg&device_id=d2&page=2');vi.spyOn(p.api,'request').mockResolvedValue({items:[{id:'t2',task_code:'T2',metric_code:'SHIELD_OVERLAP_RATE',device_id:'d2',state:'CREATED',context_snapshot:{},data_environment:'SIMULATED'}],page:2,total:21});await render(<ProductionTasks {...p} metric="SHIELD_OVERLAP_RATE"/>);expect(container.querySelectorAll('th')).toHaveLength(5);const a=[...container.querySelectorAll('a')].find(a=>a.textContent==='进入检测')!;const q=new URLSearchParams(a.hash.split('?')[1]);expect(q.get('task')).toBe('t2');expect(q.get('back')).toBe('detection?metric=dg&device_id=d2&page=2');});
+test('plan creation is explicit and empty draft wording differs from query results',async()=>{const p=props('view=plans');vi.spyOn(p.api,'request').mockResolvedValue({items:[],total:0,page:1,limit:20});await render(<PlanPages {...p}/>);expect(container.textContent).not.toContain('尚未添加执行项');await act(async()=>[...container.querySelectorAll('button')].find(b=>b.textContent==='新建计划')!.click());expect(container.textContent).toContain('尚未添加执行项');expect(container.textContent).not.toContain('刷新计划列表');});
+test('task form distinguishes unselected order and selected empty order',async()=>{const p=props();await render(<TaskForm {...p} close={()=>{}}/>);expect(document.body.textContent).toContain('请先选择工单');expect(document.body.textContent).not.toContain('此工单尚无线缆');});
+test('history return stays intact when query is resubmitted',async()=>{const p=props('task_id=t&return_to='+encodeURIComponent('detection?metric=dg&task=t&back=detection%3Fpage%3D2'));vi.spyOn(p.api,'request').mockResolvedValue({items:[],has_more:false});await render(<Measurements api={p.api} data={p.data} params={p.params}/>);const link=[...container.querySelectorAll('a')].find(a=>a.textContent==='返回检测')!;expect(link.hash).toContain('back=detection%3Fpage%3D2');await act(async()=>container.querySelector('form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));expect(new URLSearchParams(window.location.hash.split('?').slice(1).join('?')).get('return_to')).toBe(p.params.get('return_to'));});

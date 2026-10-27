@@ -1,0 +1,19 @@
+{
+  "code": "OK",
+  "message": "成功",
+  "request_id": "request-example-01",
+  "data": {
+    "device_id": "device-test-01",
+    "kind": "MEASUREMENT",
+    "as_of": "2026-10-21T08:00:00Z",
+    "items": [
+      {
+        "source_id": "sim-run01-d1-r1",
+        "lookup_status": "FOUND",
+        "stored_id": "measurement-test-01",
+        "initial_status": "STORED",
+        "first_received_at": "2026-10-21T08:00:00Z"
+      }
+    ]
+  }
+}

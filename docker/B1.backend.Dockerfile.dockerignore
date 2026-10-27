@@ -1,0 +1,11 @@
+**
+!apps/
+!apps/platform/
+!apps/platform/**
+!contracts/
+!contracts/devices/
+!contracts/devices/v1/
+!contracts/devices/v1/**
+apps/platform/node_modules
+apps/platform/dist
+apps/platform/.env*

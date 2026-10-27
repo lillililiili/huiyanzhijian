@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "upload_id": "upload-test-01",
+  "device_id": "device-test-01",
+  "data_environment": "SIMULATED",
+  "source_record_key": "sim-run01-d1-r1",
+  "captured_at": "2026-10-21T08:00:00Z",
+  "content_type": "image/png",
+  "byte_size": 128,
+  "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "evidence_kind": "IMAGE"
+}

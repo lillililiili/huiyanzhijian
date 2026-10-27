@@ -1,0 +1,13 @@
+{
+  "code": "OK",
+  "message": "成功",
+  "request_id": "request-example-01",
+  "data": {
+    "ack_id": "ack-01",
+    "binding_id": "binding-test-01",
+    "binding_version": "1",
+    "result": "APPLIED",
+    "recorded_at": "2026-10-21T08:00:00Z",
+    "duplicate": false
+  }
+}

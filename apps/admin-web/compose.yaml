@@ -1,0 +1,23 @@
+name: huiyan-admin
+services:
+  admin-web:
+    image: huiyan-admin-web:local
+    pull_policy: never
+    build:
+      context: ../..
+      dockerfile: apps/admin-web/Dockerfile
+      pull: false
+      args:
+        VITE_BUSINESS_APP_URL: ${BUSINESS_APP_URL:-}
+        VITE_ADMIN_APP_URL: ${ADMIN_APP_URL:-}
+    environment:
+      API_UPSTREAM: ${API_UPSTREAM:-http://host.docker.internal:4192}
+    ports:
+      - "127.0.0.1:${ADMIN_PORT:-4182}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s

@@ -1,0 +1,10 @@
+{
+  "code": "DEPENDENCY_UNAVAILABLE",
+  "message": "部分写入结果未知，请原键查询或重试",
+  "request_id": "request-example-02",
+  "data": null,
+  "write_outcome": "UNKNOWN",
+  "retryable": true,
+  "retry_after_ms": 2000,
+  "field_errors": []
+}

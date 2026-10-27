@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "kind": "SEGMENT_ANALYSIS",
+  "task_ids": [
+    "task-test-01"
+  ],
+  "data_environment": "SIMULATED",
+  "sample_from": "2026-10-21T00:00:00Z",
+  "sample_to": "2026-10-22T00:00:00Z",
+  "received_cutoff": "2026-10-22T00:00:00Z",
+  "selection_id": "selection-test-01",
+  "selection_version": "1",
+  "analysis_policy_id": "window-test-only",
+  "analysis_policy_version": "1",
+  "mapping_version_ids": [],
+  "report_template_version": null,
+  "supersedes_job_id": null,
+  "reason": "SIMULATED V01 fixture"
+}

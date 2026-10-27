@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "batch_id": "batch-alarm-1",
+  "sent_at": "2026-10-21T08:00:00Z",
+  "alarms": [
+    {
+      "source_event_id": "sim-run01-alarm-1",
+      "device_id": "device-test-01",
+      "capture_session_id": "capture-run01-d1",
+      "capture_sequence": "2",
+      "source_alarm_key": "sim-run01-lifecycle-1",
+      "source_sequence": null,
+      "event_kind": "TRIGGERED",
+      "occurred_at": "2026-10-21T08:00:00Z",
+      "time_source": "SIMULATOR",
+      "source_type": "DEVICE",
+      "data_environment": "SIMULATED",
+      "task_id": null,
+      "binding_id": null,
+      "record_id": null,
+      "alarm_type": "DEVICE",
+      "severity": "WARNING",
+      "message": "模拟仪表离线事件",
+      "raw": {
+        "schema_version": "alarm-sim.v1",
+        "data": {
+          "fault": "disconnected"
+        }
+      }
+    }
+  ]
+}

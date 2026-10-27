@@ -1,0 +1,11 @@
+{
+  "code": "OK",
+  "message": "成功",
+  "request_id": "request-example-01",
+  "data": {
+    "accepted": true,
+    "reason_code": null,
+    "server_time": "2026-10-21T08:00:00Z",
+    "online_until": "2026-10-21T08:00:30Z"
+  }
+}

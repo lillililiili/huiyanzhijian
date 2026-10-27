@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "ack_id": "ack-01",
+  "connection_id": "connection-01",
+  "binding_id": "binding-test-01",
+  "binding_version": "1",
+  "snapshot_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "result": "APPLIED",
+  "effective_at": "2026-10-21T08:00:00Z",
+  "capture_session_id": "capture-run01-d1",
+  "first_capture_sequence": "1",
+  "reason_code": null
+}

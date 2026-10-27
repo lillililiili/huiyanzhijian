@@ -1,0 +1,12 @@
+{
+  "code": "OK",
+  "message": "成功",
+  "request_id": "request-example-01",
+  "data": {
+    "connection_id": "connection-01",
+    "device_id": "device-test-01",
+    "client_session_id": "client-session-01",
+    "active": true,
+    "server_time": "2026-10-21T08:00:00Z"
+  }
+}

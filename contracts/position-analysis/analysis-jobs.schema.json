@@ -1,0 +1,1088 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:huiyan:analysis-jobs:1.0",
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:[0-5]\\d(?:\\.\\d{1,6})?(?:Z|[+-]\\d{2}:\\d{2})$",
+      "maxLength": 32
+    },
+    "Decimal": {
+      "type": "string",
+      "pattern": "^-?(?:0|[1-9]\\d{0,13})(?:\\.\\d{1,10})?$",
+      "maxLength": 26
+    },
+    "Sequence": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9]\\d{0,19})$",
+      "description": "Unsigned decimal integer string; semantic maximum 18446744073709551615."
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "Environment": {
+      "type": "string",
+      "enum": [
+        "REAL",
+        "SIMULATED"
+      ]
+    },
+    "FieldError": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "path",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "null"
+        },
+        "write_outcome": {
+          "type": "string",
+          "enum": [
+            "NONE",
+            "UNKNOWN"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "retry_after_ms": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3600000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "field_errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldError"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data",
+        "write_outcome",
+        "retryable",
+        "retry_after_ms",
+        "field_errors"
+      ],
+      "additionalProperties": false
+    },
+    "LengthInterval": {
+      "type": "object",
+      "properties": {
+        "from_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "to_m": {
+          "$ref": "#/$defs/Decimal"
+        }
+      },
+      "required": [
+        "from_m",
+        "to_m"
+      ],
+      "additionalProperties": false
+    },
+    "MaterialCoordinate": {
+      "type": "object",
+      "properties": {
+        "coordinate_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "version": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "spool_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "core_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "process_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "origin_description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "positive_direction": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "unit": {
+          "const": "m"
+        }
+      },
+      "required": [
+        "coordinate_id",
+        "version",
+        "spool_id",
+        "core_code",
+        "process_id",
+        "origin_description",
+        "positive_direction",
+        "unit"
+      ],
+      "additionalProperties": false
+    },
+    "InspectionPass": {
+      "type": "object",
+      "properties": {
+        "pass_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "task_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "material_coordinate_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "pass_kind": {
+          "type": "string",
+          "enum": [
+            "INITIAL",
+            "RETEST"
+          ]
+        },
+        "supersedes_pass_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selection_policy_version": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "pass_id",
+        "task_id",
+        "material_coordinate_id",
+        "pass_kind",
+        "supersedes_pass_id",
+        "selection_policy_version"
+      ],
+      "additionalProperties": false
+    },
+    "MappingPiece": {
+      "type": "object",
+      "properties": {
+        "source_coordinate_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "source_from_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "source_to_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "target_from_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "target_to_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "FORWARD",
+            "REVERSE"
+          ]
+        }
+      },
+      "required": [
+        "source_coordinate_id",
+        "source_from_m",
+        "source_to_m",
+        "target_from_m",
+        "target_to_m",
+        "direction"
+      ],
+      "additionalProperties": false
+    },
+    "MappingVersion": {
+      "type": "object",
+      "properties": {
+        "mapping_version_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "target_coordinate_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "relation_type": {
+          "type": "string",
+          "enum": [
+            "AFFINE",
+            "CUT",
+            "REVERSE",
+            "SPLICE"
+          ]
+        },
+        "pieces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MappingPiece"
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        },
+        "basis_ref": {
+          "$ref": "#/$defs/Id"
+        },
+        "approval_state": {
+          "type": "string",
+          "enum": [
+            "APPROVED",
+            "TEST_ONLY",
+            "UNAPPROVED"
+          ]
+        }
+      },
+      "required": [
+        "mapping_version_id",
+        "target_coordinate_id",
+        "relation_type",
+        "pieces",
+        "basis_ref",
+        "approval_state"
+      ],
+      "additionalProperties": false
+    },
+    "SelectionVersion": {
+      "type": "object",
+      "properties": {
+        "selection_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "version": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "material_coordinate_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "task_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "expected_intervals": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LengthInterval"
+              },
+              "minItems": 0,
+              "maxItems": 1000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pass_selections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pass_id": {
+                "$ref": "#/$defs/Id"
+              },
+              "from_m": {
+                "$ref": "#/$defs/Decimal"
+              },
+              "to_m": {
+                "$ref": "#/$defs/Decimal"
+              }
+            },
+            "required": [
+              "pass_id",
+              "from_m",
+              "to_m"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "approval_state": {
+          "type": "string",
+          "enum": [
+            "APPROVED",
+            "TEST_ONLY",
+            "UNAPPROVED"
+          ]
+        },
+        "basis_ref": {
+          "$ref": "#/$defs/Id"
+        }
+      },
+      "required": [
+        "selection_id",
+        "version",
+        "material_coordinate_id",
+        "task_ids",
+        "expected_intervals",
+        "pass_selections",
+        "approval_state",
+        "basis_ref"
+      ],
+      "additionalProperties": false
+    },
+    "AnalysisRequest": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "SEGMENT_ANALYSIS",
+            "LENGTH_STATISTICS",
+            "REPORT_GENERATION"
+          ]
+        },
+        "task_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "data_environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "sample_from": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "sample_to": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "received_cutoff": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "selection_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "selection_version": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "analysis_policy_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "analysis_policy_version": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "mapping_version_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "minItems": 0,
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "report_template_version": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "supersedes_job_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "schema_version",
+        "kind",
+        "task_ids",
+        "data_environment",
+        "sample_from",
+        "sample_to",
+        "received_cutoff",
+        "selection_id",
+        "selection_version",
+        "analysis_policy_id",
+        "analysis_policy_version",
+        "mapping_version_ids",
+        "report_template_version",
+        "supersedes_job_id",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "REPORT_GENERATION"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "report_template_version": {
+                "$ref": "#/$defs/Id"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "report_template_version": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "JobCommand": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "JobView": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "SEGMENT_ANALYSIS",
+            "LENGTH_STATISTICS",
+            "REPORT_GENERATION"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "QUEUED",
+            "PREPARING",
+            "WAITING_INPUT",
+            "RUNNING",
+            "RETRY_WAIT",
+            "FAILED",
+            "CANCEL_REQUESTED",
+            "CANCELLED",
+            "SUCCEEDED"
+          ]
+        },
+        "version": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "phase": {
+          "type": "string",
+          "enum": [
+            "QUEUED",
+            "PREPARING",
+            "CALCULATING",
+            "WRITING",
+            "COMPLETE"
+          ]
+        },
+        "processed_items": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "total_items": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sequence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "manifest_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "manifest_hash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "freshness": {
+          "type": "string",
+          "enum": [
+            "CURRENT",
+            "OUTDATED",
+            "UNKNOWN"
+          ]
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "next_attempt_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_checked_change_version": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sequence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "job_id",
+        "kind",
+        "state",
+        "version",
+        "attempt",
+        "phase",
+        "processed_items",
+        "total_items",
+        "manifest_id",
+        "manifest_hash",
+        "result_id",
+        "freshness",
+        "error_code",
+        "retryable",
+        "created_at",
+        "started_at",
+        "finished_at",
+        "next_attempt_at",
+        "last_checked_change_version"
+      ],
+      "additionalProperties": false
+    },
+    "JobResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "$ref": "#/$defs/JobView"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "Ratio": {
+      "type": "object",
+      "properties": {
+        "numerator": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "denominator": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "display_percent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "ZERO_DENOMINATOR",
+                "EXPECTED_RANGE_UNKNOWN",
+                "POLICY_UNAVAILABLE"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator",
+        "display_percent",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "Statistics": {
+      "type": "object",
+      "properties": {
+        "expected_length_m": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "valid_length_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "evaluated_length_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "pass_length_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "fail_length_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "undetermined_length_m": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Decimal"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage": {
+          "$ref": "#/$defs/Ratio"
+        },
+        "length_pass_rate": {
+          "$ref": "#/$defs/Ratio"
+        },
+        "excluded_record_count": {
+          "$ref": "#/$defs/Sequence"
+        }
+      },
+      "required": [
+        "expected_length_m",
+        "valid_length_m",
+        "evaluated_length_m",
+        "pass_length_m",
+        "fail_length_m",
+        "undetermined_length_m",
+        "coverage",
+        "length_pass_rate",
+        "excluded_record_count"
+      ],
+      "additionalProperties": false
+    },
+    "ResultView": {
+      "type": "object",
+      "properties": {
+        "result_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "job_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "manifest_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "manifest_hash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "data_environment": {
+          "$ref": "#/$defs/Environment"
+        },
+        "analysis_policy_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "analysis_policy_version": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "selection_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "selection_version": {
+          "$ref": "#/$defs/Sequence"
+        },
+        "freshness": {
+          "type": "string",
+          "enum": [
+            "CURRENT",
+            "OUTDATED",
+            "UNKNOWN"
+          ]
+        },
+        "last_checked_change_version": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sequence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "statistics": {
+          "$ref": "#/$defs/Statistics"
+        },
+        "content_hash": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "created_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "report_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "result_id",
+        "job_id",
+        "manifest_id",
+        "manifest_hash",
+        "data_environment",
+        "analysis_policy_id",
+        "analysis_policy_version",
+        "selection_id",
+        "selection_version",
+        "freshness",
+        "last_checked_change_version",
+        "statistics",
+        "content_hash",
+        "created_at",
+        "report_id"
+      ],
+      "additionalProperties": false
+    },
+    "ResultResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "$ref": "#/$defs/ResultView"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "DefectSegment": {
+      "type": "object",
+      "properties": {
+        "segment_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "material_coordinate_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "pass_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "metric_code": {
+          "type": "string",
+          "enum": [
+            "SHIELD_OVERLAP_RATE",
+            "WIRE_GAP",
+            "OVALITY"
+          ]
+        },
+        "from_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "to_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "defect_length_m": {
+          "$ref": "#/$defs/Decimal"
+        },
+        "evidence_manifest_ref": {
+          "$ref": "#/$defs/Id"
+        },
+        "source_count": {
+          "$ref": "#/$defs/Sequence"
+        }
+      },
+      "required": [
+        "segment_id",
+        "material_coordinate_id",
+        "pass_id",
+        "metric_code",
+        "from_m",
+        "to_m",
+        "defect_length_m",
+        "evidence_manifest_ref",
+        "source_count"
+      ],
+      "additionalProperties": false
+    },
+    "SegmentPageResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "const": "OK"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "request_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "result_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/DefectSegment"
+              },
+              "minItems": 0,
+              "maxItems": 500
+            },
+            "next_cursor": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "result_id",
+            "items",
+            "next_cursor"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "data"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "title": "慧眼智检分析任务设计契约"
+}

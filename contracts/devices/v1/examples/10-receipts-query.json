@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "device_id": "device-test-01",
+  "kind": "MEASUREMENT",
+  "source_ids": [
+    "sim-run01-d1-r1"
+  ]
+}

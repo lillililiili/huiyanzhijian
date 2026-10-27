@@ -1,0 +1,68 @@
+[
+  {
+    "file": "examples/01-position-known.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": true,
+    "bundle": "device"
+  },
+  {
+    "file": "examples/02-position-estimated.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": true,
+    "bundle": "device"
+  },
+  {
+    "file": "examples/03-position-unknown.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": true,
+    "bundle": "device"
+  },
+  {
+    "file": "examples/negative-01-known-no-context.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": false,
+    "bundle": "device"
+  },
+  {
+    "file": "examples/negative-02-numeric-position.json",
+    "definition": "MeasurementBatch",
+    "schema_valid": false,
+    "bundle": "device"
+  },
+  {
+    "file": "examples/04-position-profile.json",
+    "definition": "PositionProfile",
+    "schema_valid": true,
+    "bundle": "device"
+  },
+  {
+    "file": "examples/05-position-segment.json",
+    "definition": "PositionSegmentRequest",
+    "schema_valid": true,
+    "bundle": "device"
+  },
+  {
+    "file": "examples/06-analysis-create.json",
+    "definition": "AnalysisRequest",
+    "schema_valid": true,
+    "bundle": "analysis"
+  },
+  {
+    "file": "examples/negative-03-duplicate-task.json",
+    "definition": "AnalysisRequest",
+    "schema_valid": false,
+    "bundle": "analysis"
+  },
+  {
+    "file": "examples/negative-04-report-no-template.json",
+    "definition": "AnalysisRequest",
+    "schema_valid": false,
+    "bundle": "analysis"
+  },
+  {
+    "file": "examples/07-job-queued.json",
+    "definition": "JobView",
+    "schema_valid": true,
+    "bundle": "analysis"
+  }
+]

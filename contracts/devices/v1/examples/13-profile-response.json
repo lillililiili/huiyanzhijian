@@ -1,0 +1,42 @@
+{
+  "code": "OK",
+  "message": "成功",
+  "request_id": "request-example-01",
+  "data": {
+    "schema_versions": [
+      "1.0"
+    ],
+    "server_time": "2026-10-21T08:00:00Z",
+    "factory_id": "factory-test-01",
+    "data_environment": "SIMULATED",
+    "devices": [
+      {
+        "device_id": "device-test-01",
+        "metric_codes": [
+          "WIRE_GAP"
+        ],
+        "raw_schema_versions": [
+          "wire-gap-sim.v1",
+          "alarm-sim.v1"
+        ],
+        "source_identification": "SAMPLE_ID",
+        "position_supported": true,
+        "image_supported": false,
+        "source_alarm_supported": true,
+        "offline_replay_supported": true
+      }
+    ],
+    "limits": {
+      "measurements_per_batch": 500,
+      "alarms_per_batch": 100,
+      "json_body_bytes": 1048576,
+      "evidence_bytes": 8388608,
+      "heartbeat_interval_seconds": 10,
+      "offline_after_seconds": 30,
+      "heartbeat_max_age_seconds": 15,
+      "clock_skew_seconds": 5
+    },
+    "rate_limit_policy_id": "ing01-test-default",
+    "retention_policy_id": "ing01-no-auto-purge"
+  }
+}

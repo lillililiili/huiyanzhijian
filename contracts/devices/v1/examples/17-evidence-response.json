@@ -1,0 +1,12 @@
+{
+  "code": "OK",
+  "message": "成功",
+  "request_id": "request-example-01",
+  "data": {
+    "evidence_id": "evidence-test-01",
+    "upload_id": "upload-test-01",
+    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "availability": "AVAILABLE",
+    "duplicate": false
+  }
+}

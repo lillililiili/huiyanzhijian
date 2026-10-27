@@ -1,0 +1,210 @@
+{
+  "policy": "TEST_ONLY, explicit windows, FAIL_WINS, no gap bridging",
+  "vectors": [
+    {
+      "id": "V01",
+      "expected": [
+        "0",
+        "10"
+      ],
+      "pass_windows": [
+        [
+          "0",
+          "4"
+        ],
+        [
+          "8",
+          "10"
+        ]
+      ],
+      "fail_windows": [
+        [
+          "4",
+          "6"
+        ]
+      ],
+      "want": {
+        "valid": "8",
+        "evaluated": "8",
+        "passed": "6",
+        "failed": "2",
+        "undetermined": "2"
+      }
+    },
+    {
+      "id": "V02",
+      "expected": [
+        "0",
+        "10"
+      ],
+      "pass_windows": [
+        [
+          "0",
+          "4"
+        ],
+        [
+          "8",
+          "10"
+        ]
+      ],
+      "fail_windows": [
+        [
+          "4",
+          "6"
+        ],
+        [
+          "5",
+          "7"
+        ]
+      ],
+      "want": {
+        "valid": "9",
+        "evaluated": "9",
+        "passed": "6",
+        "failed": "3",
+        "undetermined": "1"
+      }
+    },
+    {
+      "id": "V03",
+      "expected": [
+        "0",
+        "10"
+      ],
+      "pass_windows": [
+        [
+          "0",
+          "4"
+        ],
+        [
+          "8",
+          "10"
+        ],
+        [
+          "0",
+          "4"
+        ],
+        [
+          "8",
+          "10"
+        ]
+      ],
+      "fail_windows": [
+        [
+          "4",
+          "6"
+        ],
+        [
+          "4",
+          "6"
+        ]
+      ],
+      "want": {
+        "valid": "8",
+        "evaluated": "8",
+        "passed": "6",
+        "failed": "2",
+        "undetermined": "2"
+      }
+    },
+    {
+      "id": "V04",
+      "expected": [
+        "0",
+        "10"
+      ],
+      "pass_windows": [],
+      "fail_windows": [],
+      "point_positions": [
+        "1",
+        "9"
+      ],
+      "want": {
+        "valid": "0",
+        "evaluated": "0",
+        "passed": "0",
+        "failed": "0",
+        "undetermined": "10"
+      }
+    },
+    {
+      "id": "V05",
+      "expected": [
+        "0",
+        "10"
+      ],
+      "pass_windows": [
+        [
+          "0",
+          "6"
+        ]
+      ],
+      "fail_windows": [
+        [
+          "4",
+          "8"
+        ]
+      ],
+      "want": {
+        "valid": "8",
+        "evaluated": "8",
+        "passed": "4",
+        "failed": "4",
+        "undetermined": "2"
+      }
+    },
+    {
+      "id": "V06",
+      "expected": [
+        "0",
+        "10"
+      ],
+      "pass_windows": [
+        [
+          "0",
+          "4"
+        ],
+        [
+          "8",
+          "10"
+        ]
+      ],
+      "fail_windows": [],
+      "excluded_estimated": [
+        [
+          "4",
+          "6"
+        ]
+      ],
+      "want": {
+        "valid": "6",
+        "evaluated": "6",
+        "passed": "6",
+        "failed": "0",
+        "undetermined": "4"
+      }
+    },
+    {
+      "id": "V07",
+      "pass_scopes": [
+        {
+          "pass_id": "p1",
+          "covered_length": "10"
+        },
+        {
+          "pass_id": "p2",
+          "covered_length": "10"
+        }
+      ],
+      "merged_result": null,
+      "reason": "PASS_SELECTION_REQUIRED"
+    },
+    {
+      "id": "V08",
+      "expected": [],
+      "coverage_ratio": null,
+      "length_pass_ratio": null,
+      "reason": "ZERO_DENOMINATOR"
+    }
+  ]
+}

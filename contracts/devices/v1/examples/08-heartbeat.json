@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "device_id": "device-test-01",
+  "data_environment": "SIMULATED",
+  "connection_id": "connection-01",
+  "heartbeat_sequence": "1",
+  "sent_at": "2026-10-21T08:00:00Z",
+  "capture_session_id": "capture-run01-d1",
+  "observed_task_id": "task-test-01",
+  "observed_binding_id": "binding-test-01",
+  "last_sample_time": "2026-10-21T08:00:00Z",
+  "last_record_id": "sim-run01-d1-r1",
+  "queue_depth": 0,
+  "disk_free_bytes": "104857600",
+  "instrument_state": "READY",
+  "config_version": "config-test-1"
+}

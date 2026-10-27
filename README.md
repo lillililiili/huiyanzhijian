@@ -1,18 +1,20 @@
 # 慧眼智检线缆质量管控平台
 
-本项目面向 35–220kV 高压电缆生产场景，建设三项检测的设备接入、现场检测、质量追溯和 MES 数据输出能力。当前包含原生原型、React 演示前端与正式系统设计文档。
+本项目面向 35–220kV 高压电缆生产场景，建设三项检测的设备接入、现场检测、质量追溯和 MES 数据输出能力。仓库包含原生原型、React 演示前端、业务/管理前端、Node 平台后端、设备输入模拟器、PostgreSQL 迁移、接口契约与 Docker 部署文件。
 
 ## 当前状态
 
 - 代码仓库：[lillililiili/huiyanzhijian](https://github.com/lillililiili/huiyanzhijian)。
-- 2026-10-20 从用户提供的 `huiyanzhijian.zip` 导入 [React 演示前端](web/README.md)、[Docker 配置](docker/README.md)及三份前端设计资料。源码位于 `web/`，采用 React、TypeScript、Vite 和 ECharts，数据仍为本地模拟。导入范围、逐文件摘要及本机验证见 [导入记录](docs/verification/2026-10-20_压缩包代码导入.md)。
+- `web/` 是 localStorage 演示前端；实际业务端在 `apps/web/`，管理端在 `apps/admin-web/`，Node/TypeScript API 在 `apps/platform/`，独立设备模拟器在 `tools/simulator/`。模拟器只经设备契约调用 API；不会直写 PostgreSQL。SIMULATED 数据与真实设备数据来源标识保持区分。
+- PostgreSQL 表结构通过 `apps/platform/db/migrations/` 中的有序 SQL 迁移管理；设备输入契约、OpenAPI 与样例位于 `contracts/`。本地凭据、运行期配置、数据库卷、SQLite 队列及备份不提交到 Git。
+- Docker Compose 部署文件：`docker/b1.compose.yaml`（PostgreSQL、API 与 CLI 模拟器）、`docker/compose.yaml`（业务前端）、`apps/admin-web/compose.yaml`（管理前端）、`tools/simulator/compose.yaml`（4196 模拟器 Web）。旧 localStorage 演示部署单独保留在 `docker/demo.compose.yaml`。
+- `node_modules`、`dist` 等构建目录不入库。各前端、后端及模拟器用已提交的 `package-lock.json` 通过 Docker 构建；无需提交约 1.3 GB 的解压交付包或重复的历史运行快照。
+- 2026-10-20 从用户提供的 `huiyanzhijian.zip` 导入的演示前端、Docker 配置及设计资料仍保留；导入说明见 [记录](docs/verification/2026-10-20_压缩包代码导入.md)。
 - 2026-10-09 核对代码基线 `cbd8c76`：已包含 [27 页原生交互原型](慧眼智检-原生原型/README.md)，可在本机运行。
 - 两份 Word 文档、一份 Excel 台账原样保存在 [项目资料](项目资料/)；十张参考图已在 [原型参考图目录](慧眼智检-原生原型/assets/references/) 归档。
-- 全局开发文档在V0.2原型审查基础上补充R01和逐页测试方案，部分全局文件已更新V0.3，仍为待评审设计。原型采用原生 HTML/CSS/JS，正式技术方案已补充为第11份R01（Java＋Vue＋PostgreSQL建议），尚未批准或安装构建；设备协议、判定口径及部署指标仍待确认。
-- 原型模拟了任务、测量、报警、报告及 MES 状态；尚无正式后端、真实身份认证、设备驱动、生产数据库或现场联调结论。原型交互通过不等于 M00–M10 正式模块已验收。
-- 开发文档及原始资料已纳入 `docs/project-definition`，本次导入起始提交为 `da956002eb58d75e2df67daad6766bb8b6c239ee`。正式设计仍待评审，当前没有冻结模块。
-
-React 演示前端与第11份 R01 的 Vue 正式方案分开记录；本次同步已有代码不代表批准替换正式技术栈。压缩包中的设计计划和 `docker/VERIFICATION.md` 是来源资料及历史记录，不作为本机测试结果或自动执行后续任务的指令。
+- 全局开发文档记录架构、页面台账与模块范围。当前运行实现采用 React/TypeScript、Node/TypeScript 和 PostgreSQL；原生原型和 `web/` 演示数据不作为生产能力依据。
+- B1–B3、AD02、SIM02–SIM07 等功能状态与验证范围以 `docs/12_页面开发与测试台账.md`、对应工作包和模块台账为准。代码提交、Docker 构建、模拟器验证、真实浏览器、真机和 MES 验收分别记录；未注明完成的现场验证仍待执行。
+- 当前提交分支为 `docs/project-definition`。该分支包含项目文档、演示前端和完整业务源包；每个包的运行与部署方法见下文和子目录 README。
 
 ## 项目文件入口
 
@@ -33,10 +35,37 @@ React 演示前端与第11份 R01 的 Vue 正式方案分开记录；本次同�
 | [审查记录与开发任务](docs/09_文档审查与开发任务.md) | 本次发现、修正依据、剩余决策、可分配工作包 |
 | [第一轮开发任务清单](docs/10_第一轮开发任务清单.md) | V1.1按页面派工、职责、交付与验收；[可转发Word版](docs/交付/10_第一轮开发任务清单_开发人员版_V1.1.docx)；原V1.0保留为历史 |
 | [R01技术选型与工程方案](docs/11_R01技术选型与工程方案.md) | 推荐理由、候选版本、工程部署、三类测试与负责人确认事项；[Word版](docs/交付/11_R01技术选型与工程方案_V1.0.docx) |
-| [页面开发与测试台账](docs/12_页面开发与测试台账.md) | 27页分期、依赖、当前可测状态与逐页提测门槛；当前正式页均不可测 |
+| [页面开发与测试台账](docs/12_页面开发与测试台账.md) | 页面分期、依赖、当前可测状态与逐页提测门槛 |
 | [页面任务与提测模板](docs/pages/页面任务与提测模板.md) | 每页前后端、契约、测试数据与交接；[P09规格档案样例](docs/pages/P09_规格档案_页面工作包.md) |
 
-## 开发准备与启动
+## 完整业务栈部署（Windows / Docker Desktop）
+
+在仓库根目录使用 PowerShell。首次准备需要 Node.js 22、Docker Desktop 和可用的 Docker 镜像 `node:22-bookworm`、`postgis/postgis:16-3.5`、`nginx:1.27-alpine`；本仓库的 Compose 配置不自动拉取镜像。缺少镜像时先按本机网络与镜像策略获取。
+
+```powershell
+node tools/b1.mjs init
+docker compose -f docker/compose.yaml up -d --build --pull never web
+docker compose -f apps/admin-web/compose.yaml up -d --build --pull never admin-web
+node tools/simulator.mjs init
+```
+
+`node tools/b1.mjs init` 创建本机运行配置，启动 PostgreSQL，构建 API 与 CLI 模拟器，执行有序迁移及初始档案引导，再启动 API。首次运行会在 `runtime/b1/` 生成凭据；`node tools/simulator.mjs init` 使用设备凭据生成独立模拟器 Web 配置。凭据只保存在本机，不要提交或分享该目录。
+
+| 服务 | 本地地址 | 部署说明 |
+|---|---|---|
+| 业务前端 | http://127.0.0.1:4181/ | [业务 Docker 配置](docker/README.md) |
+| 管理前端 | http://127.0.0.1:4182/ | [AD02 部署说明](docker/AD02-DEPLOYMENT.md) |
+| 平台 API | http://127.0.0.1:4192/api/v1 | [后端说明](apps/platform/README.md) |
+| PostgreSQL | 127.0.0.1:4193 | 表和字段变更见 `apps/platform/db/migrations/` |
+| 设备模拟器 Web | http://127.0.0.1:4196/ | [模拟器使用说明](tools/simulator/README.md) |
+
+日常启动/停止可用 `node tools/b1.mjs start`、`node tools/b1.mjs stop`、`node tools/simulator.mjs start` 和 `node tools/simulator.mjs stop`；停止服务不会删除命名数据卷。数据库备份命令为 `node tools/b1.mjs backup`，生成的备份保存在被 Git 忽略的本地 `runtime/b1/backups/`。升级前按部署文档备份并保留卷；不要使用 `docker compose down -v` 清理业务数据。
+
+每个包也可独立开发：平台 `apps/platform/`、业务前端 `apps/web/`、管理前端 `apps/admin-web/`、SIMULATED Web 模拟器 `tools/simulator/`。这些包各自有 README、锁文件与容器定义。`apps/device-edge/` 目前只有采集端预留说明，不含可运行驱动；真机/MES 是否接通以工作包和验收记录为准。
+
+## 演示与原型
+
+旧 React 演示前端与原生原型仍保留，便于对照页面和历史验证；它们不替代真实业务前端/API。
 
 Windows 10/11 64 位电脑可使用免安装交付包：完整解压后双击 `启动平台.bat`，自动打开 `http://127.0.0.1:4188/`；双击 `停止平台.bat` 结束服务。包内自带 Node.js 和前端资源，目标电脑无需安装 Node、npm、Docker 或数据库。演示账号 `admin` / `1234`，数据仍保存在浏览器本地；不包含原电脑浏览器数据。制作脚本与运行约定见 [免安装包说明](deploy/portable/README.md)，本机实测见 [交付验证](docs/verification/2026-10-20_Windows免安装包.md)。
 
@@ -48,7 +77,7 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-打开 [React 演示前端](http://127.0.0.1:4180/)。运行 `npm.cmd test` 执行已有前端测试，运行 `npm.cmd run build` 执行 TypeScript 检查及生产构建。演示账号和存储隔离说明见 [web/README.md](web/README.md)。Docker 启动另见 [docker/README.md](docker/README.md)，导入配置不表示已部署。
+打开 [React 演示前端](http://127.0.0.1:4180/)。运行 `npm.cmd test` 执行已有前端测试，运行 `npm.cmd run build` 执行 TypeScript 检查及生产构建。演示账号和存储隔离说明见 [web/README.md](web/README.md)。Docker 演示使用 [docker/DEMO-README.md](docker/DEMO-README.md)；完整业务栈部署见 [docker/README.md](docker/README.md)。
 
 原型可以直接启动。在仓库根目录执行：
 
@@ -60,14 +89,6 @@ node server.cjs
 打开 [本机原型](http://127.0.0.1:4174/)。演示账号 `admin` / `1234`；密码仅作不少于四位字符的本地校验。无需 npm 安装或构建。端口占用时使用 `node server.cjs 4175`；不要停止其他项目服务。服务只监听本机，关闭运行进程后停止。
 
 原型使用浏览器 localStorage 保存演示数据，设备和 MES 均为模拟；正式系统不能复用该存储、鉴权和模拟确认机制。原型测试命令与能力见其 README。本机已执行启动及登录、检测页跳转验证；本次文档审查的复核记录见第 09 份文档。
-
-正式开发准备：
-
-1. 项目负责人确认第11份R01的技术方向、环境和首轮范围；统筹开发在G00验证候选版本兼容性并锁定依赖。
-2. 按第10、12份认领页面，优先G00→P01→P09，随后P21-A/P18；第07、08份仍约束页面内容与业务规则。每页完成约定子范围即提测，不等待整个模块。
-3. 明确设备和 MES 接口输入、测量口径的责任人与预计提供日期。资料未到时只验证标识明确的模拟链路。
-4. 在独立开发分支和工作目录中完成工程初始化后，将经过实际执行的安装、配置、迁移、启动、测试命令写回本节，注明运行目录、端口、预期结果和环境要求。
-5. 开发、测试、生产分开配置。提交配置样例时仅保留变量名和无敏感默认值，凭据通过环境注入。
 
 仓库已有，不再重复创建。已克隆仓库的开发者先检查当前分支与未提交修改；首次获取仓库可使用：
 

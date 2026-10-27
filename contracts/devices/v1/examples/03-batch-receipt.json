@@ -1,0 +1,66 @@
+{
+  "code": "OK",
+  "message": "成功",
+  "request_id": "request-example-01",
+  "data": {
+    "schema_version": "1.0",
+    "batch_id": "batch-mixed-example",
+    "counts": {
+      "total": 4,
+      "stored": 1,
+      "duplicate": 1,
+      "quarantined": 1,
+      "rejected": 1
+    },
+    "items": [
+      {
+        "input_index": 0,
+        "source_id": "sim-run01-d1-r1",
+        "receipt_status": "STORED",
+        "stored_id": "measurement-test-01",
+        "initial_status": "STORED",
+        "first_received_at": "2026-10-21T08:00:00Z",
+        "error_code": null,
+        "retryable": false,
+        "retry_after_ms": null,
+        "field_errors": []
+      },
+      {
+        "input_index": 1,
+        "source_id": "sim-run01-d1-r1",
+        "receipt_status": "DUPLICATE",
+        "stored_id": "measurement-test-01",
+        "initial_status": "STORED",
+        "first_received_at": "2026-10-21T08:00:00Z",
+        "error_code": null,
+        "retryable": false,
+        "retry_after_ms": null,
+        "field_errors": []
+      },
+      {
+        "input_index": 2,
+        "source_id": "sim-unbound",
+        "receipt_status": "QUARANTINED",
+        "stored_id": "measurement-quarantine",
+        "initial_status": "QUARANTINED",
+        "first_received_at": "2026-10-21T08:00:00Z",
+        "error_code": "TASK_BINDING_UNVERIFIED",
+        "retryable": false,
+        "retry_after_ms": null,
+        "field_errors": []
+      },
+      {
+        "input_index": 3,
+        "source_id": "sim-run01-d1-r1",
+        "receipt_status": "REJECTED",
+        "stored_id": null,
+        "initial_status": null,
+        "first_received_at": null,
+        "error_code": "RECORD_PAYLOAD_CONFLICT",
+        "retryable": false,
+        "retry_after_ms": null,
+        "field_errors": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "source": "existing React seed; fixed configuration only, not approved production rules",
+  "specs": [
+    {
+      "id": "SP035-400",
+      "voltage": 35,
+      "area": 400,
+      "cores": 1,
+      "structure": "tape",
+      "metrics": [
+        "dg",
+        "by"
+      ],
+      "enabled": true,
+      "productType": "交联聚乙烯绝缘电缆",
+      "customerCode": "HV-035-400",
+      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+    },
+    {
+      "id": "SP035-300",
+      "voltage": 35,
+      "area": 300,
+      "cores": 1,
+      "structure": "tape",
+      "metrics": [
+        "dg",
+        "by"
+      ],
+      "enabled": true,
+      "productType": "交联聚乙烯绝缘电缆",
+      "customerCode": "HV-035-300",
+      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+    },
+    {
+      "id": "SP066-630",
+      "voltage": 66,
+      "area": 630,
+      "cores": 1,
+      "structure": "wire",
+      "metrics": [
+        "jx",
+        "by"
+      ],
+      "enabled": true,
+      "productType": "交联聚乙烯绝缘电缆",
+      "customerCode": "HV-066-630",
+      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+    },
+    {
+      "id": "SP110-800",
+      "voltage": 110,
+      "area": 800,
+      "cores": 1,
+      "structure": "wire",
+      "metrics": [
+        "jx",
+        "by"
+      ],
+      "enabled": true,
+      "productType": "交联聚乙烯绝缘电缆",
+      "customerCode": "HV-110-800",
+      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+    },
+    {
+      "id": "SP110-1000",
+      "voltage": 110,
+      "area": 1000,
+      "cores": 1,
+      "structure": "wire",
+      "metrics": [
+        "jx",
+        "by"
+      ],
+      "enabled": true,
+      "productType": "交联聚乙烯绝缘电缆",
+      "customerCode": "HV-110-1000",
+      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+    },
+    {
+      "id": "SP220-1200",
+      "voltage": 220,
+      "area": 1200,
+      "cores": 1,
+      "structure": "wire",
+      "metrics": [
+        "jx",
+        "by"
+      ],
+      "enabled": true,
+      "productType": "交联聚乙烯绝缘电缆",
+      "customerCode": "HV-220-1200",
+      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+    }
+  ],
+  "devices": [
+    {
+      "id": "HY-DG-01",
+      "name": "金属屏蔽搭盖率检测设备",
+      "metric": "dg",
+      "line": "铜带屏蔽工位",
+      "status": "online",
+      "source": "设备自动采集",
+      "lastSeen": "2026-10-09 14:30:00",
+      "calibration": "2026-12-31",
+      "model": "HY-DG",
+      "image": "assets/images/device-dg.png",
+      "ip": "192.168.10.101"
+    },
+    {
+      "id": "HY-JX-01",
+      "name": "铜丝屏蔽相邻铜丝间隙检测设备",
+      "metric": "jx",
+      "line": "铜丝屏蔽工位",
+      "status": "online",
+      "source": "设备自动采集",
+      "lastSeen": "2026-10-09 14:30:00",
+      "calibration": "2026-12-31",
+      "model": "HY-JX",
+      "image": "assets/images/device-jx.png",
+      "ip": "192.168.10.102"
+    },
+    {
+      "id": "HY-BY-01",
+      "name": "电缆不圆度检测设备",
+      "metric": "by",
+      "line": "不圆度检测工位",
+      "status": "online",
+      "source": "设备自动采集",
+      "lastSeen": "2026-10-09 14:30:00",
+      "calibration": "2026-12-31",
+      "model": "HY-BY",
+      "image": "assets/images/device-by.png",
+      "ip": "192.168.10.103"
+    }
+  ],
+  "recipes": [
+    {
+      "id": "DG-V1.0",
+      "metric": "dg",
+      "version": "V1.0",
+      "threshold": 10,
+      "operator": ">=",
+      "name": "搭盖率默认演示配方",
+      "enabled": true,
+      "createdAt": "2026-10-09 08:00:00",
+      "description": "依据原型设定的演示阈值"
+    },
+    {
+      "id": "JX-V1.0",
+      "metric": "jx",
+      "version": "V1.0",
+      "threshold": 3,
+      "operator": "<=",
+      "name": "铜丝间隙默认演示配方",
+      "enabled": true,
+      "createdAt": "2026-10-09 08:00:00",
+      "description": "依据原型设定的演示阈值"
+    },
+    {
+      "id": "BY-V1.0",
+      "metric": "by",
+      "version": "V1.0",
+      "threshold": 8,
+      "operator": "<=",
+      "name": "不圆度默认演示配方",
+      "enabled": true,
+      "createdAt": "2026-10-09 08:00:00",
+      "description": "依据原型设定的演示阈值"
+    }
+  ],
+  "users": [
+    {
+      "id": "U001",
+      "name": "质量管理员",
+      "username": "admin",
+      "role": "admin",
+      "enabled": true,
+      "department": "质量管理部",
+      "lastLogin": "2026-10-09 08:00:00"
+    },
+    {
+      "id": "U002",
+      "name": "检测操作员",
+      "username": "operator",
+      "role": "quality",
+      "enabled": true,
+      "department": "检测车间",
+      "lastLogin": "2026-10-09 12:00:00"
+    },
+    {
+      "id": "U003",
+      "name": "质量审核员",
+      "username": "quality",
+      "role": "quality",
+      "enabled": true,
+      "department": "质量管理部",
+      "lastLogin": "2026-10-09 13:45:00"
+    },
+    {
+      "id": "U004",
+      "name": "访客",
+      "username": "viewer",
+      "role": "viewer",
+      "enabled": true,
+      "department": "演示用户",
+      "lastLogin": null
+    }
+  ]
+}

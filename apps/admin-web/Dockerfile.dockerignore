@@ -1,0 +1,17 @@
+**
+!apps/
+!apps/admin-web/
+!apps/admin-web/**
+!apps/web/
+!apps/web/src/
+!apps/web/src/**
+!apps/web/public/
+!apps/web/public/**
+!infra/
+!infra/middleware/
+!infra/middleware/nginx/
+!infra/middleware/nginx/frontend.conf.template
+apps/admin-web/node_modules
+apps/admin-web/dist
+apps/admin-web/.env*
+**/*.tsbuildinfo
