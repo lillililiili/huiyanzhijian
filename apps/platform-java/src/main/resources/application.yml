@@ -1,0 +1,28 @@
+server:
+  port: ${PORT:4192}
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: huiyan-platform-java
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:4193}/${DB_NAME:huiyan_b1}
+    username: ${DB_USER:hy_runtime}
+    password: ${DB_PASSWORD:WiWvV-uaqk15-MBIHrEW2UCjN-pHwamg}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 3
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+  jackson:
+    time-zone: UTC
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+    default-property-inclusion: always
+
+logging:
+  level:
+    root: INFO
+    com.huiyan.platform: DEBUG

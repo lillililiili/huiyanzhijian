@@ -137,3 +137,105 @@ test("history display and CSV keep query-time association when the workspace has
  expect(container.textContent).toContain('查询时盘A');await click('导出完整筛选CSV');
  const csv=String(vi.mocked(downloadFile).mock.calls[0][1]);expect(csv).toContain('查询时盘A');expect(csv).toContain('创建盘');expect(csv).not.toContain('后改盘B');
 });
+
+
+test("ovality detection removes sheath box and illustration, and drawer shows real 170A-2D two-point axis data without fabrication", async () => {
+  const api = new ApiClient();
+  const sampleObserved = {
+    ...row("s1", "15.0"),
+    value: "9.5238095238",
+    quality_result: "FAIL",
+    raw_payload: {
+      ...row("s1", "15.0").raw_payload,
+      sample_time: "2026-10-26T00:00:01Z",
+      raw: {
+        data: {
+          algorithm: "sim-legacy-percent-mean.v1",
+          observation: {
+            diameter_x_mm: "40.000000",
+            diameter_y_mm: "44.000000",
+            major_axis_mm: "44.000000",
+            minor_axis_mm: "40.000000",
+            average_diameter_mm: "42.000000",
+            ovality_difference_mm: "4.000000",
+            registers: {
+              "0x0200_status_word": "0x0002",
+              "0x0201_avg_diameter_001mm": 4200,
+              "0x0202_axis1_diameter_001mm": 4000,
+              "0x0204_axis2_diameter_001mm": 4400
+            }
+          }
+        }
+      }
+    } as any
+  } as Measurement;
+  const sampleScalarOnly = {
+    ...row("s2", "30.0"),
+    value: "2.0",
+    quality_result: "PASS",
+    raw_payload: {
+      ...row("s2", "30.0").raw_payload,
+      sample_time: "2026-10-26T00:00:05Z"
+    } as any
+  } as Measurement;
+  vi.spyOn(api, "request").mockResolvedValue({ items: [sampleObserved, sampleScalarOnly], total: 2, has_more: false, next_cursor: null, as_of: "cutoff" });
+  const task = { id: "task", task_code: "202610280001", state: "RUNNING", metric_code: "OVALITY", device_id: "HY-BY-01", spool_id: "spool", context_snapshot: { spool_code: "线缆1号" }, rule_snapshot: { comparison: null }, data_environment: "SIMULATED" } as any;
+  await render(<Measurements api={api} data={emptyWorkspace} task={task} params={new URLSearchParams()} live />);
+  expect(container.querySelector('[data-testid="sheath-thickness-module"]')).toBeNull();
+  expect(container.textContent).not.toContain("外护套薄厚检测（最薄点记录 · 平均厚度计算）");
+  const detailButtons = [...container.querySelectorAll("button")].filter(b => b.textContent === "详情");
+  await act(async () => detailButtons[0].click());
+  expect(document.body.textContent).not.toContain("线缆不圆度示意图");
+  const drawerCard = document.body.querySelector('[data-testid="ovality-drawer-card"]');
+  expect(drawerCard).toBeTruthy();
+  expect(drawerCard?.textContent).toContain("170A-2D 双向测径仪观测与椭圆长短轴数据");
+  expect(drawerCard?.textContent).toContain("44 / 40");
+  expect(drawerCard?.textContent).toContain("42");
+  await act(async () => detailButtons[1].click());
+  const scalarCard = document.body.querySelector('[data-testid="ovality-drawer-card"]');
+  expect(scalarCard?.textContent).toContain("未携带 X/Y 轴两点距离原始观测字段");
+});
+
+
+test("measurement filter switch toggles between all records, anomalies (FAIL), and passing records", async () => {
+  const api = new ApiClient();
+  const passRow = { ...row("r1", "10"), value: "2.1", quality_result: "PASS" } as Measurement;
+  const failRow = { ...row("r2", "11"), value: "8.5", quality_result: "FAIL" } as Measurement;
+  const requests: string[] = [];
+  vi.spyOn(api, "request").mockImplementation(async (path: string) => {
+    requests.push(path);
+    if (path.includes("limit=100")) return { items: [passRow, failRow], total: 2, has_more: false, next_cursor: null, as_of: "cutoff" };
+    if (path.includes("quality=FAIL")) return { items: [failRow], total: 1, has_more: false, next_cursor: null, as_of: "cutoff" };
+    if (path.includes("quality=PASS")) return { items: [passRow], total: 1, has_more: false, next_cursor: null, as_of: "cutoff" };
+    return { items: [passRow, failRow], total: 2, has_more: false, next_cursor: null, as_of: "cutoff" };
+  });
+  const task = { id: "task-001", task_code: "202610280018", state: "ENDED", metric_code: "OVALITY", device_id: "HY-BY-01", spool_id: "spool", context_snapshot: { spool_code: "线缆1号" }, rule_snapshot: { comparison: null }, data_environment: "SIMULATED" } as any;
+  await render(<Measurements api={api} data={emptyWorkspace} task={task} params={new URLSearchParams()} live />);
+  await act(async () => { await Promise.resolve(); });
+
+  const filterSwitch = container.querySelector(".review-filter-switch");
+  expect(filterSwitch).toBeTruthy();
+  const buttons = filterSwitch!.querySelectorAll("button");
+  expect(buttons).toHaveLength(3);
+  expect(buttons[0].textContent).toBe("全部记录");
+  expect(buttons[0].getAttribute("aria-pressed")).toBe("true");
+  expect(buttons[1].textContent).toContain("仅异常项");
+  expect(buttons[1].textContent).toContain("1");
+  expect(buttons[2].textContent).toBe("符合规则");
+
+  // Click 仅异常项
+  await act(async () => buttons[1].click());
+  expect(requests.some(r => r.includes("task_id=task-001") && r.includes("quality=FAIL"))).toBe(true);
+  expect(buttons[1].getAttribute("aria-pressed")).toBe("true");
+  expect(container.textContent).toContain("已筛选：仅显示异常超限记录");
+
+  // Click 符合规则
+  await act(async () => buttons[2].click());
+  expect(requests.some(r => r.includes("task_id=task-001") && r.includes("quality=PASS"))).toBe(true);
+  expect(buttons[2].getAttribute("aria-pressed")).toBe("true");
+  expect(container.textContent).toContain("已筛选：仅显示符合规则记录");
+
+  // Click 全部记录
+  await act(async () => buttons[0].click());
+  expect(buttons[0].getAttribute("aria-pressed")).toBe("true");
+});

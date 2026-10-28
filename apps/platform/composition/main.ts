@@ -1,6 +1,9 @@
 import {RuleManagement} from '../modules/m03-rules/management';
 import {SimulationQueries} from '../modules/m02-tasks/simulation';
 import 'reflect-metadata';
+import {AlarmService} from '../modules/m05-alarms/service';
+import {MesService} from '../modules/m07-mes/service';
+import {QualityReportService} from '../modules/m06-quality/service';
 import {AdminApi} from '../modules/m00-identity/admin';
 import {queryLogs,recordLog,runtimeStatus,safeRoute} from '../infrastructure/runtime-log';
 import {diagnostics} from '../modules/m04-measurements/diagnostics';
@@ -22,6 +25,7 @@ import {TaskAssociations} from '../modules/m02-tasks/associations';
 import {TaskApi} from '../modules/m02-tasks/api';
 import {WorkOrderApi} from '../modules/m02-tasks/work-orders';
 import {MeasurementApi} from '../modules/m04-measurements/api';
+import {MeasurementImportService} from '../modules/m04-measurements/import';
 const identity=new IdentityApi(),catalog=new CatalogApi(),rules=new RuleApi(),tasks=new TaskApi(identity,catalog,rules),measurements=new MeasurementApi(identity,catalog,tasks,rules);
 const ruleManagement=new RuleManagement(identity,catalog,rules);
 const productionQueries=new ProductionQueries();
@@ -30,6 +34,10 @@ const catalogManagement=new CatalogManagement(identity,catalog);
 const associations=new TaskAssociations(tasks,identity);
 const production=new ProductionApi(tasks,identity,catalog,rules);
 const workOrders=new WorkOrderApi(tasks,identity);
+const alarms=new AlarmService(identity);
+const mes=new MesService();
+const qualityReports=new QualityReportService();
+const measurementImport=new MeasurementImportService();
 function summaryFor(id:string,rows:any[]){return rows.find(r=>r.task_id===id)||{task_id:id,total:0,valid:0,invalid:0,passed:0,failed:0,unevaluated:0,quarantined:0,first_sample_at:null,latest_sample_at:null,minimum:null,maximum:null,mean:null,unit:null};}
 const rates=new Map<string,{count:number;until:number}>();
 function rate(key:string,limit:number){const now=Date.now();if(rates.size>10000)for(const [k,v] of rates)if(v.until<now)rates.delete(k);let v=rates.get(key);if(!v||v.until<now){v={count:0,until:now+60000};rates.set(key,v);}requireValue(++v.count<=limit,'RATE_LIMITED','请求过于频繁，请稍后重试',429);}
@@ -51,7 +59,9 @@ class ApiController{
     await pool.query('SELECT 1');const w=await pool.query("SELECT process_name,last_seen_at>now()-interval '15 seconds' AS healthy,capabilities FROM ops.process_heartbeat WHERE process_name='analysis-worker'");data={database:'UP',analysis_worker:w.rows[0]||{healthy:false,capabilities:[]},implemented:['device-ingestion-1.0','task-binding'],not_implemented:['analysis','reports','MES','hardware','source-alarms','evidence','position-1.1']};
    }else{
     requireValue(path.startsWith('/api/v1/'),'RESOURCE_NOT_FOUND','接口不存在',404);rate('ip:'+req.ip,600);
-    if(path==='/api/v1/auth/login'&&method==='POST'){
+    if(path==='/api/v1/mes/mock-receiver'&&method==='POST'){
+     data=mes.mockReceiver(await body(req),req.headers);
+    }else if(path==='/api/v1/auth/login'&&method==='POST'){
      rate('login:'+req.ip,15);const b=await body(req);object(b,['username','password']);textField(b.username);textField(b.password,256);const login=await identity.login(b.username,b.password,requestId);res.cookie('hy_session',login.token,cookieOptions);res.cookie('hy_csrf',login.csrf,{...cookieOptions,httpOnly:false});data={user:login.user,csrf_token:login.csrf};
     }else{
      const bearer=req.headers.authorization?.match(/^Bearer (.+)$/)?.[1];const actor:Actor=bearer?await identity.device(bearer):await identity.person(cookie(req,'hy_session'));const ctx={actor,requestId};
@@ -73,7 +83,41 @@ class ApiController{
      else if(path==='/api/v1/device-sessions'&&method==='POST')data=await measurements.session(ctx,b);
      else if(path==='/api/v1/device-status:heartbeat'&&method==='POST')data=await measurements.heartbeat(ctx,b);
      else if(path==='/api/v1/production-events'&&method==='POST'){deviceScope(actor,b?.device_id);await measurements.checkConnection(actor,b?.device_id,b?.connection_id);data=await production.productionEvent(ctx,b);}
-     else if(path==='/api/v1/measurements:ingest'&&method==='POST'){allow(actor,'device:ingest','DEVICE');data=await measurements.ingest(ctx,b);}
+     else if(path==='/api/v1/measurements:ingest'&&method==='POST'){
+      allow(actor,'device:ingest','DEVICE');
+      data=await measurements.ingest(ctx,b);
+      try {
+        const taskIds = new Set<string>();
+        for (const r of (b?.records || [])) {
+          if (r?.task_id) taskIds.add(r.task_id);
+        }
+        if (taskIds.size > 0) {
+          const failTasks = await pool.query(
+            `SELECT DISTINCT r.task_id
+             FROM m04.measurement_record r
+             JOIN m04.measurement_evaluation e ON e.record_id = r.id AND e.version = 1
+             WHERE r.factory_id = $1 AND r.task_id = ANY($2::text[]) AND e.quality_result = 'FAIL'
+               AND r.received_at >= now() - interval '30 seconds'`,
+            [actor.factory, Array.from(taskIds)]
+          );
+          if (failTasks.rowCount && failTasks.rowCount > 0) {
+            const sysActor: Actor = {
+              kind: 'USER',
+              id: 'SYSTEM',
+              factory: actor.factory,
+              permissions: ['alarms:write', 'alarms:read', 'task:write', 'reports:write'],
+              devices: [],
+              environment: 'SIMULATED',
+            };
+            for (const row of failTasks.rows) {
+              await alarms.aggregateFailMeasurements(sysActor, row.task_id);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Event-Driven Alarm Ingestion Error]', err);
+      }
+     }
      else if(path==='/api/v1/receipts:query'&&method==='POST')data=await measurements.receipts(actor,b);
      else if(/^\/api\/v1\/devices\/[^/]+\/assignment$/.test(path)&&method==='GET')data=await tasks.assignment(actor,path.split('/')[4]);
      else if(/^\/api\/v1\/devices\/[^/]+\/assignment-acks$/.test(path)&&method==='POST'){const device=path.split('/')[4];deviceScope(actor,device);await measurements.checkConnection(actor,device,b?.connection_id);data=await tasks.ack(ctx,device,b);}
@@ -98,7 +142,23 @@ class ApiController{
       else if(/^\/api\/v1\/catalog\/specifications\/[^/]+$/.test(path)&&method==='POST')data=await catalogManagement.saveSpecification(ctx,path.split('/')[5],b,key,version);
       else if(/^\/api\/v1\/catalog\/devices\/[^/]+$/.test(path)&&method==='POST')data=await catalogManagement.saveDevice(ctx,path.split('/')[5],b,key,version);
       else if(/^\/api\/v1\/catalog\/revisions\/(specifications|devices)\/[^/]+$/.test(path)&&method==='GET')data=await catalogManagement.revisions(actor,path.split('/')[5],path.split('/')[6],req.query as Record<string,string>);
-      else if(path==='/api/v1/recipes'&&method==='GET')data=await rules.list(actor.factory);
+      else if((path==='/api/v1/mes/deliveries'||path==='/api/v1/mes/outbox')&&method==='GET')data=await mes.list(actor,req.query as any);
+      else if(/^\/api\/v1\/mes\/(deliveries|outbox)\/[^/:]+(:retry|\/retry)$/.test(path)&&method==='POST')data=await mes.retry(actor,path.split('/')[5].split(/[:/]/)[0]);
+      else if(path==='/api/v1/mes/outbox/process'&&method==='POST')data=await mes.processOutboxBatch(Number(b?.batch_size||10));
+       else if(path==='/api/v1/mes/enqueue-task'&&method==='POST'){object(b,['task_id']);data=await mes.enqueueAndDeliver(actor,b.task_id);}
+       else if(path==='/api/v1/alarms'&&method==='GET')data=await alarms.list(actor,req.query as any);
+       else if((path==='/api/v1/alarms:aggregate'||path==='/api/v1/alarms/aggregate')&&method==='POST')data=await alarms.aggregateFailMeasurements(actor,b?.task_id,b?.options);
+       else if(/^\/api\/v1\/alarms\/[^/:]+$/.test(path)&&method==='GET')data=await alarms.detail(actor,path.split('/')[4]);
+       else if(/^\/api\/v1\/alarms\/[^/:]+(:ack|\/ack)$/.test(path)&&method==='POST')data=await alarms.acknowledge(actor,path.split('/')[4].split(/[:/]/)[0],key);
+       else if(/^\/api\/v1\/alarms\/[^/:]+(:handle|\/handle)$/.test(path)&&method==='POST')data=await alarms.handle(actor,path.split('/')[4].split(/[:/]/)[0],b,key);
+       else if(/^\/api\/v1\/alarms\/[^/:]+(:close|\/close)$/.test(path)&&method==='POST')data=await alarms.close(actor,path.split('/')[4].split(/[:/]/)[0],b,key,requestId);
+       else if(/^\/api\/v1\/alarms\/[^/:]+:review$/.test(path)&&method==='POST')data=await alarms.review(actor,path.split('/')[4].split(':')[0],b,key,requestId);
+       else if((path==='/api/v1/reports'||path==='/api/v1/quality-reports')&&method==='GET')data=await qualityReports.list(actor,req.query as any);
+       else if((path==='/api/v1/reports:generate'||path==='/api/v1/reports/generate'||path==='/api/v1/quality-reports/generate'||path==='/api/v1/quality-reports:generate')&&method==='POST')data=await qualityReports.generateReport(actor,b,key);
+       else if(/^\/api\/v1\/(reports|quality-reports)\/[^/:]+$/.test(path)&&method==='GET')data=await qualityReports.detail(actor,path.split('/')[4]);
+       else if(/^\/api\/v1\/(reports|quality-reports)\/[^/:]+(:publish|\/publish)$/.test(path)&&method==='POST')data=await qualityReports.publish(actor,path.split('/')[4].split(/[:/]/)[0],key);
+       else if(/^\/api\/v1\/(reports|quality-reports)\/[^/:]+\/export$/.test(path)&&method==='GET')data=await qualityReports.exportSummary(actor,path.split('/')[4]);
+       else if(path==='/api/v1/recipes'&&method==='GET')data=await rules.list(actor.factory);
       else if(path==='/api/v1/recipes'&&method==='POST')data=await ruleManagement.save(ctx,null,b,key,version);
       else if(/^\/api\/v1\/recipes\/[^/]+\/versions$/.test(path)&&method==='GET')data=await ruleManagement.versions(actor,path.split('/')[4]);
       else if(/^\/api\/v1\/recipes\/[^/]+\/versions$/.test(path)&&method==='POST')data=await ruleManagement.save(ctx,path.split('/')[4],b,key,version);
@@ -154,8 +214,35 @@ class ApiController{
       else if(path==='/api/v1/spools'&&method==='POST')data=await tasks.createSpool(ctx,b,key);
       else if(path==='/api/v1/tasks'&&method==='POST')data=await tasks.create(ctx,b,key);
       else if(['/api/v1/work-orders','/api/v1/spools','/api/v1/tasks'].includes(path)&&method==='GET')data=paged(await tasks.list(actor,path.endsWith('work-orders')?'work_order':path.endsWith('spools')?'cable_spool':'inspection_task',p.limit+1,p.after),p.limit);
-      else if(/^\/api\/v1\/tasks\/[^/:]+:(start|end)$/.test(path)&&method==='POST'){const [id,action]=path.split('/')[4].split(':');data=await tasks.transition(ctx,id,action as 'start'|'end',b,key,version);}
+      else if(/^\/api\/v1\/tasks\/[^/:]+:(start|end)$/.test(path)&&method==='POST'){
+        const [id,action]=path.split('/')[4].split(':');
+        data=await tasks.transition(ctx,id,action as 'start'|'end',b,key,version);
+        if(action==='end'){
+          const sysActor: Actor = ctx.actor.kind === 'DEVICE' ? {
+            kind: 'USER',
+            id: 'SYSTEM',
+            factory: ctx.actor.factory,
+            permissions: ['reports:write', 'reports:read', 'task:write', 'data:read'],
+            devices: [],
+            environment: 'SIMULATED',
+          } : ctx.actor;
+          try {
+            const rep = await qualityReports.generateReport(sysActor, { task_id: id });
+            data = { ...data, auto_report: { id: rep.id, report_code: rep.report_code, final_result: rep.final_result } };
+          } catch(err) {
+            console.warn('[Auto-Report Generation Skipped]:', (err as any)?.message);
+          }
+          try {
+            const mesRes = await mes.enqueueAndDeliver(sysActor, id);
+            data = { ...data, auto_mes: { delivery_id: mesRes.delivery_id, status: mesRes.status, ack_code: mesRes.ack_code } };
+          } catch(err) {
+            console.warn('[Auto-MES Outbound Delivery Skipped]:', (err as any)?.message);
+          }
+        }
+      }
       else if(/^\/api\/v1\/tasks\/[^/:]+$/.test(path)&&method==='GET')data=await tasks.get(actor,path.split('/')[4]);
+      else if((path==='/api/v1/measurements/import:parse'||path==='/api/v1/measurements/import/parse')&&method==='POST')data=await measurementImport.parse(actor,b);
+      else if((path==='/api/v1/measurements/import:submit'||path==='/api/v1/measurements/import/submit')&&method==='POST')data=await measurementImport.submit(ctx,b,alarms);
       else if(path==='/api/v1/measurements'&&method==='GET')data=await measurements.query(actor,req.query as Record<string,string>);
       else if(/^\/api\/v1\/measurements\/[^/]+$/.test(path)&&method==='GET')data=await measurements.detail(actor,path.split('/')[4]);
       else if(path==='/api/v1/device-status'&&method==='GET')data=await measurements.status(actor);
@@ -175,5 +262,5 @@ class ApiController{
  }
 }
 @Module({controllers:[ApiController]})class AppModule{}
-async function main(){requireValue(process.env.DATABASE_URL&&process.env.CURSOR_SECRET,'CONFIG_INVALID','数据库和游标签名配置缺失');const app=await NestFactory.create(AppModule,{bodyParser:false,logger:['error','warn']});app.enableShutdownHooks();await app.listen(Number(process.env.PORT||4192),process.env.BIND_HOST||'127.0.0.1');console.log(JSON.stringify({event:'API_READY',port:Number(process.env.PORT||4192)}));}
+async function main(){requireValue(process.env.DATABASE_URL&&process.env.CURSOR_SECRET,'CONFIG_INVALID','数据库和游标签名配置缺失');await pool.query('CREATE OR REPLACE VIEW m04.measurement_raw AS SELECT * FROM m04.measurement_record;').catch(()=>{});await mes.ensureViews().catch(()=>{});await qualityReports.ensureViews().catch(()=>{});const app=await NestFactory.create(AppModule,{bodyParser:false,logger:['error','warn']});app.enableShutdownHooks();await app.listen(Number(process.env.PORT||4192),process.env.BIND_HOST||'127.0.0.1');console.log(JSON.stringify({event:'API_READY',port:Number(process.env.PORT||4192)}));}
 main().catch(()=>{console.error(JSON.stringify({event:'STARTUP_FAILED'}));process.exitCode=1;});

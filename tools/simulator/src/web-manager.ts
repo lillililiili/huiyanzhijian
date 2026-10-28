@@ -6,6 +6,7 @@ import {FeedControl} from './feed-control';
 import {DeviceClient, HttpFailure, verifyAssignment} from './client';
 import {ModelStore,hashInput} from './model-store';
 import {insist,keys,fixed} from './cable-model';
+import {record,SCENARIO_PERFECT,SCENARIO_OVERLAP_DEFECT,SCENARIO_GAP_GLITCH,SCENARIO_OVALITY_OUT_OF_BOUNDS,SCENARIO_SENSOR_BLOCKED,INDUSTRIAL_SCENARIOS} from './scenarios';
 
 export class WebError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
@@ -14,7 +15,7 @@ export const requireWeb = (ok: unknown, status: number, code: string, message: s
   if (!ok) throw new WebError(status, code, message);
 };
 export const validId = (id: unknown): id is string => typeof id === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,89}$/.test(id);
-const scenarios = ['mixed', 'normal', 'boundary', 'over', 'invalid'];
+const scenarios = ['mixed', 'normal', 'boundary', 'over', 'invalid', SCENARIO_PERFECT, SCENARIO_OVERLAP_DEFECT, SCENARIO_GAP_GLITCH, SCENARIO_OVALITY_OUT_OF_BOUNDS, SCENARIO_SENSOR_BLOCKED, 'perfect', 'overlap_defect', 'gap_glitch', 'ovality_out_of_bounds', 'sensor_blocked'];
 type Input = {request_id: string; device_id: string; scenario: string; count: number; interval_ms: number; seed: number};
 type Job = {id: string; run_id: string; device_id: string; command: string; status: string; input: string; request_hash: string; started_at: string; ended_at: string | null; exit_code: number | null; message: string | null};
 
@@ -296,6 +297,176 @@ export class WebManager {
     const p=this.models.pass(id);requireWeb(p,404,'PASS_NOT_FOUND','本次运行不是线缆过料');
     const job=this.lastJob(id);requireWeb(job?.command==='run'&&job.status==='RUNNING'&&this.children.has(job.id),409,'FEED_NOT_ACTIVE','请在运行或暂停送料时调整速度');
     const speed=this.feed.change(id,p.snapshot,input);this.log(job!,'FEED_SPEED_CHANGED',speed);return speed;
+  }
+
+  scenarios() {
+    return {
+      presets: INDUSTRIAL_SCENARIOS,
+      available_scenarios: scenarios,
+    };
+  }
+
+  async triggerCutSpool(input: { device_id: string; spool_id?: string; position_m?: string; run_id?: string }) {
+    requireWeb(validId(input.device_id), 400, 'INVALID_DEVICE_ID', '设备ID无效');
+    const pos = input.position_m || '0.0000';
+    const res = await this.client.sendCutSpoolEvent({
+      device_id: input.device_id,
+      spool_id: input.spool_id,
+      position_m: pos,
+    });
+    if (input.run_id) {
+      this.queue.db.prepare("UPDATE sim_run SET control='STOPPED' WHERE id=?").run(input.run_id);
+    }
+    return res;
+  }
+
+  async coordinatedFeed(input: {
+    spool_id?: string;
+    step_m?: number | string;
+    planned_length_m?: number | string;
+    scenario?: string;
+    device_scenarios?: Record<string, string>;
+    step_count?: number;
+    auto_cut?: boolean;
+    direct_send?: boolean;
+  }) {
+    let profile: any;
+    try {
+      profile = (await this.client.request('/ingestion/profile', 'ProfileResponse')).data;
+    } catch (e) {
+      this.upstreamError(e);
+    }
+    requireWeb(profile.data_environment === 'SIMULATED', 403, 'SOURCE_NOT_ALLOWED', '仅支持SIMULATED环境');
+
+    const targetMetrics = ['SHIELD_OVERLAP_RATE', 'WIRE_GAP', 'OVALITY'];
+    const activeDevices: Array<{ device_id: string; metric_code: string; assignment: any }> = [];
+
+    for (const dev of profile.devices) {
+      for (const m of targetMetrics) {
+        if (dev.metric_codes.includes(m)) {
+          try {
+            const assignResp = await this.client.request('/devices/' + encodeURIComponent(dev.device_id) + '/assignment', 'AssignmentResponse');
+            const assignment = assignResp.data?.assignment;
+            if (assignment && assignment.metric_code === m) {
+              if (assignment.snapshot_hash) verifyAssignment(assignment);
+              activeDevices.push({ device_id: dev.device_id, metric_code: m, assignment });
+            }
+          } catch {}
+        }
+      }
+    }
+
+    requireWeb(activeDevices.length > 0, 404, 'NO_ACTIVE_DEVICES', '未找到具备有效运行任务的三项指标设备');
+
+    const stepM = Number(input.step_m || 0.5);
+    const plannedM = Number(input.planned_length_m || 100);
+    const stepCount = input.step_count || Math.ceil(plannedM / stepM);
+    const globalScenario = input.scenario || SCENARIO_PERFECT;
+    const deviceScenarios = input.device_scenarios || {};
+    const autoCut = input.auto_cut !== false;
+
+    const runs = activeDevices.map((d) => {
+      const runId = 'coord-' + d.device_id + '-' + randomUUID().slice(0, 8);
+      const devScenario = deviceScenarios[d.device_id] || globalScenario;
+      this.queue.db.prepare(
+        'INSERT INTO sim_run(id,device_id,capture_session,scenario,seed,target,assignment,created_at) VALUES(?,?,?,?,?,?,?,?)'
+      ).run(
+        runId,
+        d.device_id,
+        'session-' + randomUUID().slice(0, 8),
+        devScenario,
+        0,
+        stepCount,
+        JSON.stringify(d.assignment),
+        new Date().toISOString()
+      );
+      return {
+        runId,
+        device_id: d.device_id,
+        metric_code: d.metric_code,
+        assignment: d.assignment,
+        scenario: devScenario,
+      };
+    });
+
+    const generatedRecords: any[] = [];
+    const cutSpoolResults: any[] = [];
+    let stopped = false;
+
+    for (let seq = 1; seq <= stepCount && !stopped; seq++) {
+      const currentPosM = (seq * stepM).toFixed(4);
+      const nowMicros = Date.now();
+      const baseIso = new Date(nowMicros).toISOString().replace(/Z$/, '');
+
+      for (let dIdx = 0; dIdx < runs.length; dIdx++) {
+        const run = runs[dIdx];
+        const microOffset = dIdx * 100;
+        const sampleTime = `${baseIso.slice(0, 20)}${String(100000 + microOffset).padStart(6, '0')}Z`;
+
+        const r = record(
+          {
+            id: run.runId,
+            device_id: run.device_id,
+            capture_session: 'session-' + run.runId,
+            scenario: run.scenario,
+            seed: 0,
+            assignment: JSON.stringify(run.assignment),
+          },
+          seq,
+          sampleTime
+        );
+
+        if (r.position_quality === 'KNOWN') {
+          r.position_m = currentPosM;
+        }
+
+        this.queue.saveSample(run.runId, r);
+        generatedRecords.push(r);
+      }
+
+      if (autoCut && Number(currentPosM) >= plannedM) {
+        stopped = true;
+        for (const run of runs) {
+          const cutRes = await this.feed.checkAutoCutSpool({
+            runId: run.runId,
+            currentPositionM: currentPosM,
+            plannedLengthM: plannedM,
+            deviceId: run.device_id,
+            spoolId: run.assignment.spool_id,
+            client: this.client,
+          });
+          cutSpoolResults.push({ device_id: run.device_id, ...cutRes });
+        }
+        break;
+      }
+    }
+
+    if (input.direct_send) {
+      for (const run of runs) {
+        const pending = this.queue.pending(run.runId);
+        if (pending.length) {
+          try {
+            await this.client.request('/measurements:ingest', 'BatchReceipt', {
+              schema_version: '1.0',
+              batch_id: 'batch-' + randomUUID(),
+              sent_at: new Date().toISOString(),
+              records: pending.map((x: any) => JSON.parse(x.payload)),
+            });
+          } catch {}
+        }
+      }
+    }
+
+    return {
+      coordinated_runs: runs,
+      step_m: stepM,
+      total_steps: Math.min(stepCount, Math.floor(generatedRecords.length / runs.length)),
+      final_position_m: (Math.min(stepCount, Math.floor(generatedRecords.length / runs.length)) * stepM).toFixed(4),
+      records_generated: generatedRecords.length,
+      interleaved: true,
+      auto_cut_triggered: stopped,
+      cut_spool_events: cutSpoolResults,
+    };
   }
 
   async close() {

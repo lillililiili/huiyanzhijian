@@ -9,7 +9,7 @@ const operator: SessionUser = { id: "U002", name: "检测操作员", username: "
 const viewer: SessionUser = { id: "U004", name: "访客", username: "viewer", role: "viewer" };
 
 const routeNames = [
-  "login", "dashboard", "monitor", "detection", "tasks", "task", "specs", "history", "trace", "import",
+  "login", "dashboard", "monitor", "detection", "tasks", "task", "specs", "history", "trace",
   "alarms", "alarm", "analytics", "reports", "report", "metrics", "recipes", "templates", "devices",
   "connections", "mes", "sync", "users", "audit", "settings"
 ];

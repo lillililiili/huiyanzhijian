@@ -1,0 +1,207 @@
+/* WP4.2 工业级报警工作台样式 */
+
+.alarms-workbench-tabs {
+  display: flex;
+  gap: 16px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+}
+
+.alarms-workbench-tabs button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.alarms-workbench-tabs button:hover {
+  background: #f1f5f9;
+  color: var(--text-main, #0f172a);
+}
+
+.alarms-workbench-tabs button.active {
+  background: #e0e7ff;
+  color: #3730a3;
+  font-weight: 600;
+  border-color: #c7d2fe;
+}
+
+.alarm-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+  .alarm-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.alarm-badge-group {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.alarm-peak-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.alarm-pos-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  font-size: 12px;
+  color: #334155;
+  font-family: monospace;
+}
+
+/* 报警审计时间线 */
+.alarm-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  padding-left: 20px;
+  margin: 16px 0;
+}
+
+.alarm-timeline::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 6px;
+  width: 2px;
+  background: #e2e8f0;
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: -19px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #93c5fd;
+}
+
+.timeline-item.TRIGGER::before {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px #fca5a5;
+}
+
+.timeline-item.ACKNOWLEDGE::before {
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px #fde68a;
+}
+
+.timeline-item.HANDLE::before {
+  background: #3b82f6;
+  box-shadow: 0 0 0 2px #93c5fd;
+}
+
+.timeline-item.REVIEW::before {
+  background: #10b981;
+  box-shadow: 0 0 0 2px #6ee7b7;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.timeline-time {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: normal;
+}
+
+.timeline-flow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+  margin: 4px 0;
+}
+
+.timeline-opinion {
+  font-size: 13px;
+  color: #334155;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.timeline-evidence {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.timeline-evidence a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.timeline-evidence a:hover {
+  text-decoration: underline;
+}
+
+.alarm-actions-cell {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.alarm-drawer-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #e2e8f0);
+}

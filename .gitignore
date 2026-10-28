@@ -7,6 +7,9 @@ node_modules/
 dist/
 **/dist/
 build/
+target/
+**/target/
+*.class
 coverage/
 .vite/
 *.tsbuildinfo

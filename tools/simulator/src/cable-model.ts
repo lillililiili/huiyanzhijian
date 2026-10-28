@@ -12,7 +12,8 @@ export function keys(v:any,allowed:string[]){insist(v&&typeof v==='object'&&!Arr
 export function named(v:unknown,max=128){insist(typeof v==='string'&&v.trim().length>0&&v.length<=max,'名称/原因必填且不能超长');}
 export function validateCable(c:Cable){
  keys(c,['name','material_ref','length_m','baseline','defects']);named(c.name);named(c.material_ref);const length=fixed(c.length_m);insist(length>0n,'线缆长度必须大于0');
- keys(c.baseline,['tape_width_mm','overlap_width_mm','wire_gap_mm','diameter_x_mm','diameter_y_mm']);
+ const baseKeys=['tape_width_mm','overlap_width_mm','wire_gap_mm','diameter_x_mm','diameter_y_mm'];
+ insist(c.baseline&&typeof c.baseline==='object'&&!Array.isArray(c.baseline)&&baseKeys.every(k=>k in c.baseline)&&Object.keys(c.baseline).length===baseKeys.length,'线缆基准量字段缺失或存在未知字段');
  for(const [k,v] of Object.entries(c.baseline)){const n=fixed(v,1000);insist(n>0n||k==='wire_gap_mm'||k==='overlap_width_mm','宽度和直径必须大于0');}
  insist(fixed(c.baseline.overlap_width_mm)<=fixed(c.baseline.tape_width_mm),'搭盖宽度不能超过带宽');
  insist(Array.isArray(c.defects)&&c.defects.length<=20,'每版最多20个缺陷区段');

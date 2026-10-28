@@ -8,12 +8,9 @@ import type { SessionUser } from "../domain/types";
 import { memoryPersistence } from "../persistence/memoryPersistence";
 import { resetToasts, ToastViewport } from "../ui/Toast";
 import { HistoryPage } from "./history/HistoryPage";
-import { resetImportPreview } from "./import/importPreview";
-import { ImportPage } from "./import/ImportPage";
 import { TracePage } from "./trace/TracePage";
 
 const admin: SessionUser = { id: "U001", name: "质量管理员", username: "admin", role: "admin" };
-const quality: SessionUser = { id: "U003", name: "质量审核员", username: "quality", role: "quality" };
 const viewer: SessionUser = { id: "U004", name: "只读访客", username: "viewer", role: "viewer" };
 
 let root: Root | null = null;
@@ -44,13 +41,6 @@ async function clickButton(label: string) {
   });
 }
 
-function chooseFile(name: string, content: string, size?: number) {
-  const file = new File([content], name, { type: "text/csv" });
-  if (size !== undefined) Object.defineProperty(file, "size", { value: size });
-  const input = document.querySelector<HTMLInputElement>("#core-import-file");
-  if (!input) throw new Error("缺少文件选择");
-  Object.defineProperty(input, "files", { configurable: true, value: [file] });
-}
 
 function captureDownloads() {
   const captured: { name: string; bytes: Promise<ArrayBuffer> }[] = [];
@@ -81,7 +71,6 @@ afterEach(() => {
   container = null;
   resetViewState();
   resetToasts();
-  resetImportPreview();
   vi.restoreAllMocks();
   window.location.hash = "";
 });
@@ -226,117 +215,4 @@ test("trace keeps the seed reel, skips empty charts, and leaves an unknown reel 
   });
   expect(document.body.textContent).toContain(DENY_WRITE_CORE);
   expect(source.getState().reports.length).toBe(before);
-});
-
-test("import previews every checked row, saves only passing rows, and keeps store line numbers off the CSV", async () => {
-  const source = freshStore(quality);
-  const before = source.getState().records.length;
-  render(<ImportPage store={source} user={quality} />);
-  expect(document.querySelector("h1")?.textContent).toBe("数据导入与补录");
-  expect(document.body.textContent).toContain("选择 CSV 文件或新增补录，校验结果将在这里展示");
-  await clickButton("读取并校验文件");
-  expect(document.body.textContent).toContain("请先选择 CSV 文件");
-  chooseFile("big.csv", "taskId,metric,time,meter,value\nT1,dg,2026-10-09 14:31:00,1,12\n", 5 * 1024 * 1024 + 1);
-  await clickButton("读取并校验文件");
-  expect(document.body.textContent).toContain("请将单个导入文件控制在 5MB 以内");
-  chooseFile("bad.csv", "name,value\nA,1\n");
-  await clickButton("读取并校验文件");
-  expect(document.body.textContent).toContain("CSV 缺少必要表头：taskId, metric, time, meter, value");
-
-  const mixed = [
-    "taskId,metric,time,meter,value,validity",
-    "MISSING,dg,2026-10-09 14:31:00,10,12,valid",
-    "T20261009001,dg,2026-10-09 14:31:00,1240,12.5,valid",
-    "T20261009001,dg,2026-10-09 14:31:00,1240,12.5,valid"
-  ].join("\n");
-  chooseFile("mixed.csv", mixed);
-  await clickButton("读取并校验文件");
-  expect(document.body.textContent).toContain("文件校验完成，请查看预览");
-  expect(document.body.textContent).toContain("3 条待导入");
-  expect(document.body.textContent).toContain("2 条通过");
-  expect(document.body.textContent).toContain("1 条错误");
-  expect(document.body.textContent).toContain("任务不存在");
-  const csvRows = [...document.querySelectorAll("tbody tr td:first-child")].map(cell => cell.textContent);
-  expect(csvRows).toEqual(["2", "3", "4"]);
-  await clickButton("保存校验通过的记录");
-  expect(document.body.textContent).toContain("已保存 1 条记录，1 条被拒绝");
-  expect(document.body.textContent).toContain("成功 1 条，失败 1 条。");
-  const drawer = document.querySelector(".drawer")?.textContent || "";
-  expect(drawer).toContain("提交序号 2 · line 3 · 同一任务、时间和米数的记录已存在");
-  expect(drawer).not.toContain("line 2");
-  expect(drawer).not.toContain("line 4");
-  expect(drawer).not.toContain("CSV行");
-  expect(source.getState().records.length).toBe(before + 1);
-  expect(source.getState().records.at(-1)?.source).toBe("人工导入补录");
-  expect(document.body.textContent).toContain("选择 CSV 文件或新增补录，校验结果将在这里展示");
-});
-
-test("import shows 100 preview rows, saves every passing row, and blocks a viewer", async () => {
-  const source = freshStore(quality);
-  const before = source.getState().records.length;
-  render(<ImportPage store={source} user={quality} />);
-  const lines = ["taskId,metric,time,meter,value,validity"];
-  for (let index = 0; index < 101; index += 1) {
-    const minute = String(Math.floor(index / 60)).padStart(2, "0");
-    const second = String(index % 60).padStart(2, "0");
-    lines.push(`T20261009001,dg,2026-10-09 15:${minute}:${second},${index + 1},12.5,valid`);
-  }
-  chooseFile("many.csv", lines.join("\n"));
-  await clickButton("读取并校验文件");
-  expect(document.body.textContent).toContain("预览仅展示前100行；保存处理全部校验通过的记录。");
-  expect(document.querySelectorAll("tbody tr").length).toBe(100);
-  await clickButton("保存校验通过的记录");
-  expect(source.getState().records.length).toBe(before + 101);
-  expect(source.getState().records.at(-1)?.source).toBe("人工导入补录");
-
-  const tooMany = `taskId,metric,time,meter,value\n${"T20261009001,dg,2026-10-09 14:31:00,1,12\n".repeat(10001)}`;
-  chooseFile("over.csv", tooMany);
-  await clickButton("读取并校验文件");
-  expect(document.body.textContent).toContain("单次最多导入 10,000 条记录");
-  expect(document.body.textContent).not.toContain("10001 条待导入");
-
-  act(() => {
-    root?.render(<><ImportPage store={source} user={viewer} /><ToastViewport /></>);
-  });
-  chooseFile("one.csv", "taskId,metric,time,meter,value\nT20261009001,dg,2026-10-09 16:10:00,1600,12.4,valid\n");
-  await clickButton("读取并校验文件");
-  expect(document.body.textContent).toContain("可导入");
-  const locked = source.getState().records.length;
-  await clickButton("保存校验通过的记录");
-  expect(document.body.textContent).toContain(DENY_WRITE_CORE);
-  expect(source.getState().records.length).toBe(locked);
-  expect(document.body.textContent).toContain("可导入");
-  await clickButton("新增一条补录");
-  expect(document.querySelector("#modal-title")).toBeNull();
-  expect(document.body.textContent).toContain(DENY_WRITE_CORE);
-});
-
-test("manual entry and the template download stay on the shared preview", async () => {
-  const source = freshStore(quality);
-  const downloads = captureDownloads();
-  render(<ImportPage store={source} user={quality} />);
-  await clickButton("下载 CSV 模板");
-  expect(downloads[0].name).toBe("慧眼智检-检测数据导入模板.csv");
-  const template = csvText(await downloads[0].bytes);
-  expect(template.startsWith("taskId,metric,time,meter,value,validity\r\nT20261009001,dg,2026-10-09 14:31:00,1240,12.36,valid\r\n")).toBe(true);
-  await clickButton("新增一条补录");
-  expect(document.querySelector("#modal-title")?.textContent).toBe("补录检测数据");
-  const value = document.querySelector<HTMLInputElement>("#active-modal-form input[name='value']");
-  const time = document.querySelector<HTMLInputElement>("#active-modal-form input[name='time']");
-  if (!value || !time) throw new Error("缺少补录表单");
-  time.value = "2026-10-09T14:32";
-  value.value = "12.8";
-  await act(async () => {
-    document.querySelector<HTMLButtonElement>("#active-modal-form button[type='submit']")?.click();
-  });
-  expect(document.body.textContent).toContain("补录已校验，请在预览中保存");
-  expect(document.body.textContent).toContain("人工补录");
-  expect(document.body.textContent).toContain("2026-10-09 14:32:00");
-  expect(document.querySelector("tbody tr td")?.textContent).toBe("1");
-  const before = source.getState().records.length;
-  await clickButton("保存校验通过的记录");
-  expect(source.getState().records.length).toBe(before + 1);
-  expect(source.getState().records.at(-1)?.source).toBe("人工导入补录");
-  expect(source.getState().records.at(-1)?.time).toBe("2026-10-09 14:32:00");
-  expect(window.location.hash).toBe("#import");
 });

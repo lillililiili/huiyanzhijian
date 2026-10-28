@@ -58,6 +58,7 @@ const server=createServer(async(req,res)=>{
     if(req.method==='GET'&&url.pathname==='/api/state'){json(res,200,manager.state());return;}
     if(req.method==='GET'&&url.pathname==='/api/devices'){json(res,200,await manager.devices());return;}
     if(req.method==='GET'&&url.pathname==='/api/ui-config'){json(res,200,{platform_url:process.env.SIM_PLATFORM_URL||''});return;}
+    if(req.method==='GET'&&url.pathname==='/api/scenarios'){json(res,200,manager.scenarios());return;}
     if(req.method==='GET'&&url.pathname==='/api/catalog'){json(res,200,await manager.catalog(Object.fromEntries(url.searchParams)));return;}
     const historyMatch=url.pathname.match(/^\/api\/models\/(cables|detectors)\/([a-f0-9-]{36})\/history$/);
     if(req.method==='GET'&&historyMatch){json(res,200,manager.models.history(historyMatch[1],historyMatch[2],Number(url.searchParams.get('page')||1)));return;}
@@ -80,6 +81,8 @@ const server=createServer(async(req,res)=>{
       if(url.pathname==='/api/passes'){json(res,202,await manager.createPass(input));return;}
       if(passMatch?.[2]==='speed'){json(res,200,manager.changeSpeed(passMatch[1],input));return;}
       if(passMatch?.[2]==='finish'){json(res,200,await manager.finishPass(passMatch[1]));return;}
+      if(url.pathname==='/api/coordinated-feed'){json(res,200,await manager.coordinatedFeed(input));return;}
+      if(url.pathname==='/api/cut-spool'){json(res,200,await manager.triggerCutSpool(input));return;}
       if(url.pathname==='/api/runs'){json(res,202,await manager.create(input));return;}
       if(match?.[2]){requireWeb(input&&Object.keys(input).length===1&&typeof input.action==='string',400,'INVALID_ACTION','请指定控制操作');json(res,200,manager.control(match[1],input.action));return;}
     }

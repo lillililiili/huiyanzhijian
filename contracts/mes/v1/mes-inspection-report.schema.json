@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MesInspectionReport",
+  "type": "object",
+  "required": [
+    "delivery_id",
+    "send_time",
+    "factory_code",
+    "work_order_code",
+    "spool_code",
+    "specification_code",
+    "inspection_scope",
+    "overall_verdict",
+    "metric_results"
+  ],
+  "properties": {
+    "delivery_id": { "type": "string", "format": "uuid" },
+    "send_time": { "type": "string", "format": "date-time" },
+    "factory_code": { "type": "string" },
+    "work_order_code": { "type": "string" },
+    "spool_code": { "type": "string" },
+    "specification_code": { "type": "string" },
+    "product_name": { "type": "string" },
+    "inspection_scope": {
+      "type": "object",
+      "required": ["total_length_m", "effective_coverage_m"],
+      "properties": {
+        "total_length_m": { "type": "number", "minimum": 0 },
+        "effective_coverage_m": { "type": "number", "minimum": 0 },
+        "start_time": { "type": "string" },
+        "end_time": { "type": "string" }
+      }
+    },
+    "overall_verdict": { "type": "string", "enum": ["PASS", "FAIL"] },
+    "metric_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["metric_code", "sample_count", "failed_count", "verdict"],
+        "properties": {
+          "metric_code": { "type": "string", "enum": ["SHIELD_OVERLAP_RATE", "WIRE_GAP", "OVALITY"] },
+          "metric_name": { "type": "string" },
+          "unit": { "type": "string" },
+          "sample_count": { "type": "integer", "minimum": 0 },
+          "failed_count": { "type": "integer", "minimum": 0 },
+          "rule_expression": { "type": "string" },
+          "mean_value": { "type": ["number", "null"] },
+          "min_value": { "type": ["number", "null"] },
+          "max_value": { "type": ["number", "null"] },
+          "verdict": { "type": "string", "enum": ["PASS", "FAIL", "NOT_EVALUATED"] }
+        }
+      }
+    },
+    "inspector": {
+      "type": "object",
+      "properties": {
+        "operator_name": { "type": "string" },
+        "operator_id": { "type": "string" }
+      }
+    }
+  }
+}

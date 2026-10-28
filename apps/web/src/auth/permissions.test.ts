@@ -14,7 +14,7 @@ const quality: SessionUser = { id: "U003", name: "质量审核员", username: "q
 const viewer: SessionUser = { id: "U004", name: "访客", username: "viewer", role: "viewer" };
 
 const routeNames = [
-  "login", "dashboard", "monitor", "detection", "tasks", "task", "specs", "history", "trace", "import",
+  "login", "dashboard", "monitor", "detection", "tasks", "task", "specs", "history", "trace",
   "alarms", "alarm", "analytics", "reports", "report", "metrics", "recipes", "templates",
   "devices", "connections", "mes", "sync", "users", "audit", "settings"
 ];
@@ -95,7 +95,7 @@ test("permission copy keeps four distinct sentences and the drawer role names", 
   assert.deepEqual(roleBadge("admin"), ["系统管理员", "blue"]);
   assert.deepEqual(roleBadge("quality"), ["质量管理员", "green"]);
   assert.deepEqual(roleBadge("viewer"), ["只读查看者", "gray"]);
-  assert.equal(routeNames.length, 25);
+  assert.equal(routeNames.length, 24);
   assert.equal(knownRoutes.size, routeNames.length + 1);
   assert.equal(knownRoutes.has("workorders"), true);
   for (const route of routeNames) assert.equal(knownRoutes.has(route), true);

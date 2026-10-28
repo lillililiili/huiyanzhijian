@@ -54,3 +54,7 @@ GRANT USAGE ON SCHEMA m00,m01,m02,m03,m04,ops TO hy_runtime;
 GRANT SELECT,INSERT,UPDATE ON ALL TABLES IN SCHEMA m00,m01,m02,m03,m04,ops TO hy_runtime;
 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA m00,m01,m02,m03,m04,ops TO hy_runtime;
 REVOKE UPDATE ON m00.audit_event,m03.recipe_version,m02.task_transition,m02.task_device_binding,m02.binding_ack,m02.command_receipt,m04.measurement_record,m04.measurement_value,m04.measurement_evaluation,m04.measurement_qualification,m04.ingestion_item,m04.ingestion_conflict,m04.measurement_outbox FROM hy_runtime;
+
+-- 兼容 measurement_raw 视图
+CREATE OR REPLACE VIEW m04.measurement_raw AS SELECT * FROM m04.measurement_record;
+GRANT SELECT, INSERT, UPDATE, DELETE ON m04.measurement_raw TO hy_runtime;

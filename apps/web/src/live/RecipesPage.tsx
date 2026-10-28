@@ -42,11 +42,11 @@ function RecipeEditor({recipe,initialMetric,data,api,commands,close,saved}:{reci
  const applicableIds=new Set(data.catalog.specification_applicability.filter(a=>a.metric_code===metric).map(a=>a.specification_id));
  const processIds=[...new Set(data.catalog.device.filter(d=>d.metric_code===metric).map(d=>d.process_id))];
  const persist=async(v:FormData)=>{
-  const reason=String(v.get('reason')).trim(),selected=allSpecs?specs.filter(s=>s.enabled).map(s=>s.id):scope;
-  if(!selected.length)throw new Error('至少选择一个启用的产品规格。');
-  const unavailable=selected.filter(id=>!specs.some(s=>s.id===id&&s.enabled));
+  const reason=String(v.get('reason')).trim(),selected=allSpecs?(specs.length?specs.filter(s=>s.enabled).map(s=>s.id):scope):scope;
+  if(specs.length&&!selected.length)throw new Error('至少选择一个启用的产品规格。');
+  const unavailable=specs.length?selected.filter(id=>!specs.some(s=>s.id===id&&s.enabled)):[];
   if(unavailable.length)throw new Error('所选规格中包含已停用或已删除的档案，请移除后再保存。');
-  const missing=selected.filter(id=>!applicableIds.has(id));
+  const missing=specs.length?selected.filter(id=>!applicableIds.has(id)):[];
   if(missing.length&&!processIds.length)throw new Error(`当前没有关联${names[metric]}的检测工序，无法同步产品规格；请先维护设备档案。`);
   let synced=0;
   try{

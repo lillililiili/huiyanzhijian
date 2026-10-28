@@ -61,8 +61,8 @@ export function DefectExamples({api,task,record,failed,total,context,compact=fal
  const [open,setOpen]=useState(false);
  if(failed===undefined)return compact?null:<p className="muted">异常摘要暂不可用。</p>;
  if(failed<=0)return compact?null:<p className="muted">{total===0?'尚无采样，暂无异常图片。':'当前范围暂无超限记录。'}</p>;
- const trigger=<button type="button" className="defect-preview-link" onClick={()=>onPreview?onPreview():setOpen(true)} aria-label={`查看异常图片：${context}`}>
- <span aria-hidden="true" className="defect-record-icon">▤</span><span>异常图片<span className="muted small">{failed}条超限 · 按实际记录绘图</span></span></button>;
+ const trigger=<button type="button" className={`defect-preview-link${compact?' compact':''}`} onClick={()=>onPreview?onPreview():setOpen(true)} aria-label={`查看异常图片：${context}`} title={`${failed}条超限 · 按实际记录绘图`}>
+ <span aria-hidden="true" className="defect-record-icon">▤</span><span>异常图片{compact?<b className="defect-count">({failed})</b>:<span className="muted small">{failed}条超限 · 按实际记录绘图</span>}</span></button>;
  const viewer=open?<DefectExampleViewer {...{api,task,record,context}} onClose={()=>setOpen(false)}/>:null;
  return compact?<div className="defect-compact">{trigger}{viewer}</div>:<Panel core title="异常图片预览" tools={<Badge tone="amber">按实际异常值绘图</Badge>}>
  <div className="row">{trigger}<span className="muted">逐条查看数值偏差；有原始尺寸时同步绘制局部形态。</span></div>{viewer}</Panel>;

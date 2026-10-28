@@ -12,6 +12,134 @@ import {RuleApi,units,unapproved} from '../m03-rules/api';
 export const limits={measurements_per_batch:500,alarms_per_batch:100,json_body_bytes:1048576,evidence_bytes:8388608,heartbeat_interval_seconds:10,offline_after_seconds:30,heartbeat_max_age_seconds:15,clock_skew_seconds:5};
 function uint(v:string|null){return v===null||BigInt(v)<=18446744073709551615n;}
 function rawValid(v:any,depth=0):boolean {if(depth>8)return false;if(typeof v==='number')return Number.isSafeInteger(v);if(v&&typeof v==='object'){if(!Array.isArray(v)&&Object.keys(v).length>128)return false;return Object.values(v).every(x=>rawValid(x,depth+1));}return true;}
+
+export function decode170A2DStatusWord(statusHexOrInt: unknown) {
+  let word = 0x0002;
+  if (typeof statusHexOrInt === 'string' && /^0x[0-9a-fA-F]+$/.test(statusHexOrInt)) {
+    word = parseInt(statusHexOrInt, 16);
+  } else if (typeof statusHexOrInt === 'number' && Number.isInteger(statusHexOrInt)) {
+    word = statusHexOrInt & 0xffff;
+  }
+  const axisCount = word & 0x000f;
+  const deviceFault = (word & (1 << 7)) !== 0;
+  const deviceNoObject = (word & (1 << 6)) !== 0;
+  const deviceError = (word & (1 << 5)) !== 0;
+  const axis1Fault = (word & (1 << 11)) !== 0;
+  const axis1NoObject = (word & (1 << 10)) !== 0;
+  const axis1Error = (word & (1 << 9)) !== 0;
+  const axis2Fault = (word & (1 << 15)) !== 0;
+  const axis2NoObject = (word & (1 << 14)) !== 0;
+  const axis2Error = (word & (1 << 13)) !== 0;
+  const hasAnyAbnormalBit = (word & 0xeee0) !== 0;
+
+  let displaySymbol = 'Norm';
+  if (deviceFault || axis1Fault || axis2Fault) displaySymbol = 'FAUL';
+  else if (axis1Error && axis2Error) displaySymbol = 'Err-3 / Err-4';
+  else if (axis1Error) displaySymbol = 'Err-3 (X轴无光或多根被测物)';
+  else if (axis2Error) displaySymbol = 'Err-4 (Y轴无光或多根被测物)';
+  else if (axis1NoObject && axis2NoObject) displaySymbol = 'Err-6 / Err-7 (¯_¯_¯)';
+  else if (axis1NoObject) displaySymbol = 'Err-6 (X轴未检测到被测物)';
+  else if (axis2NoObject) displaySymbol = 'Err-7 (Y轴未检测到被测物)';
+  else if (deviceNoObject) displaySymbol = '¯_¯_¯';
+
+  return {
+    status_word_hex: '0x' + (word & 0xffff).toString(16).toUpperCase().padStart(4, '0'),
+    axis_count: axisCount,
+    has_abnormal_bit: hasAnyAbnormalBit,
+    device_state: { fault: deviceFault, no_object: deviceNoObject, error: deviceError },
+    axis1_x_state: { fault: axis1Fault, no_object: axis1NoObject, error: axis1Error },
+    axis2_y_state: { fault: axis2Fault, no_object: axis2NoObject, error: axis2Error },
+    display_symbol: displaySymbol,
+  };
+}
+
+function validateOvalityObservation(r: any) {
+  const v = r?.values?.[0];
+  if (!v || v.metric_code !== 'OVALITY') return;
+  const obs = r?.raw?.data?.observation;
+  if (!obs || typeof obs !== 'object') return;
+
+  const statusHex = obs.registers?.['0x0200_status_word'] ?? r?.raw?.data?.status_word;
+  if (r.data_status === 'VALID') {
+    if (statusHex !== undefined) {
+      const decoded = decode170A2DStatusWord(statusHex);
+      requireValue(decoded.axis_count === 2, 'RECORD_INVALID', '170A-2D状态字(0x0200)轴数必须为2');
+      requireValue(!decoded.has_abnormal_bit, 'RECORD_INVALID', '170A-2D状态字(0x0200)含故障/无被测物/错误位，不能作为VALID有效记录入库');
+    }
+    if (obs.diameter_x_mm !== undefined && obs.diameter_y_mm !== undefined) {
+      let dx: Decimal, dy: Decimal;
+      try {
+        dx = new Decimal(String(obs.diameter_x_mm));
+        dy = new Decimal(String(obs.diameter_y_mm));
+      } catch {
+        throw new ApiError(400, 'RECORD_INVALID', '170A-2D双向测径仪X/Y轴直径必须为有效十进制数值');
+      }
+      requireValue(dx.gt(0) && dy.gt(0), 'RECORD_INVALID', 'VALID有效状态下170A-2D双轴直径(Dx, Dy)必须大于0');
+
+      const avg = dx.plus(dy).div(2);
+      const diff = dx.minus(dy).abs();
+      const expectedOvalityPct = diff.div(avg).times(100);
+
+      if (v.value !== null && v.value !== undefined) {
+        const reportedVal = new Decimal(String(v.value));
+        requireValue(
+          reportedVal.minus(expectedOvalityPct).abs().lte(new Decimal('0.05')),
+          'RECORD_INVALID',
+          '不圆度百分比与椭圆长短轴(a,b)推导值不一致'
+        );
+      }
+    }
+  }
+}
+
+export function extractOvalityTelemetry(rawPayload: any) {
+  const obs = rawPayload?.raw?.data?.observation;
+  if (!obs || typeof obs !== 'object' || obs.diameter_x_mm === undefined || obs.diameter_y_mm === undefined) {
+    return null;
+  }
+  const statusHex = obs.registers?.['0x0200_status_word'] ?? rawPayload?.raw?.data?.status_word ?? '0x0002';
+  const statusDecoded = decode170A2DStatusWord(statusHex);
+  const dx = Number(obs.diameter_x_mm);
+  const dy = Number(obs.diameter_y_mm);
+  const major = obs.major_axis_mm !== undefined ? String(obs.major_axis_mm) : Math.max(dx, dy).toFixed(6);
+  const minor = obs.minor_axis_mm !== undefined ? String(obs.minor_axis_mm) : Math.min(dx, dy).toFixed(6);
+  const avg = obs.average_diameter_mm !== undefined ? String(obs.average_diameter_mm) : ((dx + dy) / 2).toFixed(6);
+  const diff = obs.ovality_difference_mm !== undefined ? String(obs.ovality_difference_mm) : Math.abs(dx - dy).toFixed(6);
+  const centripetalF =
+    obs.centripetal_ratio_f !== undefined
+      ? String(obs.centripetal_ratio_f)
+      : Math.max(dx, dy) > 0
+        ? (Math.min(dx, dy) / Math.max(dx, dy)).toFixed(6)
+        : '0';
+  const axisRatio =
+    obs.axis_ratio_f !== undefined
+      ? String(obs.axis_ratio_f)
+      : Math.min(dx, dy) > 0
+        ? (Math.max(dx, dy) / Math.min(dx, dy)).toFixed(6)
+        : '0';
+
+  return {
+    instrument_model: obs.instrument_model || rawPayload?.raw?.data?.instrument_model || 'Opmac-170AL2-2D',
+    protocol: obs.protocol || rawPayload?.raw?.data?.protocol || 'MODBUS_RTU',
+    comm_settings: obs.comm_settings || 'ADD1=1, BAUD1=9600, CH-T1=2 (Modbus-RTU 8N1)',
+    status_decoded: statusDecoded,
+    diameter_x_mm: String(obs.diameter_x_mm),
+    diameter_y_mm: String(obs.diameter_y_mm),
+    axis1_position_pct: obs.axis1_position_pct ?? obs.registers?.['0x0203_axis1_position'] ?? 0,
+    axis2_position_pct: obs.axis2_position_pct ?? obs.registers?.['0x0205_axis2_position'] ?? 0,
+    major_axis_mm: major,
+    minor_axis_mm: minor,
+    average_diameter_mm: avg,
+    reference_diameter_mm: obs.reference_diameter_mm ?? null,
+    deviation_avg_mm: obs.deviation_avg_mm ?? null,
+    deviation_x_mm: obs.deviation_x_mm ?? null,
+    deviation_y_mm: obs.deviation_y_mm ?? null,
+    ovality_difference_mm: diff,
+    centripetal_ratio_f: centripetalF,
+    axis_ratio_f: axisRatio,
+    registers: obs.registers || null,
+  };
+}
 export class MeasurementApi{
  constructor(private identity:IdentityApi,private catalog:CatalogApi,private tasks:TaskApi,private rules:RuleApi){}
  async profile(actor:Actor){const devices=[];for(const id of actor.devices){const d=await this.catalog.getDevice(actor.factory,id);devices.push({device_id:id,metric_codes:[d.metric_code],raw_schema_versions:d.raw_schema_versions,source_identification:d.source_identification,position_supported:true,image_supported:false,source_alarm_supported:false,offline_replay_supported:true});}return {schema_versions:['1.0'],server_time:new Date().toISOString(),factory_id:actor.factory,data_environment:actor.environment,devices,limits,rate_limit_policy_id:'b1-device-120-per-minute',retention_policy_id:'b1-no-auto-purge'};}
@@ -42,7 +170,7 @@ export class MeasurementApi{
     const d=await this.catalog.getDevice(ctx.actor.factory,r.device_id);requireValue(d.enabled,'ACCESS_DENIED','设备停用；未授权历史补传',403);
     requireValue(d.data_environment===r.data_environment,'SOURCE_NOT_ALLOWED','设备环境不匹配',403);
     requireValue(r.data_status===r.values[0].data_status&&r.values[0].metric_code===d.metric_code,'RECORD_INVALID','指标或有效性不一致');requireValue(units[r.values[0].metric_code]===r.values[0].unit,'UNIT_MISMATCH','单位不匹配');
-    requireValue(d.raw_schema_versions.includes(r.raw.schema_version),'RAW_SCHEMA_UNSUPPORTED','原文版本未注册');requireValue(Buffer.byteLength(JSON.stringify(r.raw))<=65536&&rawValid(r.raw.data),'RAW_LIMIT_EXCEEDED','原文结构/大小/数值超出限制');
+    requireValue(d.raw_schema_versions.includes(r.raw.schema_version),'RAW_SCHEMA_UNSUPPORTED','原文版本未注册');requireValue(Buffer.byteLength(JSON.stringify(r.raw))<=65536&&rawValid(r.raw.data),'RAW_LIMIT_EXCEEDED','原文结构/大小/数值超出限制');validateOvalityObservation(r);
     requireValue(!(r.data_environment==='REAL'&&r.time_source==='SIMULATOR'),'SOURCE_NOT_ALLOWED','真实数据不能使用模拟时间来源');requireValue(r.sample_kind!=='NEW_SAMPLE'||d.source_identification==='SAMPLE_ID','RECORD_INVALID','缺少可靠新样本标识');
     const w=r.values[0].window;if(w.kind==='POSITION')requireValue(new Decimal(w.position_to_m).gte(w.position_from_m),'WINDOW_INVALID','位置窗口倒序');if(w.kind==='TIME')requireValue(instantMicros(w.end)>=instantMicros(w.start),'WINDOW_INVALID','时间窗口倒序');
     requireValue(r.evidence_refs.length===0,'EVIDENCE_NOT_READY','本阶段未开通证据上传');
@@ -96,7 +224,7 @@ export class MeasurementApi{
   const rows=(await db.query(`SELECT r.id,r.task_id,r.ingest_order::text,r.raw_payload,r.receipt_status,r.position_eligibility,to_char(r.received_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS received_at,v.value,v.metric_code,v.unit,e.quality_result,e.reason_code AS evaluation_reason,q.eligibility FROM m04.measurement_record r JOIN m04.measurement_value v ON v.record_id=r.id JOIN m04.measurement_evaluation e ON e.record_id=r.id AND e.version=1 JOIN m04.measurement_qualification q ON q.record_id=r.id AND q.version=1 WHERE r.factory_id=$1 AND ($2::text IS NULL OR r.device_id=$2) AND ($3::text IS NULL OR r.task_id=$3) AND ($4::text IS NULL OR v.metric_code=$4) AND r.ingest_order${filter.order==='desc'?'<':'>'}$5 AND r.ingest_order<=$6 AND ($8::text[] IS NULL OR r.task_id=ANY($8)) AND ($9::timestamptz IS NULL OR r.sample_time >= $9) AND ($10::timestamptz IS NULL OR r.sample_time < $10) AND ($11::text IS NULL OR e.quality_result=$11) AND ($12::text IS NULL OR r.data_environment=$12) AND ($13::text IS NULL OR r.data_status=$13) AND ($14::text IS NULL OR r.receipt_status=$14) ORDER BY r.ingest_order ${filter.order==='desc'?'DESC':'ASC'} LIMIT $7`,[actor.factory,filter.device,filter.task,filter.metric,after,upper,limit+1,filter.tasks,filter.from,filter.to,filter.quality,filter.environment,filter.validity,filter.receipt])).rows;
   const more=rows.length>limit,items=rows.slice(0,limit);
   const contexts=await this.tasks.businessContexts(actor,[...new Set(items.map(r=>r.task_id).filter(Boolean))],db);
-  for(const item of items)item.business_context=contexts.find(c=>c.task_id===item.task_id)||null;
+  for(const item of items){item.business_context=contexts.find(c=>c.task_id===item.task_id)||null;if(item.metric_code==='OVALITY')item.ovality_telemetry=extractOvalityTelemetry(item.raw_payload);}
   let cursor=null;if(more){const s=Buffer.from(JSON.stringify({filter:filterHash,upper,after:items.at(-1).ingest_order,as_of:asOf})).toString('base64url');cursor=s+'.'+sign(s);}return {items,total,has_more:more,next_cursor:cursor,as_of:asOf,scope:scope?{root_id:scope.root_id,members:scope.members,task_count:scope.tasks.length,scope_hash:scope.scope_hash}:null};
  }
  async simulationSampledTasks(actor:Actor,db:Pick<PoolClient,'query'>=pool){
@@ -133,7 +261,7 @@ export class MeasurementApi{
  async taskSummary(actor:Actor,id:string){
   const r=await pool.query(`SELECT count(*)::int AS total,count(*) FILTER(WHERE v.data_status='VALID')::int AS valid,count(*) FILTER(WHERE v.data_status<>'VALID')::int AS invalid,count(*) FILTER(WHERE e.quality_result='FAIL')::int AS failed,count(*) FILTER(WHERE e.quality_result='NOT_EVALUATED')::int AS unevaluated,count(*) FILTER(WHERE r.receipt_status='QUARANTINED')::int AS quarantined,min(r.sample_time) AS first_sample_at,max(r.sample_time) AS latest_sample_at,min(v.value)::text AS minimum,max(v.value)::text AS maximum FROM m04.measurement_record r JOIN m04.measurement_value v ON v.record_id=r.id JOIN m04.measurement_evaluation e ON e.record_id=r.id AND e.version=1 WHERE r.factory_id=$1 AND r.task_id=$2`,[actor.factory,id]);return r.rows[0];
  }
- async detail(actor:Actor,id:string){const r=await pool.query(`SELECT *,${timestamp('received_at')} AS received_at,${timestamp('sample_time')} AS sample_time FROM m04.measurement_record WHERE factory_id=$1 AND id=$2`,[actor.factory,id]);if(!r.rowCount)throw new ApiError(404,'RESOURCE_NOT_FOUND','记录不存在');const [v,e,q]=await Promise.all([pool.query('SELECT * FROM m04.measurement_value WHERE record_id=$1',[id]),pool.query('SELECT * FROM m04.measurement_evaluation WHERE record_id=$1 ORDER BY version',[id]),pool.query('SELECT * FROM m04.measurement_qualification WHERE record_id=$1 ORDER BY version',[id])]);return {...r.rows[0],values:v.rows,evaluations:e.rows,qualifications:q.rows};}
+ async detail(actor:Actor,id:string){const r=await pool.query(`SELECT *,${timestamp('received_at')} AS received_at,${timestamp('sample_time')} AS sample_time FROM m04.measurement_record WHERE factory_id=$1 AND id=$2`,[actor.factory,id]);if(!r.rowCount)throw new ApiError(404,'RESOURCE_NOT_FOUND','记录不存在');const [v,e,q]=await Promise.all([pool.query('SELECT * FROM m04.measurement_value WHERE record_id=$1',[id]),pool.query('SELECT * FROM m04.measurement_evaluation WHERE record_id=$1 ORDER BY version',[id]),pool.query('SELECT * FROM m04.measurement_qualification WHERE record_id=$1 ORDER BY version',[id])]);const ovality_telemetry=v.rows[0]?.metric_code==='OVALITY'?extractOvalityTelemetry(r.rows[0].raw_payload):undefined;return {...r.rows[0],values:v.rows,evaluations:e.rows,qualifications:q.rows,...(ovality_telemetry?{ovality_telemetry}:{})};}
  async batches(actor:Actor,limit:number,after:string){return (await pool.query('SELECT * FROM m04.ingestion_batch WHERE factory_id=$1 AND ($2=\'\' OR id::text>$2) ORDER BY id LIMIT $3',[actor.factory,after,limit])).rows;}
  async batch(actor:Actor,id:string){const r=await pool.query('SELECT * FROM m04.ingestion_batch WHERE factory_id=$1 AND id::text=$2',[actor.factory,id]);if(!r.rowCount)throw new ApiError(404,'RESOURCE_NOT_FOUND','批次不存在');return {...r.rows[0],items:(await pool.query('SELECT * FROM m04.ingestion_item WHERE batch_id=$1 ORDER BY input_index',[r.rows[0].id])).rows};}
 }

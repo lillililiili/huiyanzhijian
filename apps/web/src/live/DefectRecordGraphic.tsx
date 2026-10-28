@@ -64,11 +64,14 @@ export function DefectRecordGraphic({record,task}:{record:Measurement;task?:Task
      <text x="65" y="482" fill={grey} fontSize="13">铜丝沿上下方向连续，宽度仅示意；横向标实测间隙，不表示断丝。</text>
     </g>;})()}
     {g.kind==='ovality'&&(()=>{const scale=90/Math.max(Number(g.x),Number(g.y)),rx=Number(g.x)*scale,ry=Number(g.y)*scale;return <g>
-     <ellipse cx="360" cy="376" rx={rx} ry={ry} fill="#3c4652" stroke={color} strokeWidth="2"/>
+     <ellipse cx="360" cy="376" rx={rx} ry={ry} fill="#24303d" stroke={color} strokeWidth="2"/>
+
      <rect x={360-rx-5} y={376-ry-5} width={rx*2+10} height={ry*2+10} fill="none" stroke={red}/>
      {tick(360-rx,376,360+rx,376,`X ${g.x} mm`)}
      <line x1="360" x2="360" y1={376-ry} y2={376+ry} stroke={yellow}/><text x={375+rx} y="382" fill={yellow} fontSize="15">Y {g.y} mm</text>
-     <text x="65" y="499" fill={grey} fontSize="13">X/Y比例对应本条观测；仅外轮廓，不推断内部结构或全周形状。</text>
+
+
+     <text x="65" y="482" fill={grey} fontSize="13">X/Y外径对应本条双向测径仪两点距离观测；按长轴与短轴计算不圆度。</text>
     </g>;})()}
    </>}
   </svg>

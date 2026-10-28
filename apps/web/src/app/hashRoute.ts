@@ -17,7 +17,6 @@ export const routeTitles: Record<string, string> = {
   specs: "高压电缆产品规格档案",
   history: "历史检测数据查询",
   trace: "线缆列表与追溯",
-  import: "数据导入与补录",
   alarms: "报警事件",
   alarm: "报警详情与处置",
   analytics: "质量统计分析",

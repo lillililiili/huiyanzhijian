@@ -1,0 +1,324 @@
+/* 报告模板配置与高保真纸质预览样式 */
+.tpl-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tpl-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.tpl-tab-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--line, #dce4ee);
+  background: var(--panel, #ffffff);
+  color: var(--text, #17324f);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.tpl-tab-btn:hover {
+  border-color: var(--primary, #155ab6);
+  color: var(--primary, #155ab6);
+}
+
+.tpl-tab-btn.active {
+  background: var(--primary, #155ab6);
+  border-color: var(--primary, #155ab6);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.tpl-split-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .tpl-split-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 高保真 A4 报告排版纸质容器 */
+.report-paper {
+  background: #ffffff;
+  border: 1px solid #dce4ee;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(23, 50, 79, 0.07);
+  padding: 36px 32px;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: #17324f;
+  line-height: 1.5;
+}
+
+.report-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #155ab6;
+  padding-bottom: 14px;
+  margin-bottom: 24px;
+}
+
+.report-logo-img {
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+}
+
+.report-header-meta {
+  text-align: right;
+  font-size: 12px;
+  color: #65758b;
+  line-height: 1.4;
+}
+
+.report-title-section {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.report-main-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #17324f;
+  margin: 0 0 6px;
+}
+
+.report-subtitle {
+  font-size: 13px;
+  color: #65758b;
+  margin: 0;
+}
+
+/* 受控元数据表格 */
+.report-meta-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.report-meta-table th,
+.report-meta-table td {
+  border: 1px solid #dce4ee;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.report-meta-table th {
+  background: #f4f7fc;
+  color: #486581;
+  font-weight: 600;
+  width: 18%;
+}
+
+.report-meta-table td {
+  background: #ffffff;
+  color: #17324f;
+  width: 32%;
+}
+
+/* 质量指标与汇总模块 */
+.report-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: #fbfcfe;
+}
+
+.report-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #155ab6;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.report-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.report-stat-box {
+  background: #ffffff;
+  border: 1px solid #dce4ee;
+  border-radius: 6px;
+  padding: 10px;
+  text-align: center;
+}
+
+.report-stat-label {
+  font-size: 12px;
+  color: #65758b;
+  margin-bottom: 4px;
+}
+
+.report-stat-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: #17324f;
+}
+
+.report-stat-val.passed {
+  color: #0d824d;
+}
+
+/* 纸面模拟趋势图占位 */
+.report-trend-mock {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.report-trend-canvas-mock {
+  height: 64px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.report-trend-bar {
+  flex: 1;
+  background: #bfdbfe;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.3s ease;
+}
+
+.report-trend-bar.highlight {
+  background: #3b82f6;
+}
+
+/* 异常报警列表模拟 */
+.report-alarms-mock {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.report-alarms-mock th,
+.report-alarms-mock td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.report-alarms-mock th {
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+/* 签审责任栏 */
+.report-sign-area {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid #dce4ee;
+}
+
+.report-sign-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #17324f;
+  margin-bottom: 10px;
+}
+
+.report-compliance-note {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.5;
+  background: #f8fafc;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border-left: 3px solid #94a3b8;
+  margin-bottom: 16px;
+}
+
+.report-footer-area {
+  font-size: 11px;
+  color: #94a3b8;
+  text-align: center;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+  line-height: 1.6;
+}
+
+/* 右侧受控信息和必备项 */
+.tpl-info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tpl-essential-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.tpl-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tpl-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 14px 0;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.tpl-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tpl-history-modal .table-wrap {
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.tpl-history-reason {
+  color: #155ab6;
+  font-weight: 500;
+}

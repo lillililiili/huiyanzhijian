@@ -8,7 +8,6 @@ import { AnalyticsPage } from "./analytics/AnalyticsPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { DetectionPage } from "./detection/DetectionPage";
 import { HistoryPage } from "./history/HistoryPage";
-import { ImportPage } from "./import/ImportPage";
 import { MetricsPage } from "./metrics/MetricsPage";
 import { MonitorPage } from "./monitor/MonitorPage";
 import { RecipesPage } from "./recipes/RecipesPage";
@@ -37,7 +36,6 @@ export function renderPage(route: string, params: URLSearchParams, store: Inspec
   if (route === "specs") return <SpecsPage store={store} user={user} params={params} />;
   if (route === "history") return <HistoryPage store={store} user={user} params={params} />;
   if (route === "trace") return <TracePage store={store} user={user} params={params} />;
-  if (route === "import") return <ImportPage store={store} user={user} />;
   if (route === "alarms") return <AlarmsPage store={store} />;
   if (route === "alarm") return <AlarmPage store={store} user={user} params={params} />;
   if (route === "analytics") return <AnalyticsPage store={store} />;

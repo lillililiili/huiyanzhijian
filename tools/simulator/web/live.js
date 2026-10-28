@@ -23,7 +23,7 @@ function renderLive(data){
  const last=feed?.last_sample;
  $('live-position').textContent=feed?(last?.position_m??'未采样')+' / '+feed.length_m+' m':'—';
  $('live-progress').textContent=run&&!run.starting?run.generated+' / '+run.target+' 点':'—';
- $('live-value').textContent=last?last.value+' '+last.unit:'—';
+ $('live-value').textContent=last?last.value+' '+last.unit:'—';if($('live-ovality-box')){$('live-ovality-box').hidden=run?.metric_code!=='OVALITY';const obs=last?.observation;$('live-ovality-axes').textContent=obs?.diameter_x_mm!==undefined?`X(202H) ${obs.diameter_x_mm} / Y(204H) ${obs.diameter_y_mm} mm · 长轴a ${obs.major_axis_mm||'0'} / 短轴b ${obs.minor_axis_mm||'0'} mm · OvAL ${obs.ovality_difference_mm||'0'} mm · 向心率f ${obs.centripetal_ratio_f||'—'} · 状态字 ${obs.registers?.['0x0200_status_word']||'0x0002'}`:'等待采样';}
  $('live-result').textContent=last?(last.result==='FAIL'?'异常':last.result==='PASS'?'正常':'未判定'):'—';$('live-result').classList.toggle('error',last?.result==='FAIL');
  $('live-queue').textContent=run&&!run.starting?run.stored+' / '+run.pending+' 条':'—';
  $('live-track').style.width=run?.target?Math.min(100,100*run.generated/run.target)+'%':'0%';

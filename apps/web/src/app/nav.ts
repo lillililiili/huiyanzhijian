@@ -22,8 +22,7 @@ export const navGroups: NavGroup[] = [
     icon: "history",
     items: [
       ["history", "历史检测数据"],
-      ["trace", "线缆列表与追溯"],
-      ["import", "数据导入与补录"]
+      ["trace", "线缆列表与追溯"]
     ]
   },
   {
@@ -91,7 +90,7 @@ export const navEntries: NavEntry[] = [
 export const businessNavEntries: NavEntry[] = navEntries.flatMap(entry =>
   entry.type === 'link' && entry.route === 'workorders'
     ? [entry, {type:'link' as const,route:'trace',label:'线缆管理',icon:'box'}] : [entry]);
-export const pendingBusinessRoutes = new Set(['analytics','reports','import','templates']);
+export const pendingBusinessRoutes = new Set<string>();
 export const reservedBusinessRoutes = new Set(['connections','mes','sync']);
 
 export function groupByKey(key: string) {

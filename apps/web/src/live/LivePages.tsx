@@ -1,4 +1,7 @@
 import {RecipesPage} from './RecipesPage';
+import {TemplatesConfigPage} from './TemplatesConfigPage';
+import {AnalyticsLivePage} from './AnalyticsLivePage';
+import {ReportsLivePage, ReportLiveView} from './ReportsLivePage';
 import {taskDisplayLabel} from './ExecutionSummary';
 import {Specifications,ManagedDevices} from './CatalogPages';
 import {WorkOrders} from './WorkOrders';
@@ -66,15 +69,18 @@ export function LivePages(props:Props){
   if(route==="metrics")return <MetricDefinitions data={data} api={api} commands={commands} user={user} refresh={refresh}/>;
   if(route==="specs")return <Specifications {...props}/>;
   if(route==="recipes")return <RecipesPage api={api} commands={commands} data={data} user={user} refresh={refresh} params={params}/>;
+  if(route==="templates")return <TemplatesConfigPage user={user} data={data} api={api} commands={commands} refresh={refresh}/>;
+  if(route==="analytics")return <AnalyticsLivePage data={data} user={user} refresh={refresh}/>;
+  if(route==="reports")return <ReportsLivePage api={api} data={data} user={user} params={params} refresh={refresh}/>;
+  if(route==="report")return <ReportLiveView api={api} data={data} user={user} params={params} refresh={refresh}/>;
   const pending:Record<string,string>={
     users:'管理后台待开发：账号增改、停用、角色与工厂权限维护。当前仅登录、会话与服务端权限校验已接通。',
     settings:'管理后台待开发：默认参数、参数版本与修改审计。检测中的任务保留创建时快照；全局设置不能覆盖原始记录。',
     audit:'审计查询API已接通；管理页面的筛选、详情和导出待开发。',
-    reports:'正式报告生成、审核、发布与版本追溯待开发；原始记录导出请进入历史查询。',
-    analytics:'区段、覆盖率和质量统计待开发；现有样本数量不能替代按长度合格率。',
+
+
     connections:'设备接入配置入口保留；当前使用模拟器验证业务流程，真实设备接入暂不开展。',
-    mes:'MES配置入口保留，当前阶段暂不接入MES，不影响工单、任务、检测和历史查询。',sync:'MES同步监控入口保留，当前阶段暂不开展发送、对账与补偿。',
-    import:'文件导入、人工补录和更正审批待开发；设备断网补传走已有接入契约。',templates:'报告模板维护与受控版本待开发。'
+    mes:'MES配置入口保留，当前阶段暂不接入MES，不影响工单、任务、检测和历史查询。',sync:'MES同步监控入口保留，当前阶段暂不开展发送、对账与补偿。'
   };
   return <><PageTitle title={routeTitles[route]||"页面不存在"}/><Panel core title="待开放"><Note>{pending[route]||"此页面尚未开放。"}</Note>{["alarms","connections"].includes(route)?<HashLink route="monitor">查看采集监控</HashLink>:["mes","sync"].includes(route)?<HashLink route="devices">查看设备档案</HashLink>:<HashLink route="history">查询历史与导出数据</HashLink>}</Panel></>;
 }
