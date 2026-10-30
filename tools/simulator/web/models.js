@@ -49,14 +49,14 @@ const defectHint=(metric,value,baseline=cableBaseline)=>{
  if(metric==='SHIELD_OVERLAP_RATE'){const width=n(baseline.tape_width_mm),rate=width>0?physical/width*100:NaN,verdict=!Number.isFinite(rate)?'请填写有效的搭盖宽度和铜带宽度。':rate<10?'低于默认限值，可模拟搭盖不足。':'未低于默认限值，请调整异常宽度或设备范围。';return `异常区段只替换搭盖宽度；当前值换算搭盖率=${fmt(physical)}÷${fmt(width)}×100=${fmt(rate)}%。默认设备下限10%：${verdict}`;}
  if(metric==='WIRE_GAP'){const verdict=!Number.isFinite(physical)?'请填写有效的铜丝间隙。':physical>3?'高于默认限值，可模拟间隙偏大。':'未超过默认限值，请调整异常值或设备范围。';return `异常区段只替换铜丝间隙，读数单位mm；当前异常值${fmt(physical)}mm，默认设备上限3mm：${verdict}`;}
  const x=n(baseline.diameter_x_mm),y=physical,total=x+y,ovality=total>0?200*Math.abs(x-y)/total:NaN,verdict=!Number.isFinite(ovality)?'请填写有效的0°—180°和异常90°—270°轴距。':ovality>8?'高于默认限值，可模拟不圆度异常。':'未超过默认限值，请调整Y向值或设备范围。';
- return `异常区段只替换90°—270°轴距Y，0°—180°轴距X保持基准${fmt(x)}mm；当前X/Y=${fmt(x)}/${fmt(y)}mm，长短轴[${fmt(Math.max(x,y))}/${fmt(Math.min(x,y))}mm]，按200×|X−Y|÷(X+Y)换算不圆度${fmt(ovality)}%。默认设备上限8%：${verdict}`;
+ return `异常区段只替换90°—270°轴距Y，0°—180°轴距X保持基准${fmt(x)}mm；当前X/Y=${fmt(x)}/${fmt(y)}mm，长短轴[${fmt(Math.max(x,y))}/${fmt(Math.min(x,y))}mm]，圆整度min(X,Y)/max(X,Y)=${fmt(Math.min(x,y)/Math.max(x,y))}（越接近1越圆）；历史百分比不圆度${fmt(ovality)}%。新圆整度任务使用配方下限；历史8%设备参考：${verdict}`;
 };
 function updateDefectHints(){document.querySelectorAll('.defect-row').forEach((row,i)=>{const d=defects[i],hint=row.querySelector('[data-defect-hint]'),value=row.querySelector('[data-field="value_mm"]');if(hint)hint.textContent=defectHint(d.metric,d.value_mm);if(value){value.min=d.metric==='OVALITY'?'0.000001':'0';value.max=d.metric==='SHIELD_OVERLAP_RATE'?(cableBaseline.tape_width_mm||'1000'):'1000';}});}
 function updateGeometryPreview(){
  const number=k=>Number(cableBaseline[k]),fmt=n=>Number.isFinite(n)?String(Number(n.toFixed(6))):'待填写';
  const tape=number('tape_width_mm'),overlap=number('overlap_width_mm'),gap=number('wire_gap_mm'),x=number('diameter_x_mm'),y=number('diameter_y_mm');
  const rate=tape>0?100*overlap/tape:NaN,ovality=x+y>0?200*Math.abs(x-y)/(x+y):NaN;
- $('cable-geometry-preview').textContent=`当前正常值换算参考：搭盖率 ${fmt(rate)}%（${fmt(overlap)}÷${fmt(tape)}×100）；铜丝间隙 ${fmt(gap)} mm；0°—180°/90°—270°双向轴距 ${fmt(x)}/${fmt(y)} mm，差值 ${fmt(Math.abs(x-y))} mm，不圆度 ${fmt(ovality)}%。`;
+ $('cable-geometry-preview').textContent=`当前正常值换算参考：搭盖率 ${fmt(rate)}%（${fmt(overlap)}÷${fmt(tape)}×100）；铜丝间隙 ${fmt(gap)} mm；0°—180°/90°—270°双向轴距 ${fmt(x)}/${fmt(y)} mm，差值 ${fmt(Math.abs(x-y))} mm，圆整度 ${fmt(Math.min(x,y)/Math.max(x,y))}（0～1）；历史不圆度 ${fmt(ovality)}%。`;
 }
 function firstFreeDefectStart(metric,size,excludeIndex=-1){
  const length=Number(cableForm.elements.length_m.value),width=Number(size);if(!Number.isFinite(length)||!Number.isFinite(width)||width<=0)return null;
@@ -64,7 +64,7 @@ function firstFreeDefectStart(metric,size,excludeIndex=-1){
  let start=0;for(const range of ranges){if(start+width<=range.start)break;start=Math.max(start,range.end);}return start+width<=length?Number(start.toFixed(6)):null;
 }
 function renderDefects(){
- $('defect-editor').innerHTML=defects.map((d,i)=>`<fieldset class="defect-row"><legend>缺陷 ${i+1}</legend><div class="form-row"><label>问题描述<input data-index="${i}" data-field="name" value="${escape(d.name)}" required maxlength="128"></label><label>所属检测项<select data-index="${i}" data-field="metric">${Object.entries(labels).map(([v,n])=>`<option value="${v}" ${d.metric===v?'selected':''}>${n}</option>`).join('')}</select></label><label>起点 m<input data-index="${i}" data-field="start_m" value="${escape(d.start_m)}" type="number" min="0" step="0.000001" required><span class="small muted">区段起点，必须位于线缆长度内</span></label><label>缺陷长度 m<input data-index="${i}" data-field="length_m" value="${escape(d.length_m)}" type="number" min="0.000001" step="0.000001" required><span class="small muted">区段长度，起点+长度不得超出线长</span></label><label>${physicalLabel(d.metric)}<input data-index="${i}" data-field="value_mm" value="${escape(d.value_mm)}" type="number" min="${d.metric==='OVALITY'?'0.000001':'0'}" max="${d.metric==='SHIELD_OVERLAP_RATE'?cableBaseline.tape_width_mm:'1000'}" step="0.000001" required><span class="small muted">按检测项填写物理量，最多六位小数</span></label></div><p data-defect-hint class="small muted defect-hint">${defectHint(d.metric,d.value_mm)}</p><button type="button" data-remove="${i}">移除此缺陷</button></fieldset>`).join('')||'<p class="empty-inline">尚未添加预设缺陷。可保存为仅含正常基准值的线缆。</p>';
+ $('defect-editor').innerHTML=defects.map((d,i)=>`<fieldset class="defect-row"><legend>缺陷 ${i+1}${d.profile?' · 连续波动（以下物理量为峰值）':''}</legend><div class="form-row"><label>问题描述<input data-index="${i}" data-field="name" value="${escape(d.name)}" required maxlength="128"></label><label>所属检测项<select data-index="${i}" data-field="metric">${Object.entries(labels).map(([v,n])=>`<option value="${v}" ${d.metric===v?'selected':''}>${n}</option>`).join('')}</select></label><label>起点 m<input data-index="${i}" data-field="start_m" value="${escape(d.start_m)}" type="number" min="0" step="0.000001" required><span class="small muted">区段起点，必须位于线缆长度内</span></label><label>缺陷长度 m<input data-index="${i}" data-field="length_m" value="${escape(d.length_m)}" type="number" min="0.000001" step="0.000001" required><span class="small muted">区段长度，起点+长度不得超出线长</span></label><label>${physicalLabel(d.metric)}<input data-index="${i}" data-field="value_mm" value="${escape(d.value_mm)}" type="number" min="${d.metric==='OVALITY'?'0.000001':'0'}" max="${d.metric==='SHIELD_OVERLAP_RATE'?cableBaseline.tape_width_mm:'1000'}" step="0.000001" required><span class="small muted">按检测项填写物理量，最多六位小数</span></label></div><p data-defect-hint class="small muted defect-hint">${defectHint(d.metric,d.value_mm)}</p><button type="button" data-remove="${i}">移除此缺陷</button></fieldset>`).join('')||'<p class="empty-inline">尚未添加预设缺陷。可保存为仅含正常基准值的线缆。</p>';
  updateDefectHints();
  $('add-defect').disabled=defects.length>=20;
 }
@@ -77,7 +77,7 @@ function syncDetectorDevices(){const el=$('model-device'),prior=el.value,metric=
  $('detector-param-summary').textContent='初始参数：步长 '+detectorParameters.step_m+' m，速度 '+detectorParameters.speed_m_min+' m/min，测试范围 '+(detectorParameters.lower||'不限')+' ～ '+(detectorParameters.upper||'不限')+' '+unitOf(metric)+(rows.length?'':'。当前没有对应的可用平台设备，请检查连接或设备档案。');}
 function openEditor(kind,id=''){
  const c=kind==='cables',prefix=c?'cable':'detector',form=c?cableForm:detectorForm,row=models[kind].find(r=>r.id===id);form.reset();editing[kind]=row?{id:row.id,version:row.version}:{id:crypto.randomUUID(),version:0};
- if(c){cableBaseline={...normalGeometry,...structuredClone(row?.data.baseline||{})};defects=structuredClone(row?.data.defects||[]);form.elements.name.value=row?.data.name||'';form.elements.material_ref.value=row?.data.material_ref||'cable-'+crypto.randomUUID();form.elements.length_m.value=row?.data.length_m||'10';for(const [k,v] of Object.entries(cableBaseline))form.elements[k].value=v;renderDefects();updateGeometryPreview();}
+ if(c){$('random-result').textContent='';cableBaseline={...normalGeometry,...structuredClone(row?.data.baseline||{})};defects=structuredClone(row?.data.defects||[]);form.elements.name.value=row?.data.name||'';form.elements.material_ref.value=row?.data.material_ref||'cable-'+crypto.randomUUID();form.elements.length_m.value=row?.data.length_m||'10';for(const [k,v] of Object.entries(cableBaseline))form.elements[k].value=v;renderDefects();updateGeometryPreview();}
  else{const data=row?.data;detectorParameters=data?Object.fromEntries(['step_m','speed_m_min','lower','upper'].map(k=>[k,data[k]])):parametersFor(catalogFilter.metric||'SHIELD_OVERLAP_RATE');form.elements.name.value=data?.name||'';form.elements.metric.value=data?.metric||catalogFilter.metric||'SHIELD_OVERLAP_RATE';syncDetectorDevices();if(data&&devices.some(d=>d.device_id===data.device_id&&d.metric_codes.includes(data.metric)))form.elements.device_id.value=data.device_id;}
  $(prefix+'-dialog-title').textContent=(row?'编辑':'新建')+(c?'线缆':'设备模拟');$(prefix+'-version').textContent=row?'当前 v'+row.version+'，保存生成新版本':'未保存';$(prefix+'-result').textContent='';showDialog(prefix+'-dialog');
 }
@@ -117,3 +117,12 @@ for(const id of ['feed-cable','feed-detector','feed-mode'])$(id).addEventListene
 
 function chooseSetting(name){document.querySelectorAll('[data-setting-panel]').forEach(el=>el.hidden=el.dataset.settingPanel!==name);document.querySelectorAll('[data-setting]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.setting===name)));}
 document.querySelectorAll('[data-setting]').forEach(el=>el.onclick=()=>chooseSetting(el.dataset.setting));
+
+$('random-new-seed').onclick=()=>{$('random-seed').value=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000000);};
+$('random-generate').onclick=()=>{
+ try{
+  updateGeometryPreview();
+  const added=generateRandomDefects({length:Number(cableForm.elements.length_m.value),count:Number($('random-count').value),seed:Number($('random-seed').value),metric:$('random-metric').value,baseline:cableBaseline,existing:defects,minLength:Number($('random-min').value),maxLength:Number($('random-max').value),strength:Number($('random-strength').value)});
+  defects.push(...added);renderDefects();$('random-result').textContent=`已追加 ${added.length} 段波动瑕疵，保存线缆后生效；采样步长大于区段长度时可能漏采。`;
+ }catch(e){$('random-result').textContent=e.message;}
+};

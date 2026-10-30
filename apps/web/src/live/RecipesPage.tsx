@@ -23,7 +23,7 @@ export function RecipesPage({api,commands,data,user,refresh,params}:Props){
  const rows=(value||[]).filter(r=>(!metric||r.metric_code===metric)&&(!query||(r.code+' '+r.name).toLowerCase().includes(query.toLowerCase()))&&(show==='all'||r.enabled===(show==='enabled')));
  const scope=(r:Recipe)=>r.specification_ids?.length?r.specification_ids.map(id=>data.catalog.product_specification.find(s=>s.id===id)?.code||id).join('、'):'全部适用规格';
  return <><PageTitle title="配方与判定规则" subtitle="设置三项检测标准；编辑生成新版本，已有任务保留原规则。" actions={<><Button onClick={()=>void reload()}>刷新</Button>{write&&<Button primary disabled={!value} onClick={()=>setEdit('new')}>新增配方</Button>}</>}/>
- <Note>仅供模拟测试，不能用于生产放行。参考资料提供间隙≤3 mm、不圆度≤8%的参考目标；搭盖率限值需手动填写测试依据。设备测量精度不作为产品限值。</Note>
+ <Note>仅供模拟测试，不能用于生产放行。参考资料提供间隙≤3 mm、历史百分比不圆度≤8%的参考目标（不适用于新圆整度比值）；搭盖率限值需手动填写测试依据。设备测量精度不作为产品限值。</Note>
  {!write&&<Note>{user.permissions.includes('task:write')?'当前账号可查看和选用配方':'当前账号仅可查看配方'}；新增、编辑及启停由管理员维护。</Note>}
  <div className="rule-filters"><Field label="检测项"><select value={metric} onChange={e=>setMetric(e.target.value)}><option value="">全部检测项</option>{Object.entries(names).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></Field><Field label="配方搜索"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="编号或名称"/></Field><Field label="启停状态"><select value={show} onChange={e=>setShow(e.target.value as typeof show)}><option value="all">全部版本</option><option value="enabled">已启用</option><option value="disabled">已停用</option></select></Field></div>
  {error&&<Note>{error} 请刷新后重试。</Note>}
@@ -35,8 +35,8 @@ export function RecipesPage({api,commands,data,user,refresh,params}:Props){
 }
 type RecipeSpec=Workspace['catalog']['product_specification'][number]&{version:string;cable_model?:string|null;customer_code?:string|null;product_type?:string|null;description?:string|null;applicability:{process_id:string;metric_code:string}[]};
 function RecipeEditor({recipe,initialMetric,data,api,commands,close,saved}:{recipe?:Recipe;initialMetric:string;data:Workspace;api:ApiClient;commands:Commands;close:()=>void;saved:()=>Promise<void>}){
- const [metric,setMetric]=useState(recipe?.metric_code||initialMetric||'SHIELD_OVERLAP_RATE'),[operator,setOperator]=useState(recipe?.rule_snapshot.comparison?.operator||((recipe?.metric_code||initialMetric||'SHIELD_OVERLAP_RATE')==='SHIELD_OVERLAP_RATE'?'GE':'LE'));
- const [lower,setLower]=useState(recipe?.rule_snapshot.comparison?.lower||''),[upper,setUpper]=useState(recipe?.rule_snapshot.comparison?.upper||'');
+ const [metric,setMetric]=useState(recipe?.metric_code||initialMetric||'SHIELD_OVERLAP_RATE'),[operator,setOperator]=useState((recipe?.metric_code==='OVALITY'?'GE':recipe?.rule_snapshot.comparison?.operator)||((recipe?.metric_code||initialMetric||'SHIELD_OVERLAP_RATE')!=='WIRE_GAP'?'GE':'LE'));
+ const [lower,setLower]=useState((recipe?.metric_code==='OVALITY'&&recipe.unit!=='1'?'':recipe?.rule_snapshot.comparison?.lower)||''),[upper,setUpper]=useState(recipe?.rule_snapshot.comparison?.upper||'');
  const [standard,setStandard]=useState(recipe?.standard_reference||''),[scope,setScope]=useState<string[]>(recipe?.specification_ids||[]),[allSpecs,setAllSpecs]=useState(!(recipe?.specification_ids?.length));
  const specs=data.catalog.product_specification;
  const applicableIds=new Set(data.catalog.specification_applicability.filter(a=>a.metric_code===metric).map(a=>a.specification_id));
@@ -75,10 +75,10 @@ function RecipeEditor({recipe,initialMetric,data,api,commands,close,saved}:{reci
  };
  return <Modal title={recipe?`编辑配方 · ${recipe.name}`:'新增模拟配方'} open submitLabel={recipe?'保存为新版本':'创建并启用'} onClose={close} onSubmit={persist}>
  <div className="rule-editor-grid"><Field label="配方编号"><TextInput name="code" value={recipe?.code} required maxLength={64} readOnly={!!recipe}/></Field><Field label="配方名称"><TextInput name="name" value={recipe?.name} required maxLength={128}/></Field></div>
- <Field label="检测项"><select value={metric} disabled={!!recipe} onChange={e=>{setMetric(e.target.value);setOperator(e.target.value==='SHIELD_OVERLAP_RATE'?'GE':'LE');setLower('');setUpper('');setScope([]);setAllSpecs(true);setStandard('');}}>{Object.entries(names).map(([k,v])=><option key={k} value={k}>{v}（{metricUnits[k]}）</option>)}</select></Field>
- {metric!=='SHIELD_OVERLAP_RATE'?<div className="rule-preset"><Button onClick={()=>{setOperator('LE');setLower('');setUpper(metric==='WIRE_GAP'?'3':'8');setStandard(reference+'；'+(metric==='WIRE_GAP'?'铜丝间隙≤3 mm':'不圆度≤8%'));}}>套用参考目标：≤ {metric==='WIRE_GAP'?'3 mm':'8%'}</Button><span className="muted small">来自宏亮应用方案，仅作模拟参考。</span></div>:<Note>参考资料未提供产品搭盖率合格限值。请填写测试阈值和依据；旧10%只是历史演示值。</Note>}
- <div className="rule-editor-grid"><Field label="判定方式"><select value={operator} onChange={e=>setOperator(e.target.value)}><option value="GE">不小于（≥，含边界）</option><option value="LE">不大于（≤，含边界）</option><option value="BETWEEN">区间（上下限均包含）</option></select></Field><Field label="单位"><input value={metricUnits[metric]} readOnly/></Field>
- {operator!=='LE'&&<Field label={`下限 / ${metricUnits[metric]}`}><input name="lower" type="number" required min="0" max={metricUnits[metric]==='%'?100:undefined} step="any" value={lower} onChange={e=>setLower(e.target.value)}/></Field>}{operator!=='GE'&&<Field label={`上限 / ${metricUnits[metric]}`}><input name="upper" type="number" required min="0" max={metricUnits[metric]==='%'?100:undefined} step="any" value={upper} onChange={e=>setUpper(e.target.value)}/></Field>}</div>
+ <Field label="检测项"><select value={metric} disabled={!!recipe} onChange={e=>{setMetric(e.target.value);setOperator(e.target.value!=='WIRE_GAP'?'GE':'LE');setLower('');setUpper('');setScope([]);setAllSpecs(true);setStandard('');}}>{Object.entries(names).map(([k,v])=><option key={k} value={k}>{v}（{metricUnits[k]}）</option>)}</select></Field>
+ {metric==='OVALITY'?<Note>圆整度=min(X,Y)/max(X,Y)，范围0～1，越接近1越圆。请填写新的测试下限；旧百分比阈值不能直接套用。</Note>:metric!=='SHIELD_OVERLAP_RATE'?<div className="rule-preset"><Button onClick={()=>{setOperator('LE');setLower('');setUpper(metric==='WIRE_GAP'?'3':'8');setStandard(reference+'；'+(metric==='WIRE_GAP'?'铜丝间隙≤3 mm':'不圆度≤8%'));}}>套用参考目标：≤ {metric==='WIRE_GAP'?'3 mm':'8%'}</Button><span className="muted small">来自宏亮应用方案，仅作模拟参考。</span></div>:<Note>参考资料未提供产品搭盖率合格限值。请填写测试阈值和依据；旧10%只是历史演示值。</Note>}
+ <div className="rule-editor-grid"><Field label="判定方式"><select value={operator} onChange={e=>setOperator(e.target.value)}><option value="GE">不小于（≥，含边界）</option>{metric!=='OVALITY'&&<><option value="LE">不大于（≤，含边界）</option><option value="BETWEEN">区间（上下限均包含）</option></>}</select></Field><Field label="单位"><input value={metricUnits[metric]} readOnly/></Field>
+ {operator!=='LE'&&<Field label={`下限 / ${metricUnits[metric]}`}><input name="lower" type="number" required min="0" max={metric==='OVALITY'?1:metricUnits[metric]==='%'?100:undefined} step="any" value={lower} onChange={e=>setLower(e.target.value)}/></Field>}{operator!=='GE'&&<Field label={`上限 / ${metricUnits[metric]}`}><input name="upper" type="number" required min="0" max={metric==='OVALITY'?1:metricUnits[metric]==='%'?100:undefined} step="any" value={upper} onChange={e=>setUpper(e.target.value)}/></Field>}</div>
  <fieldset className="b2-group"><legend>适用规格</legend>
   <label><input type="radio" name="recipe-scope" checked={allSpecs} onChange={()=>setAllSpecs(true)}/> 全部启用规格（{specs.filter(s=>s.enabled).length} 个；保存时补齐该指标的适用关系）</label>
   <label><input type="radio" name="recipe-scope" checked={!allSpecs} onChange={()=>setAllSpecs(false)}/> 仅选择指定规格（已选 {scope.length} 个）</label>
@@ -90,6 +90,6 @@ function RecipeEditor({recipe,initialMetric,data,api,commands,close,saved}:{reci
  </fieldset>
  <Field label="标准名称 / 版本 / 依据"><textarea value={standard} onChange={e=>setStandard(e.target.value)} required maxLength={1000} rows={3} placeholder="填写参考文件、条款或明确的模拟测试依据"/></Field>
  <Field label={recipe?'修改原因':'创建原因'}><TextInput name="reason" required maxLength={500}/></Field>
- <Note>{recipe?'保存会新增版本并停用当前编辑版本，已有任务快照不变；自动发现需重新选用版本。':'创建后启用，可在新建任务和自动发现中选择。'} 所选规格会先同步写入规格档案，之后指标页与规格编辑页会显示相同的指标适用关系；缩小单个配方范围不会删除档案关系。仅供测试，配方快照仍按版本保留。不圆度当前按%标量模拟，不能将双向测径的直径差mm直接作为此阈值。</Note>
+ <Note>{recipe?'保存会新增版本并停用当前编辑版本，已有任务快照不变；自动发现需重新选用版本。':'创建后启用，可在新建任务和自动发现中选择。'} 所选规格会先同步写入规格档案，之后指标页与规格编辑页会显示相同的指标适用关系；缩小单个配方范围不会删除档案关系。仅供测试，配方快照仍按版本保留。圆整度按双轴比值判定；旧百分比任务保留原方法与快照。</Note>
  </Modal>;
 }

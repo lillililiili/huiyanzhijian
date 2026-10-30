@@ -8,7 +8,7 @@ import {IdentityApi,allow,type Actor,type Context} from '../m00-identity/api';
 import {CatalogApi} from '../m01-catalog/api';
 import {RuleApi,units} from './api';
 
-const methods:Record<string,string>={SHIELD_OVERLAP_RATE:'test-dg',WIRE_GAP:'test-jx',OVALITY:'test-by'};
+const methods:Record<string,string>={SHIELD_OVERLAP_RATE:'test-dg',WIRE_GAP:'test-jx',OVALITY:'roundness-min-max.v1'};
 export class RuleManagement {
  constructor(private identity:IdentityApi,private catalog:CatalogApi,private rules:RuleApi){}
  async versions(actor:Actor,id:string){
@@ -44,11 +44,13 @@ export class RuleManagement {
  async save(ctx:Context,id:string|null,b:any,key:string,version:string){
   allow(ctx.actor,'rules:write','USER');object(b,['code','name','metric_code','unit','comparison','specification_ids','standard_reference','reason']);
   textField(b.code,64);textField(b.name,128);textField(b.standard_reference,1000);textField(b.reason,500);
-  requireValue(b.code===b.code.trim()&&Object.hasOwn(methods,b.metric_code));requireValue(b.unit===units[b.metric_code],'RULE_UNIT_INVALID','单位必须与当前接入指标一致',422);
+  requireValue(b.code===b.code.trim()&&Object.hasOwn(methods,b.metric_code));requireValue(b.unit===(b.metric_code==='OVALITY'?'1':units[b.metric_code]),'RULE_UNIT_INVALID','单位必须与当前接入指标一致',422);
+  if(b.metric_code==='OVALITY')requireValue(b.comparison?.operator==='GE','RULE_VALUE_INVALID','圆整度使用下限判定',422);
   object(b.comparison,['operator','lower','upper']);const c=b.comparison;requireValue(['GE','LE','BETWEEN'].includes(c.operator));
   for(const k of ['lower','upper']){const needed=k==='lower'?c.operator!=='LE':c.operator!=='GE';
    if(!needed){requireValue(c[k]===null);continue;}
    requireValue(typeof c[k]==='string'&&/^\d{1,14}(\.\d{1,10})?$/.test(c[k]),'RULE_VALUE_INVALID','阈值必须为非负十进制数，最多10位小数；不可留空',422);
+   requireValue(b.unit!=='1'||new Decimal(c[k]).gte(0)&&new Decimal(c[k]).lte(1),'RULE_VALUE_INVALID','圆整度下限必须位于0至1',422);
    requireValue(b.unit!=='%'||new Decimal(c[k]).lte(100),'RULE_VALUE_INVALID','百分比阈值不能超过100',422);
   }
   if(c.operator==='BETWEEN')requireValue(new Decimal(c.lower).lte(c.upper),'RULE_VALUE_INVALID','下限不能大于上限',422);

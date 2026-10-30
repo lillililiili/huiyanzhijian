@@ -167,7 +167,8 @@
           "type": "string",
           "enum": [
             "%",
-            "mm"
+            "mm",
+            "1"
           ]
         },
         "data_status": {
@@ -266,9 +267,28 @@
             }
           },
           "else": {
-            "properties": {
-              "unit": {
-                "const": "%"
+            "if": {
+              "properties": {
+                "metric_code": {
+                  "const": "OVALITY"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "unit": {
+                  "enum": [
+                    "%",
+                    "1"
+                  ]
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "unit": {
+                  "const": "%"
+                }
               }
             }
           }
@@ -459,9 +479,6 @@
         "binding_version",
         "sample_time",
         "time_source",
-        "position_m",
-        "position_quality",
-        "position_segment_id",
         "source_type",
         "data_environment",
         "data_status",
@@ -478,7 +495,10 @@
               "position_quality": {
                 "const": "KNOWN"
               }
-            }
+            },
+            "required": [
+              "position_quality"
+            ]
           },
           "then": {
             "properties": {
@@ -498,7 +518,21 @@
             }
           }
         }
-      ]
+      ],
+      "dependentRequired": {
+        "position_m": [
+          "position_quality",
+          "position_segment_id"
+        ],
+        "position_quality": [
+          "position_m",
+          "position_segment_id"
+        ],
+        "position_segment_id": [
+          "position_m",
+          "position_quality"
+        ]
+      }
     },
     "MeasurementBatch": {
       "type": "object",
@@ -1268,7 +1302,8 @@
           "type": "string",
           "enum": [
             "%",
-            "mm"
+            "mm",
+            "1"
           ]
         },
         "recipe_version_id": {

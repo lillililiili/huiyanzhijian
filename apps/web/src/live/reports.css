@@ -69,6 +69,7 @@
   border-collapse: collapse;
   margin: 12px 0;
   font-size: 13px;
+  table-layout: fixed;
 }
 
 .report-metrics-table th,
@@ -84,6 +85,18 @@
   color: #334155;
 }
 
+.report-metrics-table td {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-snapshot-caption {
+  margin: 9px 0 0;
+  color: #687b90;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .report-actions-cell {
   display: flex;
   gap: 6px;
@@ -91,23 +104,96 @@
   flex-wrap: wrap;
 }
 
-/* 打印与导出样式 */
+/* A4打印：只输出当前报告或模板样张；图表颜色与正文保持一致 */
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
 @media print {
+  html,
+  body {
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   body * {
     visibility: hidden;
   }
+
   .report-print-target,
   .report-print-target * {
     visibility: visible;
   }
+
   .report-print-target {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+    max-width: none;
+    box-sizing: border-box;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    color: #17324f !important;
+    overflow: visible !important;
+  }
+
+  .report-print-target .report-header-row,
+  .report-print-target .report-title-section,
+  .report-print-target .report-section,
+  .report-print-target .report-visual-card,
+  .report-print-target .report-sign-area,
+  .report-print-target .report-source-callout,
+  .report-print-target .report-data-capability-note {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .report-print-target table {
+    width: 100%;
+    border-collapse: collapse;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .report-print-target thead { display: table-header-group; }
+  .report-print-target tr { break-inside: avoid; page-break-inside: avoid; }
+
+  .report-print-target .report-metrics-table {
+    font-size: 8.5pt;
+  }
+
+  .report-print-target .report-metrics-table th,
+  .report-print-target .report-metrics-table td {
+    padding: 4px 5px;
+    overflow-wrap: anywhere;
+  }
+
+  .report-print-target .report-visual-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .report-print-target .report-visual-card-range {
+    grid-column: 1 / -1;
+  }
+
+  .report-print-target .report-range-row {
+    grid-template-columns: minmax(78px, 1fr) minmax(95px, 1.4fr) minmax(160px, 2fr);
+  }
+
+  .report-print-target .report-sample-banner,
+  .report-print-target .report-visuals-source,
+  .report-print-target .report-rate-track,
+  .report-print-target .report-donut,
+  .report-print-target .report-range-line,
+  .report-print-target .report-range-track::before {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

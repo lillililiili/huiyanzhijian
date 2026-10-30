@@ -19,6 +19,7 @@ import type {
   ReportKind
 } from './reportTypes';
 import { reportKindMeta, reportStateMeta, qualityVerdictMeta } from './reportTypes';
+import { ReportSummaryVisuals } from './ReportSummaryVisuals';
 import './reports.css';
 import './templates.css';
 
@@ -778,28 +779,35 @@ export function ReportLiveView({ api, data, params }: PageProps) {
   const reportId = params.get('id');
   const [report, setReport] = useState<QualityReportItem | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isLocalPreview, setIsLocalPreview] = useState(false);
 
   useEffect(() => {
     let active = true;
     if (api && reportId) {
       setLoading(true);
+      setIsLocalPreview(false);
       api.request<QualityReportItem>(`/reports/${encodeURIComponent(reportId)}`)
         .then(res => {
-          if (active && res) setReport(res);
+          if (active && res) {
+            setReport(res);
+            setIsLocalPreview(false);
+          }
         })
         .catch(() => {
-          // 降级使用本地 seeds
+          // 本地预览种子不是服务端报告；页面和PDF都必须明确标识。
           if (active) {
-            const fallback = loadFallbackSeeds(data).find(r => r.id === reportId) || loadFallbackSeeds(data)[0];
+            const fallback = loadFallbackSeeds(data).find(r => r.id === reportId) || null;
             setReport(fallback);
+            setIsLocalPreview(Boolean(fallback));
           }
         })
         .finally(() => {
           if (active) setLoading(false);
         });
     } else {
-      const fallback = loadFallbackSeeds(data).find(r => r.id === reportId) || loadFallbackSeeds(data)[0];
+      const fallback = reportId ? loadFallbackSeeds(data).find(r => r.id === reportId) || null : null;
       setReport(fallback);
+      setIsLocalPreview(Boolean(fallback));
     }
     return () => { active = false; };
   }, [api, reportId, data]);
@@ -830,7 +838,7 @@ export function ReportLiveView({ api, data, params }: PageProps) {
   const orderCode = order?.external_code || report.work_order_id || '—';
 
   async function handlePublish() {
-    if (!api || !report) return;
+    if (!api || !report || isLocalPreview) return;
     try {
       await api.request(`/reports/${encodeURIComponent(report.id)}:publish`, {});
       toast('主管签发成功，报告已发布！');
@@ -842,7 +850,7 @@ export function ReportLiveView({ api, data, params }: PageProps) {
   }
 
   async function handleExportJson() {
-    if (!api || !report) return;
+    if (!api || !report || isLocalPreview) return;
     try {
       const cert = await api.request<QualityCertificateExport>(`/reports/${encodeURIComponent(report.id)}/export`);
       const blob = new Blob([JSON.stringify(cert, null, 2)], { type: 'application/json' });
@@ -866,14 +874,14 @@ export function ReportLiveView({ api, data, params }: PageProps) {
         actions={
           <>
             <HashLink route="reports">返回报告管理</HashLink>
-            {report.state === 'GENERATED' && (
+            {!isLocalPreview && report.state === 'GENERATED' && (
               <Button primary onClick={() => void handlePublish()}>主管签发发布</Button>
             )}
-            {api && (
+            {api && !isLocalPreview && (
               <Button onClick={() => void handleExportJson()}>导出防伪证书</Button>
             )}
             <Button primary icon="printer" onClick={() => window.print()}>
-              打印 / 保存 PDF
+              {isLocalPreview ? '打印样张 / 保存 PDF' : '打印 / 保存 PDF'}
             </Button>
           </>
         }
@@ -881,13 +889,19 @@ export function ReportLiveView({ api, data, params }: PageProps) {
 
       {/* 高保真 A4 报告纸质排版 */}
       <article className="report-paper report-print-target">
+        {isLocalPreview && (
+          <div className="report-sample-banner" role="note">
+            <strong>本地预览样张 · 非服务端归档报告</strong>
+            <span>此内容用于界面演示，不能作为正式质量结论；发布与防伪证书导出已禁用。</span>
+          </div>
+        )}
         {/* 防伪验真印章印条 */}
         <div className="tamper-proof-seal">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span>✔ 工业级不可篡改数字指纹 (SHA-256)：</span>
+            <span>报告快照指纹 (SHA-256)：</span>
             <code>{report.snapshot_hash}</code>
           </div>
-          <Badge tone="green">VERIFIED_IMMUTABLE</Badge>
+          <Badge tone="green">已冻结快照</Badge>
         </div>
 
         {/* 页眉 */}
@@ -901,11 +915,9 @@ export function ReportLiveView({ api, data, params }: PageProps) {
           </div>
           <div className="report-header-meta">
             <div>报告编号：<strong>{report.report_code || report.id}</strong></div>
-            <div>生成时间：{report.created_at}</div>
-            <div>
-              模板版本：<Badge tone="blue">V1.0 (受控基准)</Badge>
-              <span style={{ marginLeft: 6 }}>Rev.{report.revision}</span>
-            </div>
+            <div>生成时间：{labelTime(report.created_at)}</div>
+            <div>模板修订：<Badge tone="blue">{tpl.revision ? `Rev.${tpl.revision}` : '生成时快照'}</Badge></div>
+            <div>报告修订：Rev.{report.revision}</div>
           </div>
         </div>
 
@@ -961,7 +973,7 @@ export function ReportLiveView({ api, data, params }: PageProps) {
         {/* 数据汇总：三项指标全量表格 */}
         <div className="report-section">
           <div className="report-section-title">
-            <span>检测数据汇总统计 (三项指标专项统计)</span>
+            <span>检测数据汇总统计（{statsList.length} 项指标）</span>
             <span style={{ fontSize: 13, color: '#65758b' }}>
               编制人：{report.generated_by} · 签发人：{report.published_by || '待主管签发'}
             </span>
@@ -972,13 +984,12 @@ export function ReportLiveView({ api, data, params }: PageProps) {
               <tr>
                 <th>检测项目</th>
                 <th>量纲</th>
-                <th>有效点数</th>
-                <th>超限点数</th>
+                <th>有效 / 总点数</th>
+                <th>符合 / 超限</th>
                 <th>平均值</th>
-                <th>极小值</th>
-                <th>极大值</th>
+                <th>最小值 ～ 最大值</th>
                 <th>合格率</th>
-                <th>单项结论</th>
+                <th>结论</th>
               </tr>
             </thead>
             <tbody>
@@ -987,13 +998,12 @@ export function ReportLiveView({ api, data, params }: PageProps) {
                   <tr key={s.metric_code}>
                     <td><strong>{names[s.metric_code] || s.metric_code}</strong></td>
                     <td>{s.unit}</td>
-                    <td>{s.valid_samples} 点</td>
+                    <td>{s.valid_samples} / {s.total_samples}</td>
                     <td style={{ color: s.failed_samples > 0 ? '#b91c1c' : '#0d824d', fontWeight: 600 }}>
-                      {s.failed_samples} 点
+                      {s.passed_samples} / {s.failed_samples}
                     </td>
-                    <td>{s.avg_value ?? '—'}</td>
-                    <td>{s.min_value ?? '—'}</td>
-                    <td>{s.max_value ?? '—'}</td>
+                    <td>{s.avg_value ?? '—'} {s.avg_value !== null ? s.unit : ''}</td>
+                    <td>{s.min_value ?? '—'} ～ {s.max_value ?? '—'} {s.min_value !== null || s.max_value !== null ? s.unit : ''}</td>
                     <td>{typeof s.compliance_rate === 'number' ? `${s.compliance_rate}%` : s.compliance_rate}</td>
                     <td>
                       <Badge tone={s.verdict === 'PASS' ? 'green' : 'red'}>
@@ -1004,30 +1014,19 @@ export function ReportLiveView({ api, data, params }: PageProps) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', color: '#94a3b8' }}>暂无三项指标汇总数据</td>
+                  <td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8' }}>暂无指标汇总数据，报告没有可绘制的统计图表。</td>
                 </tr>
               )}
             </tbody>
           </table>
 
-          {/* 趋势图快照 */}
+          {/* 只用报告本身的冻结汇总绘图；当前契约没有逐点时间序列，不能绘制趋势线 */}
           {tpl.includeTrend !== false && (
-            <div className="report-trend-mock">
-              <div style={{ fontWeight: 600, marginBottom: 4, color: '#17324f' }}>
-                全长连续量测波动与趋势分布快照
-              </div>
-              <div className="report-trend-canvas-mock">
-                <div className="report-trend-bar" style={{ height: '50%' }} />
-                <div className="report-trend-bar" style={{ height: '65%' }} />
-                <div className="report-trend-bar" style={{ height: '70%' }} />
-                <div className="report-trend-bar highlight" style={{ height: '80%' }} />
-                <div className="report-trend-bar" style={{ height: '75%' }} />
-                <div className="report-trend-bar" style={{ height: '68%' }} />
-                <div className="report-trend-bar" style={{ height: '82%' }} />
-              </div>
-              <span>依据生成时冻结的采样历史渲染</span>
-            </div>
+            <ReportSummaryVisuals metrics={statsList} />
           )}
+          <p className="report-snapshot-caption">
+            图表只使用本报告冻结的统计汇总；未纳入快照的逐点曲线、报警处置、设备参数或现场图片不会被补造。统计范围图表示最小值、平均值和最大值，不代表随时间变化的趋势。
+          </p>
         </div>
 
         {/* 签审责任栏 */}

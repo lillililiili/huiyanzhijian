@@ -19,6 +19,7 @@ export class RuleApi{
  evaluate(value:any,rule:any,environment:string){
   if(value.data_status!=='VALID')return {quality_result:'NOT_EVALUATED',reason_code:value.reason_code||'INVALID_DATA'};
   if(!rule.comparison||!['APPROVED','TEST_ONLY'].includes(rule.approval_state)||(rule.approval_state==='TEST_ONLY'&&environment!=='SIMULATED')||rule.method_id!==value.method_id)return {quality_result:'NOT_EVALUATED',reason_code:'METHOD_NOT_APPROVED'};
+  if(rule.parameters?.unit&&rule.parameters.unit!==value.unit)return {quality_result:'NOT_EVALUATED',reason_code:'UNIT_MISMATCH'};
   const x=new Decimal(value.value),c=rule.comparison;const ok=c.operator==='GE'?x.gte(c.lower):c.operator==='LE'?x.lte(c.upper):x.gte(c.lower)&&x.lte(c.upper);return {quality_result:ok?'PASS':'FAIL',reason_code:null};
  }
 }

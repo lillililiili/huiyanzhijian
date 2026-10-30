@@ -54,11 +54,14 @@ export class ModelStore{
 }
 export function hashInput(v:unknown){return createHash('sha256').update(JSON.stringify(v)).digest('hex');}
 export function modelRecord(run:any,sequence:number,s:Snapshot){const a=JSON.parse(run.assignment),position=BigInt(sequence-1)*fixed(s.detector.data.step_m);insist(sequence>=1&&sequence<=s.count,'采样序号越界');insist(a.metric_code===s.detector.data.metric,'设备模型与任务检测项不一致');
- const measured=detect(s.detector.data,observeCable(s.cable.data,position));const rawVersion=a.metric_code==='SHIELD_OVERLAP_RATE'?'overlap-sim.v1':a.metric_code==='WIRE_GAP'?'wire-gap-sim.v1':'diameter-aux-sim.v1';
+ const taskMethod=a.rule_snapshot?.method_id;
+ const comparison=a.rule_snapshot?.comparison;
+ const detector=taskMethod==='roundness-min-max.v1'&&comparison?{...s.detector.data,lower:comparison.lower??'',upper:comparison.upper??''}:s.detector.data;
+ const measured=detect(detector,observeCable(s.cable.data,position),taskMethod==='roundness-min-max.v1'?'roundness-min-max.v1':'legacy-percent');const rawVersion=a.metric_code==='SHIELD_OVERLAP_RATE'?'overlap-sim.v1':a.metric_code==='WIRE_GAP'?'wire-gap-sim.v1':'diameter-aux-sim.v1';
  // A simulated instrument reports the method frozen in its bound task. This
  // keeps M04 evaluation tied to the task snapshot instead of a simulator-only ID.
  const methodId=typeof a.rule_snapshot?.method_id==='string'?a.rule_snapshot.method_id:'sim02-'+a.metric_code.toLowerCase();
  return {record_id:run.id+'-'+sequence,device_id:run.device_id,capture_session_id:run.capture_session,capture_sequence:String(sequence),source_record_id:null,source_session_id:null,source_sequence:null,sample_kind:'NEW_SAMPLE',task_id:a.task_id,binding_id:a.binding_id,binding_version:a.binding_version,sample_time:new Date().toISOString(),time_source:'SIMULATOR',position_m:decimal(position),position_quality:'KNOWN',position_segment_id:run.id+'-segment',source_type:'DEVICE',data_environment:'SIMULATED',data_status:'VALID',recipe_version_id:a.recipe_version_id,
  values:[{metric_code:a.metric_code,value:measured.value,unit:measured.unit,data_status:'VALID',source_quality_result:measured.result,method_id:methodId,window:{kind:'INSTANT',definition_id:null,start:null,end:null,position_from_m:null,position_to_m:null},reason_code:null}],
- raw:{schema_version:rawVersion,data:{provided_scalar:measured.value,observation:measured.observation,algorithm:measured.algorithm,detector_model_id:s.detector.id,detector_version:String(s.detector.version),test_limits:{lower:s.detector.data.lower||null,upper:s.detector.data.upper||null},simulation_model:'SIM02',test_only:true,notice:'Test detector observation; no certified instrument accuracy or physical coverage claim'}},evidence_refs:[]};
+ raw:{schema_version:rawVersion,data:{provided_scalar:measured.value,observation:measured.observation,algorithm:measured.algorithm,detector_model_id:s.detector.id,detector_version:String(s.detector.version),test_limits:{lower:detector.lower||null,upper:detector.upper||null},simulation_model:'SIM02',test_only:true,notice:'Test detector observation; no certified instrument accuracy or physical coverage claim'}},evidence_refs:[]};
 }

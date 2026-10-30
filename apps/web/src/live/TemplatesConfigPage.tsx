@@ -10,6 +10,8 @@ import { toast } from '../ui/Toast';
 import { DataTable } from '../ui/DataTable';
 import { Icon } from '../ui/Icon';
 import type { Person, Workspace, ApiClient, Commands } from './api';
+import type { MetricSummaryItem } from './reportTypes';
+import { ReportSummaryVisuals } from './ReportSummaryVisuals';
 import './templates.css';
 
 export type TemplateCategory = 'CABLE_INSPECTION_SINGLE' | 'CABLE_INSPECTION_SUMMARY' | 'BATCH_DISPATCH';
@@ -130,6 +132,24 @@ const ESSENTIAL_ITEMS = [
   { label: '冻结判定规则与标准快照', note: '包含执行标准、阈值及比较方向，不可被后续修改改变' },
   { label: '阶段 / 最终报告标记与判定', note: '未判定或缺测明确标出，禁止将未测视作合格' },
   { label: '数据来源真实性声明', note: '明确标注 REAL 或 SIMULATED 来源环境，严守合规红线' }
+];
+
+const SAMPLE_REPORT_METRICS: MetricSummaryItem[] = [
+  {
+    metric_code: 'SHIELD_OVERLAP_RATE', unit: '%', total_samples: 320, valid_samples: 320,
+    passed_samples: 304, failed_samples: 16, min_value: '12.4', max_value: '17.3',
+    avg_value: '15.2', compliance_rate: 95, verdict: 'FAIL'
+  },
+  {
+    metric_code: 'WIRE_GAP', unit: 'mm', total_samples: 320, valid_samples: 320,
+    passed_samples: 300, failed_samples: 20, min_value: '1.10', max_value: '3.80',
+    avg_value: '2.40', compliance_rate: 93.75, verdict: 'FAIL'
+  },
+  {
+    metric_code: 'OVALITY', unit: '%', total_samples: 320, valid_samples: 320,
+    passed_samples: 307, failed_samples: 13, min_value: '0.2', max_value: '6.8',
+    avg_value: '2.1', compliance_rate: 95.94, verdict: 'FAIL'
+  }
 ];
 
 function loadTemplates(): Record<TemplateCategory, ReportTemplateConfig> {
@@ -290,9 +310,10 @@ export function TemplatesConfigPage({ user }: Props) {
     <div className="tpl-container">
       <PageTitle
         title="报告模板配置"
-        subtitle="维护出厂与过程质量报告受控抬头、内容组成、签审栏与版本；修改仅应用于之后新生成的报告。"
+        subtitle="维护报告版式与受控版本。预览和 PDF 导出为明确标注的样张；正式报告只使用生成时冻结的数据快照。"
         actions={
           <>
+            <Button icon="printer" onClick={() => window.print()}>导出模板样张 PDF</Button>
             <Button onClick={() => setShowHistory(true)}>版本履历 ({categoryVersions.length})</Button>
             {canEdit && (
               <Button onClick={() => setConfirmReset(true)}>恢复出厂</Button>
@@ -345,232 +366,98 @@ export function TemplatesConfigPage({ user }: Props) {
 
       <div className="tpl-split-layout">
         {/* 左侧：高保真 A4 纸质/PDF 预览 */}
-        <Panel core title="报告纸质 / PDF 预览 (所见即所得)">
-          <div className="report-paper">
-            {/* 顶栏：Logo 与编号 */}
+        <Panel core title="模板样张预览（仅示意版式）">
+          <article className="report-paper report-print-target tpl-print-sample">
+            <div className="report-sample-banner" role="note">
+              <strong>模板样张 · 示例内容</strong>
+              <span>图表数值均为模拟示例，不对应真实任务、线缆、设备或质量结论。</span>
+            </div>
+
             <div className="report-header-row">
               <div>
                 {currentTemplate.includeLogo ? (
                   <img src="assets/images/logo.png" alt="慧眼智检" className="report-logo-img" />
                 ) : (
-                  <strong style={{ fontSize: 18, color: '#155ab6' }}>{currentTemplate.company}</strong>
+                  <strong className="report-company-mark">{currentTemplate.company}</strong>
                 )}
               </div>
               <div className="report-header-meta">
-                <div>报告编号：<strong>RP-20261028-001</strong></div>
-                <div>生成时间：2026-10-28 10:30:00</div>
-                <div>模板版本：<Badge tone="blue">{currentTemplate.version} (受控)</Badge></div>
+                <div>报告编号：<strong>生成时自动编号</strong></div>
+                <div>生成时间：以报告快照时间为准</div>
+                <div>模板版本：<Badge tone="blue">{currentTemplate.version} · 样张</Badge></div>
               </div>
             </div>
 
-            {/* 报告主标题与副标题 */}
             <div className="report-title-section">
               <h2 className="report-main-title">{currentTemplate.title}</h2>
               <p className="report-subtitle">{currentTemplate.subtitle}</p>
             </div>
 
-            {/* 必备元数据表格 */}
             <table className="report-meta-table">
               <tbody>
                 <tr>
-                  <th>检测任务</th>
-                  <td>T2026102801 (自动填充)</td>
-                  <th>电缆盘号</th>
-                  <td>P2026102801 (自动填充)</td>
+                  <th>检测任务</th><td>生成报告时按冻结范围填入</td>
+                  <th>电缆盘号</th><td>来自报告关联线缆</td>
                 </tr>
                 <tr>
-                  <th>生产工单</th>
-                  <td>WO2026102801 (自动填充)</td>
-                  <th>电缆规格</th>
-                  <td>YJLW03-64/110kV-1×800mm²</td>
+                  <th>生产工单</th><td>按报告快照显示</td>
+                  <th>产品规格</th><td>按任务创建时规格显示</td>
                 </tr>
                 <tr>
-                  <th>检测工序</th>
-                  <td>金属屏蔽联锁铠装</td>
-                  <th>适用检测项</th>
-                  <td>
-                    {category === 'CABLE_INSPECTION_SINGLE'
-                      ? '金属屏蔽搭盖率 / 铜丝间隙 / 不圆度'
-                      : '整盘全项指标综合评定'}
-                  </td>
+                  <th>检测范围</th><td>{category === 'CABLE_INSPECTION_SINGLE' ? '本报告所含单项检测' : '按实际纳入的任务和检测项'}</td>
+                  <th>报告性质</th><td>阶段或最终性质以报告记录为准</td>
                 </tr>
                 <tr>
-                  <th>判定规则快照</th>
-                  <td>搭盖率≥15% (生成时快照)</td>
-                  <th>报告性质</th>
-                  <td><Badge tone="green">最终报告 (正式出厂)</Badge></td>
+                  <th>规则依据</th><td>按生成时冻结的规则快照展示</td>
+                  <th>数据来源</th><td>明确标注 REAL 或 SIMULATED</td>
                 </tr>
               </tbody>
             </table>
 
-            {/* 数据汇总区块 */}
-            <div className="report-section">
+            <div className="report-section report-sample-summary">
               <div className="report-section-title">
-                <span>检测数据概况与质量评定</span>
-                <Badge tone="green">符合标准要求</Badge>
+                <span>汇总数据展示样例</span>
+                <span className="report-sample-inline">以下仅展示图表排版</span>
               </div>
-              <div className="report-summary-stats">
-                <div className="report-stat-box">
-                  <div className="report-stat-label">总检测长度</div>
-                  <div className="report-stat-val">2,500.0 m</div>
-                </div>
-                <div className="report-stat-box">
-                  <div className="report-stat-label">有效采样点数</div>
-                  <div className="report-stat-val">1,820 点</div>
-                </div>
-                <div className="report-stat-box">
-                  <div className="report-stat-label">数据合格率</div>
-                  <div className="report-stat-val passed">99.8 %</div>
-                </div>
-                <div className="report-stat-box">
-                  <div className="report-stat-label">平均测量值</div>
-                  <div className="report-stat-val">18.4 %</div>
-                </div>
-              </div>
-
-              {/* 可选区块：量测趋势图 */}
-              {currentTemplate.includeTrend && (
-                <div className="report-trend-mock">
-                  <div style={{ fontWeight: 600, marginBottom: 4, color: '#17324f' }}>
-                    全线量测波动与趋势分布
-                  </div>
-                  <div className="report-trend-canvas-mock">
-                    <div className="report-trend-bar" style={{ height: '40%' }} />
-                    <div className="report-trend-bar" style={{ height: '55%' }} />
-                    <div className="report-trend-bar highlight" style={{ height: '70%' }} />
-                    <div className="report-trend-bar" style={{ height: '60%' }} />
-                    <div className="report-trend-bar" style={{ height: '65%' }} />
-                    <div className="report-trend-bar" style={{ height: '58%' }} />
-                    <div className="report-trend-bar" style={{ height: '72%' }} />
-                    <div className="report-trend-bar" style={{ height: '62%' }} />
-                  </div>
-                  <span>采样点逐米连续记录趋势（由图表引擎渲染）</span>
-                </div>
+              {currentTemplate.includeTrend ? (
+                <ReportSummaryVisuals
+                  metrics={category === 'CABLE_INSPECTION_SINGLE' ? SAMPLE_REPORT_METRICS.slice(0, 1) : SAMPLE_REPORT_METRICS}
+                  sample
+                />
+              ) : (
+                <div className="report-visual-empty">此模板当前关闭汇总图表；保存新版本后，影响该版本生成的新报告。</div>
               )}
             </div>
 
-            {/* 可选区块：超限报警与复核记录 */}
-            {currentTemplate.includeAlarms && (
-              <div className="report-section">
-                <div className="report-section-title">
-                  <span>超限报警与质检复核处置记录</span>
-                  <Badge tone="amber">1 条已复核处置</Badge>
-                </div>
-                <table className="report-alarms-mock">
-                  <thead>
-                    <tr>
-                      <th>报警米数</th>
-                      <th>测量值 / 阈值</th>
-                      <th>偏差原因</th>
-                      <th>处置意见</th>
-                      <th>复核人</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>1,240.5 m</td>
-                      <td>12.3% (标准 ≥15%)</td>
-                      <td>局部搭盖偏窄</td>
-                      <td>已进行人工补焊修整并通过复检</td>
-                      <td>质检员01</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* 可选区块：逐米原始测量明细 */}
-            {currentTemplate.includeDetails && (
-              <div className="report-section">
-                <div className="report-section-title">
-                  <span>量测明细数据摘要 (前 3 组示例)</span>
-                  <span className="muted small">完整明细详见报告附件 Excel</span>
-                </div>
-                <table className="report-alarms-mock">
-                  <thead>
-                    <tr>
-                      <th>序号</th>
-                      <th>采样米数</th>
-                      <th>测量数值</th>
-                      <th>有效性判定</th>
-                      <th>记录时间</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>0001</td>
-                      <td>0.5 m</td>
-                      <td>17.8 %</td>
-                      <td><span style={{ color: '#0d824d' }}>有效</span></td>
-                      <td>10:05:12</td>
-                    </tr>
-                    <tr>
-                      <td>0002</td>
-                      <td>1.0 m</td>
-                      <td>18.1 %</td>
-                      <td><span style={{ color: '#0d824d' }}>有效</span></td>
-                      <td>10:05:15</td>
-                    </tr>
-                    <tr>
-                      <td>0003</td>
-                      <td>1.5 m</td>
-                      <td>18.0 %</td>
-                      <td><span style={{ color: '#0d824d' }}>有效</span></td>
-                      <td>10:05:18</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* 可选区块：设备与参数快照 */}
-            {currentTemplate.includeDeviceSnapshot && (
-              <div className="report-section">
-                <div className="report-section-title">
-                  <span>检测设备与工位参数快照</span>
-                </div>
-                <div style={{ fontSize: 12, color: '#475569', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                  <div>检测设备：DEV-AR01 (铠装检测仪)</div>
-                  <div>工位线体：1号高压产线</div>
-                  <div>校准周期：有效期至 2026-12-31</div>
-                  <div>采集算法：光学几何轮廓视觉算法 V2.1</div>
-                </div>
-              </div>
-            )}
-
-            {/* 可选区块：数据来源环境声明 */}
             {currentTemplate.includeSourceDeclaration && (
-              <div className="report-section">
-                <div className="report-section-title">
-                  <span>数据来源与真实性声明</span>
-                </div>
-                <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>
-                  数据来源环境：<strong>REAL 工业现场直连采集</strong>。本报告由慧眼智检质量管控平台依据实时数据与防篡改日志自动生成，确保过程数据客观真实。
-                </p>
+              <div className="report-source-callout">
+                <strong>数据来源声明样式</strong>
+                <span>样张示例内容（SIMULATED），正式报告将按冻结报告记录标注来源。</span>
               </div>
             )}
 
-            {/* 签审责任栏 */}
+            <div className="report-data-capability-note">
+              当前正式报告快照提供统计汇总与覆盖信息。逐点曲线、报警处置、设备快照及检测现场图片未包含在本次快照中，因此不会在正式导出中生成虚构内容。
+            </div>
+
             <div className="report-sign-area">
               <div className="report-sign-row">
                 <span>{currentTemplate.signatory}</span>
-                <span>签发日期：2026 年 10 月 28 日</span>
+                <span>签发时间：由报告状态和服务端记录提供</span>
               </div>
               <div className="report-compliance-note">
-                <strong>签审与合规说明：</strong>
-                {currentTemplate.disclaimer}
-                （注：签审栏为纸质/PDF展示内容，文字签名不替代具有法律效力的电子签章或特种设备放行证明。）
+                <strong>签审与合规说明：</strong>{currentTemplate.disclaimer}
+                （签审栏为纸质/PDF展示内容，文字签名不替代电子签名或生产放行授权。）
               </div>
             </div>
 
-            {/* 页脚 */}
             <div className="report-footer-area">
               <div>{currentTemplate.footer}</div>
-              <div style={{ marginTop: 4 }}>
-                编制企业：{currentTemplate.company} · 受控版本：{currentTemplate.version} · 打印时间：2026-10-28 10:30
+              <div className="report-print-meta">
+                编制企业：{currentTemplate.company} · 模板版本：{currentTemplate.version} · 正式编号和时间以报告快照为准
               </div>
             </div>
-          </div>
+          </article>
         </Panel>
 
         {/* 右侧：受控规范与管理信息面板 */}
@@ -612,9 +499,9 @@ export function TemplatesConfigPage({ user }: Props) {
           </Panel>
 
           {/* 质量安全红线：必备要素 */}
-          <Panel core title="受控必备要素 (不可缺省红线)">
+          <Panel core title="报告固定展示要素">
             <p className="muted small" style={{ margin: '0 0 10px' }}>
-              依据系统合规准则（AC17与DP15.02），以下要素为出具质量检验报告的法定必须项，不可关闭或人为隐藏：
+              以下内容随生成时报告快照展示；模板样式不能改写判定结果或补造缺失资料：
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {ESSENTIAL_ITEMS.map(item => (
@@ -702,9 +589,6 @@ function TemplateEditorModal({ template, onClose, onSave }: EditorModalProps) {
 
   const [includeLogo, setIncludeLogo] = useState(template.includeLogo);
   const [includeTrend, setIncludeTrend] = useState(template.includeTrend);
-  const [includeAlarms, setIncludeAlarms] = useState(template.includeAlarms);
-  const [includeDetails, setIncludeDetails] = useState(template.includeDetails);
-  const [includeDeviceSnapshot, setIncludeDeviceSnapshot] = useState(template.includeDeviceSnapshot);
   const [includeSourceDeclaration, setIncludeSourceDeclaration] = useState(template.includeSourceDeclaration);
 
   function handleModalSubmit(formData: FormData) {
@@ -727,9 +611,6 @@ function TemplateEditorModal({ template, onClose, onSave }: EditorModalProps) {
         disclaimer: String(formData.get('disclaimer') || '').trim(),
         includeLogo: formData.has('includeLogo'),
         includeTrend: formData.has('includeTrend'),
-        includeAlarms: formData.has('includeAlarms'),
-        includeDetails: formData.has('includeDetails'),
-        includeDeviceSnapshot: formData.has('includeDeviceSnapshot'),
         includeSourceDeclaration: formData.has('includeSourceDeclaration')
       },
       cleanReason
@@ -809,7 +690,7 @@ function TemplateEditorModal({ template, onClose, onSave }: EditorModalProps) {
         </Field>
 
         <div>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#17324f' }}>可选内容组成区块：</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#17324f' }}>当前快照支持的版式选项：</span>
           <div className="tpl-checkbox-grid">
             <label className="tpl-checkbox-item">
               <input
@@ -827,34 +708,7 @@ function TemplateEditorModal({ template, onClose, onSave }: EditorModalProps) {
                 checked={includeTrend}
                 onChange={e => setIncludeTrend(e.target.checked)}
               />
-              <span>显示量测趋势图表</span>
-            </label>
-            <label className="tpl-checkbox-item">
-              <input
-                type="checkbox"
-                name="includeAlarms"
-                checked={includeAlarms}
-                onChange={e => setIncludeAlarms(e.target.checked)}
-              />
-              <span>显示超限报警与复核记录</span>
-            </label>
-            <label className="tpl-checkbox-item">
-              <input
-                type="checkbox"
-                name="includeDetails"
-                checked={includeDetails}
-                onChange={e => setIncludeDetails(e.target.checked)}
-              />
-              <span>显示逐米量测明细数据</span>
-            </label>
-            <label className="tpl-checkbox-item">
-              <input
-                type="checkbox"
-                name="includeDeviceSnapshot"
-                checked={includeDeviceSnapshot}
-                onChange={e => setIncludeDeviceSnapshot(e.target.checked)}
-              />
-              <span>显示检测设备与工位参数快照</span>
+              <span>显示汇总图表（判定构成、合格率、统计范围）</span>
             </label>
             <label className="tpl-checkbox-item">
               <input
@@ -865,6 +719,9 @@ function TemplateEditorModal({ template, onClose, onSave }: EditorModalProps) {
               />
               <span>显示数据来源环境真实性声明</span>
             </label>
+          </div>
+          <div className="tpl-unsupported-note">
+            逐点曲线、报警处置、设备参数和检测现场图片尚未进入正式报告快照；当前不会显示相应开关，也不会在 PDF 中生成示例内容冒充真实记录。
           </div>
         </div>
 
@@ -977,15 +834,18 @@ function SnapshotViewerModal({ snapshot, onClose }: SnapshotViewerModalProps) {
         </div>
 
         <div>
-          <span className="muted small">启用区块：</span>
+          <span className="muted small">该版本保存的区块设置（历史字段）：</span>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
             {snapshot.includeLogo && <Badge tone="green">品牌 Logo</Badge>}
-            {snapshot.includeTrend && <Badge tone="blue">量测趋势图表</Badge>}
-            {snapshot.includeAlarms && <Badge tone="amber">超限报警记录</Badge>}
-            {snapshot.includeDetails && <Badge tone="blue">量测明细数据</Badge>}
-            {snapshot.includeDeviceSnapshot && <Badge tone="gray">设备参数快照</Badge>}
+            {snapshot.includeTrend && <Badge tone="blue">汇总图表</Badge>}
+            {snapshot.includeAlarms && <Badge tone="amber">旧字段：报警记录</Badge>}
+            {snapshot.includeDetails && <Badge tone="blue">旧字段：量测明细</Badge>}
+            {snapshot.includeDeviceSnapshot && <Badge tone="gray">旧字段：设备快照</Badge>}
             {snapshot.includeSourceDeclaration && <Badge tone="gray">来源真实性声明</Badge>}
           </div>
+          <p className="muted small" style={{ margin: '6px 0 0' }}>
+            历史版本如实保留原设置；当前正式报告是否展示内容，以报告快照实际包含的数据为准。
+          </p>
         </div>
       </div>
     </Modal>

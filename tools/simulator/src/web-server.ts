@@ -13,7 +13,7 @@ const manager=new WebManager(resolve(process.env.SIM_DB||'../../runtime/simulato
 const webRoot=resolve(process.env.SIM_WEB_ROOT||'web');
 const allowedHosts=new Set((process.env.SIM_ALLOWED_HOSTS||'127.0.0.1,localhost').split(','));
 const sessions=new Map<string,{csrf:string;expires:number}>(),attempts=new Map<string,{count:number;expires:number}>();
-const assets:Record<string,[string,string]>={'/':['index.html','text/html; charset=utf-8'],'/app.js':['app.js','text/javascript; charset=utf-8'],'/models.js':['models.js','text/javascript; charset=utf-8'],'/device-status.js':['device-status.js','application/javascript; charset=utf-8'],'/catalog.js':['catalog.js','text/javascript; charset=utf-8'],'/live.js':['live.js','text/javascript; charset=utf-8'],'/style.css':['style.css','text/css; charset=utf-8'],'/logo.png':['logo.png','image/png']};
+const assets:Record<string,[string,string]>={'/':['index.html','text/html; charset=utf-8'],'/app.js':['app.js','text/javascript; charset=utf-8'],'/random-defects.js':['random-defects.js','text/javascript; charset=utf-8'],'/models.js':['models.js','text/javascript; charset=utf-8'],'/device-status.js':['device-status.js','application/javascript; charset=utf-8'],'/catalog.js':['catalog.js','text/javascript; charset=utf-8'],'/live.js':['live.js','text/javascript; charset=utf-8'],'/style.css':['style.css','text/css; charset=utf-8'],'/logo.png':['logo.png','image/png']};
 
 function json(res:ServerResponse,status:number,data:unknown){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}
 async function body(req:IncomingMessage){

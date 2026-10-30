@@ -197,7 +197,8 @@ export class QualityReportService {
         }
 
         const mCode = row.metric_code || 'UNKNOWN';
-        if (!metricMap[mCode]) {
+        const metricKey=row.unit==='1'?mCode+':roundness':mCode;
+        if (!metricMap[metricKey]) {
           const mName = mCode === 'SHIELD_OVERLAP_RATE'
             ? '金属屏蔽铜带搭盖率'
             : mCode === 'WIRE_GAP'
@@ -206,13 +207,9 @@ export class QualityReportService {
             ? '电缆不圆度'
             : mCode;
 
-          const ruleExpr = mCode === 'SHIELD_OVERLAP_RATE'
-            ? '>= 10.0%'
-            : mCode === 'WIRE_GAP'
-            ? '<= 3.0mm'
-            : '<= 8.0%';
+          const ruleExpr = '各任务冻结规则（不同任务阈值可能不同）';
 
-          metricMap[mCode] = {
+          metricMap[metricKey] = {
             metric_code: mCode,
             metric_name: mName,
             unit: row.unit || (mCode === 'WIRE_GAP' ? 'mm' : '%'),
@@ -226,7 +223,7 @@ export class QualityReportService {
           };
         }
 
-        const mStat = metricMap[mCode];
+        const mStat = metricMap[metricKey];
         mStat.total++;
         if (row.data_status === 'VALID') {
           mStat.valid++;
@@ -308,7 +305,7 @@ export class QualityReportService {
         totalPassedAcrossMetrics += stat.passed;
 
         metricsSummary[code] = {
-          metric_code: code,
+          metric_code: stat.metric_code,
           metric_name: stat.metric_name,
           unit: stat.unit,
           rule_expression: stat.rule_expression,
@@ -316,9 +313,9 @@ export class QualityReportService {
           valid_samples: stat.valid,
           passed_samples: stat.passed,
           failed_samples: stat.failed,
-          min_value: minVal !== null ? minVal.toFixed(3) : null,
-          max_value: maxVal !== null ? maxVal.toFixed(3) : null,
-          avg_value: avgVal !== null ? avgVal.toFixed(3) : null,
+          min_value: minVal !== null ? minVal.toFixed(stat.unit==='1'?10:3) : null,
+          max_value: maxVal !== null ? maxVal.toFixed(stat.unit==='1'?10:3) : null,
+          avg_value: avgVal !== null ? avgVal.toFixed(stat.unit==='1'?10:3) : null,
           std_dev: stdDevVal !== null ? stdDevVal.toFixed(3) : '0.000',
           defective_meters: defectiveMeters,
           compliance_rate: complianceRate,

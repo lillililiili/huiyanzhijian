@@ -167,7 +167,8 @@
           "type": "string",
           "enum": [
             "%",
-            "mm"
+            "mm",
+            "1"
           ]
         },
         "data_status": {
@@ -266,9 +267,28 @@
             }
           },
           "else": {
-            "properties": {
-              "unit": {
-                "const": "%"
+            "if": {
+              "properties": {
+                "metric_code": {
+                  "const": "OVALITY"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "unit": {
+                  "enum": [
+                    "%",
+                    "1"
+                  ]
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "unit": {
+                  "const": "%"
+                }
               }
             }
           }
@@ -1309,7 +1329,8 @@
           "type": "string",
           "enum": [
             "%",
-            "mm"
+            "mm",
+            "1"
           ]
         },
         "recipe_version_id": {

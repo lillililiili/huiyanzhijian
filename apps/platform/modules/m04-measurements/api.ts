@@ -53,10 +53,11 @@ export function decode170A2DStatusWord(statusHexOrInt: unknown) {
   };
 }
 
-function validateOvalityObservation(r: any) {
+export function validateOvalityObservation(r: any) {
   const v = r?.values?.[0];
   if (!v || v.metric_code !== 'OVALITY') return;
   const obs = r?.raw?.data?.observation;
+  if(v.method_id==='roundness-min-max.v1'&&r.data_status==='VALID')requireValue(obs?.diameter_x_mm!==undefined&&obs?.diameter_y_mm!==undefined,'RECORD_INVALID','圆整度需要原始X/Y直径');
   if (!obs || typeof obs !== 'object') return;
 
   const statusHex = obs.registers?.['0x0200_status_word'] ?? r?.raw?.data?.status_word;
@@ -74,18 +75,19 @@ function validateOvalityObservation(r: any) {
       } catch {
         throw new ApiError(400, 'RECORD_INVALID', '170A-2D双向测径仪X/Y轴直径必须为有效十进制数值');
       }
-      requireValue(dx.gt(0) && dy.gt(0), 'RECORD_INVALID', 'VALID有效状态下170A-2D双轴直径(Dx, Dy)必须大于0');
+      requireValue(dx.isFinite() && dy.isFinite() && dx.gt(0) && dy.gt(0), 'RECORD_INVALID', 'VALID有效状态下170A-2D双轴直径(Dx, Dy)必须大于0');
 
       const avg = dx.plus(dy).div(2);
       const diff = dx.minus(dy).abs();
-      const expectedOvalityPct = diff.div(avg).times(100);
+      const ratioMethod=v.method_id==='roundness-min-max.v1';
+      const expectedOvalityPct = ratioMethod?Decimal.min(dx,dy).div(Decimal.max(dx,dy)):diff.div(avg).times(100);
 
       if (v.value !== null && v.value !== undefined) {
         const reportedVal = new Decimal(String(v.value));
         requireValue(
-          reportedVal.minus(expectedOvalityPct).abs().lte(new Decimal('0.05')),
+          reportedVal.minus(expectedOvalityPct).abs().lte(new Decimal(ratioMethod?'0.0000000001':'0.05')),
           'RECORD_INVALID',
-          '不圆度百分比与椭圆长短轴(a,b)推导值不一致'
+          '测量值与当前方法的X/Y推导结果不一致'
         );
       }
     }
@@ -169,7 +171,7 @@ export class MeasurementApi{
     validate('Measurement',r);requireValue(uint(r.capture_sequence)&&uint(r.binding_version),'RECORD_INVALID','序号超出uint64');hash=digest(r);
     const d=await this.catalog.getDevice(ctx.actor.factory,r.device_id);requireValue(d.enabled,'ACCESS_DENIED','设备停用；未授权历史补传',403);
     requireValue(d.data_environment===r.data_environment,'SOURCE_NOT_ALLOWED','设备环境不匹配',403);
-    requireValue(r.data_status===r.values[0].data_status&&r.values[0].metric_code===d.metric_code,'RECORD_INVALID','指标或有效性不一致');requireValue(units[r.values[0].metric_code]===r.values[0].unit,'UNIT_MISMATCH','单位不匹配');
+    requireValue(r.data_status===r.values[0].data_status&&r.values[0].metric_code===d.metric_code,'RECORD_INVALID','指标或有效性不一致');requireValue((r.values[0].metric_code==='OVALITY'&&r.values[0].method_id==='roundness-min-max.v1'?'1':units[r.values[0].metric_code])===r.values[0].unit,'UNIT_MISMATCH','单位不匹配');
     requireValue(d.raw_schema_versions.includes(r.raw.schema_version),'RAW_SCHEMA_UNSUPPORTED','原文版本未注册');requireValue(Buffer.byteLength(JSON.stringify(r.raw))<=65536&&rawValid(r.raw.data),'RAW_LIMIT_EXCEEDED','原文结构/大小/数值超出限制');validateOvalityObservation(r);
     requireValue(!(r.data_environment==='REAL'&&r.time_source==='SIMULATOR'),'SOURCE_NOT_ALLOWED','真实数据不能使用模拟时间来源');requireValue(r.sample_kind!=='NEW_SAMPLE'||d.source_identification==='SAMPLE_ID','RECORD_INVALID','缺少可靠新样本标识');
     const w=r.values[0].window;if(w.kind==='POSITION')requireValue(new Decimal(w.position_to_m).gte(w.position_from_m),'WINDOW_INVALID','位置窗口倒序');if(w.kind==='TIME')requireValue(instantMicros(w.end)>=instantMicros(w.start),'WINDOW_INVALID','时间窗口倒序');
@@ -183,7 +185,7 @@ export class MeasurementApi{
      if(old.rowCount){if(old.rows[0].payload_hash===hash)return this.receipt(old.rows[0],index,true);await db.query('INSERT INTO m04.ingestion_conflict(id,factory_id,device_id,source_id,original_record_id,conflicting_hash,request_id,reason_code) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[randomUUID(),ctx.actor.factory,r.device_id,r.record_id,old.rows[0].id,hash,ctx.requestId,'RECORD_PAYLOAD_CONFLICT']);return this.reject(index,r.record_id,'RECORD_PAYLOAD_CONFLICT');}
      const seq=await db.query('SELECT id FROM m04.measurement_record WHERE factory_id=$1 AND device_id=$2 AND capture_session_id=$3 AND capture_sequence=$4',[ctx.actor.factory,r.device_id,r.capture_session_id,r.capture_sequence]);if(seq.rowCount)return this.reject(index,r.record_id,'CAPTURE_SEQUENCE_CONFLICT');
      const id=randomUUID();const fields=['id','factory_id','device_id','source_record_key','capture_session_id','capture_sequence','source_record_id','source_session_id','source_sequence','task_id','binding_id','binding_version','recipe_version_id','sample_kind','sample_time','time_source','position_m','position_quality','position_segment_id','source_type','data_environment','data_status','receipt_status','isolation_reason','raw_payload','payload_hash','schema_version'];
-     const values=[id,ctx.actor.factory,r.device_id,r.record_id,r.capture_session_id,r.capture_sequence,r.source_record_id,r.source_session_id,r.source_sequence,assignment?r.task_id:null,r.binding_id,r.binding_version,r.recipe_version_id,r.sample_kind,r.sample_time,r.time_source,r.position_m,r.position_quality,r.position_segment_id,r.source_type,r.data_environment,r.data_status,reason?'QUARANTINED':'STORED',reason,JSON.stringify(r),hash,'1.0'];
+     const values=[id,ctx.actor.factory,r.device_id,r.record_id,r.capture_session_id,r.capture_sequence,r.source_record_id,r.source_session_id,r.source_sequence,assignment?r.task_id:null,r.binding_id,r.binding_version,r.recipe_version_id,r.sample_kind,r.sample_time,r.time_source,r.position_m??null,r.position_quality??'UNKNOWN',r.position_segment_id??null,r.source_type,r.data_environment,r.data_status,reason?'QUARANTINED':'STORED',reason,JSON.stringify(r),hash,'1.0'];
      const stored=await db.query(`INSERT INTO m04.measurement_record(${fields.join(',')}) VALUES(${values.map((_,i)=>'$'+(i+1)).join(',')}) RETURNING *,${timestamp('received_at')} AS received`,values);const v=r.values[0];
      await db.query('INSERT INTO m04.measurement_value(record_id,metric_code,value,unit,data_status,source_quality_result,method_id,window_definition,reason_code) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[id,v.metric_code,v.value,v.unit,v.data_status,v.source_quality_result,v.method_id,JSON.stringify(v.window),v.reason_code]);
      await db.query('INSERT INTO m04.measurement_evaluation(record_id,version,quality_result,reason_code,recipe_version_id,rule_snapshot) VALUES($1,1,$2,$3,$4,$5)',[id,evaluation.quality_result,evaluation.reason_code,r.recipe_version_id,JSON.stringify(rule)]);
