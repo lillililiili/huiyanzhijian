@@ -50,9 +50,16 @@ test('empty/error replies show no fabricated image and allow retry',async()=>{
 test('history keeps the selected record and never loads a generic photograph',async()=>{
  const api=new ApiClient(),request=vi.spyOn(api,'request');const {t,r}=metricCase('WIRE_GAP');await render(<DefectExampleViewer api={api} task={t} record={r} context="历史记录" onClose={()=>{}}/>);expect(request).not.toHaveBeenCalled();expect(document.querySelector('img')).toBeNull();expect(document.querySelector('svg')!.getAttribute('aria-label')).toContain('铜丝间隙偏大');expect(document.body.textContent).toContain('0.0000000001 mm');
 });
+test('detection preview uses sample and receipt times without position or defect length',async()=>{
+ const r={...record,received_at:'2026-10-26T04:17:41.123456Z'};
+ await render(<DefectExampleViewer api={new ApiClient()} task={task} record={r} context="检测" timeOnly onClose={()=>{}}/>);
+ const text=document.querySelector('[role=dialog]')!.textContent!;
+ expect(text).toContain('12:17:40.663');expect(text).toContain('12:17:41.123456');expect(text).toContain('按采样时间追溯');
+ expect(text).not.toContain('来源米数');expect(text).not.toContain('缺陷长度');expect(text).not.toContain('0.7 m');
+});
 test('switch task cancels old request and ignores late old metric reply',async()=>{
- const api=new ApiClient();let resolveOld:(v:unknown)=>void=()=>{};const {t,r}=metricCase('OVALITY');const request=vi.spyOn(api,'request').mockImplementationOnce(()=>new Promise(resolve=>{resolveOld=resolve;})).mockResolvedValueOnce(page([{...r,raw_payload:{...r.raw_payload,task_id:'t2'}}]));
- await render(<DefectExampleViewer api={api} task={task} context="T1" onClose={()=>{}}/>);await act(async()=>root!.render(<DefectExampleViewer api={api} task={{...t,id:'t2'}} context="T2" onClose={()=>{}}/>));expect(request.mock.calls[0][3]!.aborted).toBe(true);await act(async()=>resolveOld(page([record])));expect(document.querySelector('svg')!.getAttribute('aria-label')).toContain('不圆度偏大');expect(document.body.textContent).not.toContain('9.9999999999');
+ const api=new ApiClient();let resolveOld:(v:unknown)=>void=()=>{};const {t,r}=metricCase('WIRE_GAP');const request=vi.spyOn(api,'request').mockImplementationOnce(()=>new Promise(resolve=>{resolveOld=resolve;})).mockResolvedValueOnce(page([{...r,raw_payload:{...r.raw_payload,task_id:'t2'}}]));
+ await render(<DefectExampleViewer api={api} task={task} context="T1" onClose={()=>{}}/>);await act(async()=>root!.render(<DefectExampleViewer api={api} task={{...t,id:'t2'}} context="T2" onClose={()=>{}}/>));expect(request.mock.calls[0][3]!.aborted).toBe(true);await act(async()=>resolveOld(page([record])));expect(document.querySelector('svg')!.getAttribute('aria-label')).toContain('铜丝间隙偏大');expect(document.body.textContent).not.toContain('9.9999999999');
 });
 test('detail uses server summary, survives polling, and hides summary on error',async()=>{
  const api=new ApiClient(),request=vi.spyOn(api,'request').mockImplementation(async path=>path.startsWith('/measurements')?page([record]):{measurements:{failed:2,total:8},transitions:[],plan:null,encounter:null});
@@ -84,3 +91,11 @@ test('conflicting, incomplete or unknown method observation is not drawn',()=>{
 test('reverse-direction limit draws its actual comparison without a contrary stock image',()=>{
  const t={...task,rule_snapshot:{...task.rule_snapshot,comparison:{operator:'LE',lower:null,upper:'8'}}};const model=recordGraphic({...record,value:'9'},t);expect(model.name).toBe('搭盖率偏高');expect(model.delta).toBe('1');expect(model.direction).toBe('HIGH');
 });
+
+ test('OVALITY exposes no image trigger, placeholder or direct viewer',async()=>{
+ const api=new ApiClient(),request=vi.spyOn(api,'request'),{t,r}=metricCase('OVALITY');
+ await render(<DefectExamples api={api} task={t} failed={6} context="工单任务" compact/>);expect(host.innerHTML).toBe('');
+ await act(async()=>root!.render(<DefectExamples api={api} record={r} failed={1} context="历史记录"/>));expect(host.innerHTML).toBe('');
+ await act(async()=>root!.render(<DefectExampleViewer api={api} task={t} context="不圆度" onClose={()=>{}}/>));expect(document.querySelector('[role=dialog]')).toBeNull();expect(request).not.toHaveBeenCalled();
+ await act(async()=>root!.render(<DefectRecordGraphic record={r} task={t}/>));expect(host.innerHTML).toBe('');
+ });

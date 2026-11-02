@@ -1,0 +1,23 @@
+<header>
+ <div class="brand"><img src="/logo.png" alt="慧眼智检"><div><h1>线缆在线检测</h1><p>圆整度 · 护套厚度</p></div></div>
+ <div class="top-state"><span id="connection" class="pill neutral">等待仪器数据</span><span id="state" class="pill blue">待命</span><div class="clock"><strong id="clock">—</strong><small>北京时间</small></div><button id="fullscreen" class="icon-button" title="切换全屏" aria-label="切换全屏"><img src="/icons/maximize.svg" alt=""></button><button id="settings" class="icon-button" title="采集设置" aria-label="采集设置"><img src="/icons/settings.svg" alt=""></button></div>
+</header>
+<div id="alert" role="alert" hidden></div>
+<main>
+ <section class="process-strip" aria-label="测径仪安装顺序"><span>线缆出</span><i>→</i><strong><b>A</b>测径仪 A<small>双轴测量</small></strong><i>→</i><strong class="extruder"><img src="/icons/layers-intersect.svg" alt="">线缆挤出机</strong><i>→</i><strong><b>B</b>测径仪 B<small>自动识别输入轴数</small></strong><i>→</i><span>线缆入</span></section>
+ <section class="overview">
+  <article class="panel gauge-panel"><div class="card-title"><h2><b class="gauge-badge">A</b>测径仪 A</h2><span id="a-state" class="subtle">等待数据</span></div><div class="gauge-values">
+   <div class="axis-value ax"><span><i></i>X 直径 <small>mm</small></span><strong id="x">—</strong></div>
+   <div class="axis-value ay"><span><i></i>Y 直径 <small>mm</small></span><strong id="y">—</strong></div>
+   <div class="axis-value amean"><span><i></i>平均直径 <small>mm</small></span><strong id="average">—</strong></div>
+  </div><p class="gauge-caption">平均直径 = (X + Y) ÷ 2</p></article>
+  <article class="panel result-panel roundness"><div class="card-title"><h2>圆整度</h2><span class="result-source">来自 A</span></div><div id="ratio" class="result-value">—</div><div id="verdict" class="result-status">等待 A 双轴数据</div><p id="threshold">未设置判定下限</p><small id="exact">min(X, Y) ÷ max(X, Y) · 最圆为 1</small></article>
+  <article class="panel result-panel sheath"><div class="card-title"><h2>护套厚度</h2><span class="result-source">A + B</span></div><div class="thickness-reading"><strong id="thickness">—</strong><small>mm</small></div><div id="thickness-state" class="result-status">等待两台仪器数据</div><p id="thickness-formula">按确认后的平均直径差计算</p><small id="pair-detail">尚未配对</small></article>
+  <article class="panel gauge-panel"><div class="card-title"><h2><b class="gauge-badge b">B</b>测径仪 B</h2><span id="b-state" class="subtle">等待数据</span></div><div class="gauge-values b-values">
+   <div class="axis-value bx"><span><i></i>X 直径 <small>mm</small></span><strong id="bx">—</strong></div>
+   <div id="by-row" class="axis-value by" hidden><span><i></i>Y 直径 <small>mm</small></span><strong id="by">—</strong></div>
+  </div><p id="b-mode" class="gauge-caption">收到数据后自动识别单轴 / 双轴</p></article>
+ </section>
+ <section class="chart-panel panel"><div class="panel-heading"><div><h2>测径趋势</h2><span>最近 60 秒 · 直径左轴 / 圆整度右轴</span></div><small id="rate">等待采集</small></div><div class="legend-row"><div id="chart-legend" class="chart-legend" aria-label="点击图例切换曲线"></div><span class="legend-hint">点击图例显示 / 隐藏</span></div><div class="chart-area"><div id="chart" aria-label="测径仪A与B的直径和圆整度双轴折线图"></div><div id="empty-chart"><img src="/icons/chart-line.svg" alt=""><strong>等待测径数据</strong><p>开始采集并扫码后，已接收的轴值将在这里显示</p></div></div></section>
+ <section class="order-panel panel"><div class="order-info"><div class="order-grid"><div><span>工单</span><strong id="order-code">未选择</strong></div><div><span>盘号</span><strong id="spool">—</strong></div><div><span>规格</span><strong id="spec">—</strong></div><div><span>计划长度</span><strong id="length">—</strong></div></div><div class="capture-info"><span>末次采样 <strong id="capture-time">—</strong></span><span id="hint">待命，请确认设备与本盘信息</span></div></div><div class="actions"><button id="primary" class="primary">开始采集</button><button id="end" disabled><img src="/icons/player-stop.svg" alt="">结束本盘</button><button id="history"><img src="/icons/history.svg" alt="">检测记录</button></div></section>
+</main><footer><span id="storage">本地存储 · 等待数据</span><span>InfluxDB 时序记录 · 原始数据可追溯</span><span id="sync">中心对接未启用</span></footer>

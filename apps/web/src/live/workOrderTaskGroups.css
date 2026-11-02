@@ -1,0 +1,19 @@
+.wg-help{margin:0;padding:14px 22px;color:var(--muted,#7186a6);font-size:13px;line-height:1.7;border-bottom:1px solid #e6edf7}
+.wg-table{width:100%;min-width:880px}
+.wg-table>thead>tr>th{white-space:nowrap}
+.wg-table>tbody>tr>td{vertical-align:middle;padding:20px 14px}
+.wg-table>tbody>tr>td:first-child{width:23%;overflow-wrap:anywhere}
+.wg-table>tbody>tr>td:nth-child(2){width:23%}
+.wg-table>tbody>tr>td:nth-child(3){width:23%}
+.wg-table>tbody>tr>td:last-child{white-space:nowrap}
+.wg-states{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;max-width:260px}
+.wg-state{font-size:12px;line-height:1.7;padding:1px 7px;border-radius:4px;background:#eef3fa;color:#5c708e;white-space:nowrap}
+.wg-RUNNING{background:#e7f0ff;color:#175db8}.wg-CREATED{background:#fff5df;color:#90600a}
+.wg-open{background:#f2f7ff}.wg-toggle{font-size:13px}
+.wg-table>tbody>.wg-detail>td{padding:0 16px 18px;background:#f2f7ff;white-space:normal}
+.wg-detail[hidden]{display:none}
+.wg-detail-title{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;padding:16px 6px;color:#234878;font-size:14px}
+.wg-detail-title span{color:#7186a6;font-size:12px}
+.wg-detail .table-wrap{background:white;border:1px solid #dfE8f5;border-radius:8px}
+.wg-detail .ux-task-table{min-width:840px}
+.wg-detail .ux-task-table td{vertical-align:top;white-space:normal}

@@ -16,14 +16,14 @@ export class ApiClient {
     }
     return session;
   }
-  async request<T>(path: string, body?: unknown, headers: Record<string, string> = {}, signal?: AbortSignal): Promise<T> {
+  async request<T>(path: string, body?: unknown, headers: Record<string, string> = {}, signal?: AbortSignal, timeoutMs = 20000): Promise<T> {
     if(this.guardSession && body !== undefined && path !== '/auth/login') await this.checkSession(signal);
     let response: Response;
     const controller = new AbortController();
     const abort = () => controller.abort();
     if (signal?.aborted) abort();
     signal?.addEventListener("abort", abort, { once: true });
-    const timeout = setTimeout(abort, 20000);
+    const timeout = setTimeout(abort, timeoutMs);
     try {
       response = await this.send.call(globalThis, `/api/v1${path}`, { method: body === undefined ? "GET" : "POST", credentials: "same-origin", cache: "no-store",
         headers: body === undefined ? headers : { "Content-Type": "application/json", "X-CSRF-Token": this.csrf, ...headers },
@@ -54,18 +54,18 @@ export class ApiClient {
 }
 export interface Page<T> { items: T[]; total?: number; has_more: boolean; next_cursor: string | null; as_of?: string; scope?: {root_id:string;task_count:number;scope_hash:string;members:Spool[]} | null }
 export interface Person { id: string; name: string; username: string; factory_id: string; permissions: string[] }
-export interface WorkOrder { id: string; external_code: string; specification_id: string; source_system?: string; created_at: string }
-export interface Spool { id: string; spool_code: string; work_order_id: string; version?: string; canonical_spool_id?: string | null; created_at: string }
+export interface WorkOrder { specification_ids?: string[]; id: string; external_code: string; specification_id: string; source_system?: string; created_at: string }
+export interface Spool { specification_id?: string; id: string; spool_code: string; work_order_id: string; version?: string; canonical_spool_id?: string | null; created_at: string }
 export interface Specification { code?: string; id: string; name: string; voltage_kv: string; conductor_area_mm2: string; core_count: number; shield_structure: string; enabled: boolean }
 export interface Device { id: string; name: string; model: string; metric_code: string; process_id: string; line_id: string; enabled: boolean; data_environment: string }
 export interface Rule { approval_state: string; method_id: string | null; method_version: string | null; comparison: { operator: string; lower: string | null; upper: string | null } | null }
 export interface Recipe { code?:string; name?:string; group_id?:string; version_number?:number; unit?:string; specification_ids?:string[]; standard_reference?:string; reason?:string; actor_id?:string; created_at?:string; enabled?:boolean; version?:string; id: string; revision: string; metric_code: string; approval_state: string; rule_snapshot: Rule }
 export interface SampleSummary {task_id:string;total:number;valid:number;invalid:number;passed:number;failed:number;unevaluated:number;quarantined:number;first_sample_at:string|null;latest_sample_at:string|null;minimum:string|null;maximum:string|null;mean:string|null;unit:string|null}
-export interface Task { activity?:TaskActivity; measurements?:SampleSummary; current_order_code?:string; original_spool_id?: string; original_work_order_id?: string; association_version?: string; current_spool_code?: string; canonical_spool_id?: string; creation_source?: string; reported_length_m?: string | null; length_status?: string; plan_id?: string; plan_name?: string; id: string; task_code: string; work_order_id: string; spool_id: string; specification_id: string; process_id: string; device_id: string; metric_code: string; recipe_version_id: string | null; planned_length_m: string | null; state: string; version: string; rule_snapshot: Rule; data_environment: string; created_at: string; started_at: string | null; ended_at: string | null; end_reason?: string; context_snapshot: { specification: Specification; device: Device; spool_code: string; external_code: string } }
+export interface Task { activity?:TaskActivity; measurements?:SampleSummary; current_order_code?:string; original_spool_id?: string; original_work_order_id?: string; association_version?: string; current_spool_code?: string; canonical_spool_id?: string; creation_source?: string; reported_length_m?: string | null; length_status?: string; plan_id?: string; plan_name?: string; id: string; task_code: string; work_order_id: string; spool_id: string; specification_id: string; process_id: string; device_id: string; metric_code: string; recipe_version_id: string | null; planned_length_m: string | null; state: string; version: string; rule_snapshot: Rule; data_environment: string; created_at: string; started_at: string | null; ended_at: string | null; end_reason?: string; context_snapshot: { scan_execution?: {source_task_id:string;source_task_code:string;previous_task_id:string;round:number}; specification: Specification; device: Device; spool_code: string; external_code: string } }
 export interface Catalog { product_specification: Specification[]; device: Device[]; recipes: Recipe[]; inspection_process: { id: string; name: string }[]; production_line: { id: string; name: string }[]; specification_applicability: { specification_id: string; process_id: string; metric_code: string }[] }
 export interface RawRecord { task_id: string | null; device_id: string; record_id: string; sample_time: string; position_m: string | null; position_quality: string; data_status: string; data_environment: string; capture_sequence: string; recipe_version_id: string | null; values: { metric_code: string; value: string | null; unit: string; data_status: string; reason_code: string | null }[] }
 export interface BusinessContext { task_id:string; task_code:string; spool_id:string; spool_code:string; work_order_id:string; external_code:string; original_spool_id:string; original_work_order_id:string; original_spool_code:string; association_version:string }
-export interface Measurement { task_id?:string|null; business_context?:BusinessContext|null; id: string; ingest_order: string; raw_payload: RawRecord; value: string | null; unit: string; metric_code: string; quality_result: string; evaluation_reason: string | null; receipt_status: string; eligibility: string; position_eligibility: string; received_at: string }
+export interface Measurement { sheath_result?: {status:string;value:string|null;unit:string;method:string;validation_version:string;reason:string;pair:Record<string,unknown>|null}; task_id?:string|null; business_context?:BusinessContext|null; id: string; ingest_order: string; raw_payload: RawRecord; value: string | null; unit: string; metric_code: string; quality_result: string; evaluation_reason: string | null; receipt_status: string; eligibility: string; position_eligibility: string; received_at: string }
 export interface DeviceStatus { device_id: string; online: boolean; last_heartbeat_at: string; heartbeat_payload: { last_sample_time?: string | null; acquisition_state?: string } }
 export interface Workspace { catalog: Catalog; tasks: Task[]; spools: Spool[]; orders: WorkOrder[]; devices: DeviceStatus[] }
 export const emptyWorkspace: Workspace = { catalog: { product_specification: [], device: [], recipes: [], inspection_process: [], production_line: [], specification_applicability: [] }, tasks: [], spools: [], orders: [], devices: [] };

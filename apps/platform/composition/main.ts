@@ -1,3 +1,5 @@
+import {ovalityTimeseries} from '../modules/m04-measurements/timeseries';
+import {EdgeSynchronization} from '../modules/m09-edge/synchronization';
 import {RuleManagement} from '../modules/m03-rules/management';
 import {SimulationQueries} from '../modules/m02-tasks/simulation';
 import 'reflect-metadata';
@@ -11,7 +13,7 @@ import {taskActivity} from './activity';
 import {All,Controller,Module,Req,Res} from '@nestjs/common';
 import {NestFactory} from '@nestjs/core';
 import type {Request,Response} from 'express';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,timingSafeEqual} from 'node:crypto';
 import {pool,transaction} from '../infrastructure/db';
 import {ApiError,requireValue,object,textField,idPattern} from '../infrastructure/errors';
 import {parseJson} from '../infrastructure/schema';
@@ -24,16 +26,21 @@ import {ProductionApi} from '../modules/m02-tasks/production';
 import {TaskAssociations} from '../modules/m02-tasks/associations';
 import {TaskApi} from '../modules/m02-tasks/api';
 import {WorkOrderApi} from '../modules/m02-tasks/work-orders';
+import {TaskLabels} from '../modules/m02-tasks/task-labels';
+import {ScanLifecycle} from '../modules/m02-tasks/scan-lifecycle';
 import {MeasurementApi} from '../modules/m04-measurements/api';
 import {MeasurementImportService} from '../modules/m04-measurements/import';
 const identity=new IdentityApi(),catalog=new CatalogApi(),rules=new RuleApi(),tasks=new TaskApi(identity,catalog,rules),measurements=new MeasurementApi(identity,catalog,tasks,rules);
 const ruleManagement=new RuleManagement(identity,catalog,rules);
 const productionQueries=new ProductionQueries();
 const adminApi=new AdminApi(identity);
+const edgeSynchronization=new EdgeSynchronization(identity,adminApi,catalog);
 const catalogManagement=new CatalogManagement(identity,catalog);
 const associations=new TaskAssociations(tasks,identity);
 const production=new ProductionApi(tasks,identity,catalog,rules);
-const workOrders=new WorkOrderApi(tasks,identity);
+const workOrders=new WorkOrderApi(tasks,identity,catalog);
+const taskLabels=new TaskLabels(tasks,catalog);
+const scanLifecycle=new ScanLifecycle(tasks,catalog);
 const alarms=new AlarmService(identity);
 const mes=new MesService();
 const qualityReports=new QualityReportService();
@@ -56,7 +63,7 @@ class ApiController{
    const path=req.path.replace(/\/$/,'');const method=req.method;let data:any;
    if(method==='GET'&&path==='/api/v1/health/live')data={alive:true};
    else if(method==='GET'&&path==='/api/v1/health/ready'){
-    await pool.query('SELECT 1');const w=await pool.query("SELECT process_name,last_seen_at>now()-interval '15 seconds' AS healthy,capabilities FROM ops.process_heartbeat WHERE process_name='analysis-worker'");data={database:'UP',analysis_worker:w.rows[0]||{healthy:false,capabilities:[]},implemented:['device-ingestion-1.0','task-binding'],not_implemented:['analysis','reports','MES','hardware','source-alarms','evidence','position-1.1']};
+    await pool.query('SELECT 1');const w=await pool.query("SELECT process_name,last_seen_at>now()-interval '15 seconds' AS healthy,capabilities FROM ops.process_heartbeat WHERE process_name='analysis-worker'");data={database:'UP',ovality_timeseries:await ovalityTimeseries.health(),analysis_worker:w.rows[0]||{healthy:false,capabilities:[]},implemented:['device-ingestion-1.0','task-binding'],not_implemented:['analysis','reports','MES','hardware','source-alarms','evidence','position-1.1']};
    }else{
     requireValue(path.startsWith('/api/v1/'),'RESOURCE_NOT_FOUND','接口不存在',404);rate('ip:'+req.ip,600);
     if(path==='/api/v1/mes/mock-receiver'&&method==='POST'){
@@ -85,7 +92,16 @@ class ApiController{
      else if(path==='/api/v1/production-events'&&method==='POST'){deviceScope(actor,b?.device_id);await measurements.checkConnection(actor,b?.device_id,b?.connection_id);data=await production.productionEvent(ctx,b);}
      else if(path==='/api/v1/measurements:ingest'&&method==='POST'){
       allow(actor,'device:ingest','DEVICE');
-      data=await measurements.ingest(ctx,b);
+      if(Array.isArray(b?.records)&&b.records.some((r:any)=>r?.values?.some((v:any)=>v?.metric_code==='OVALITY'))){
+       const expected=process.env.OVALITY_EDGE_TOKEN||'',provided=String(req.headers['x-huiyan-edge-token']||'');
+       requireValue(expected.length>=32&&Buffer.byteLength(provided)===Buffer.byteLength(expected)&&timingSafeEqual(Buffer.from(provided),Buffer.from(expected)),'EDGE_REQUIRED','不圆度检测记录须经边缘终端采集上传',403);
+       requireValue(b.records.filter((r:any)=>r?.values?.some((v:any)=>v?.metric_code==='OVALITY')).every((r:any)=>r?.raw?.data?.edge_gateway?.run_id),'EDGE_PROVENANCE_REQUIRED','缺少边缘采集履历',400);
+      }
+       // Go edge envelopes use RFC3339Nano. Only normalize this authenticated
+       // OVALITY transport timestamp; sample timestamps and raw evidence stay exact.
+       const edgeOnly=Array.isArray(b?.records)&&b.records.length>0&&b.records.every((r:any)=>r?.values?.length===1&&r.values[0].metric_code==='OVALITY');
+       const envelope=edgeOnly&&typeof b.sent_at==='string'?{...b,sent_at:b.sent_at.replace(/(\.\d{6})\d{1,3}(Z|[+-]\d{2}:\d{2})$/,'$1$2')}:b;
+       data=await measurements.ingest(ctx,envelope);
       try {
         const taskIds = new Set<string>();
         for (const r of (b?.records || [])) {
@@ -119,6 +135,14 @@ class ApiController{
       }
      }
      else if(path==='/api/v1/receipts:query'&&method==='POST')data=await measurements.receipts(actor,b);
+     else if(/^\/api\/v1\/devices\/[^/]+\/scan-preview\/[^/]+$/.test(path)&&method==='GET')data=await scanLifecycle.preview(actor,path.split('/')[4],path.split('/')[6]);
+     else if(/^\/api\/v1\/devices\/[^/]+\/task-(scan|stop)$/.test(path)&&method==='POST'){
+      const expected=process.env.OVALITY_EDGE_TOKEN||'',provided=String(req.headers['x-huiyan-edge-token']||'');
+      requireValue(expected.length>=32&&Buffer.byteLength(provided)===Buffer.byteLength(expected)&&timingSafeEqual(Buffer.from(provided),Buffer.from(expected)),'EDGE_REQUIRED','任务切换须由授权边缘终端发起',403);
+      data=await scanLifecycle.command(ctx,path.split('/')[4],path.endsWith('task-scan')?'scan':'stop',b);
+     }
+     else if(/^\/api\/v1\/task-labels\/[^/]+$/.test(path)&&method==='GET')data=await taskLabels.resolveForCredential(actor,path.split('/')[4]);
+     else if(/^\/api\/v1\/devices\/[^/]+\/task-labels\/[^/]+$/.test(path)&&method==='GET')data=await taskLabels.resolve(actor,path.split('/')[4],path.split('/')[6]);
      else if(/^\/api\/v1\/devices\/[^/]+\/assignment$/.test(path)&&method==='GET')data=await tasks.assignment(actor,path.split('/')[4]);
      else if(/^\/api\/v1\/devices\/[^/]+\/assignment-acks$/.test(path)&&method==='POST'){const device=path.split('/')[4];deviceScope(actor,device);await measurements.checkConnection(actor,device,b?.connection_id);data=await tasks.ack(ctx,device,b);}
      else{
@@ -128,6 +152,8 @@ class ApiController{
       else if(path==='/api/v1/admin/users'&&method==='POST'){allow(actor,'users:manage');data=await adminApi.saveUser(ctx,null,b,key,version,(await catalog.factories(await adminApi.scope(actor))).map(r=>r.id));}
       else if(/^\/api\/v1\/admin\/users\/[^/:]+$/.test(path)&&method==='POST'){allow(actor,'users:manage');data=await adminApi.saveUser(ctx,path.split('/')[5],b,key,version,(await catalog.factories(await adminApi.scope(actor))).map(r=>r.id));}
       else if(/^\/api\/v1\/admin\/users\/[^/:]+:reset$/.test(path)&&method==='POST')data=await adminApi.reset(ctx,path.split('/')[5].split(':')[0],b,key,version);
+      else if(path==='/api/v1/admin/edge-sync'&&method==='GET')data=await edgeSynchronization.list(actor);
+      else if(/^\/api\/v1\/admin\/edge-sync\/[^/]+$/.test(path)&&method==='POST')data=await edgeSynchronization.save(ctx,decodeURIComponent(path.split('/')[5]),b,key,version);
       else if(path==='/api/v1/admin/settings'&&method==='GET')data=await adminApi.settings(actor);
       else if(/^\/api\/v1\/admin\/settings\/(platform|personal)$/.test(path)&&method==='POST')data=await adminApi.saveSettings(ctx,path.split('/')[5],b,key,version);
       else if(path==='/api/v1/admin/audits'&&method==='GET')data=await adminApi.audits(actor,req.query as Record<string,string>);
@@ -209,6 +235,8 @@ class ApiController{
       else if(/^\/api\/v1\/tasks\/[^/]+:reassociate$/.test(path)&&method==='POST')data=await associations.correct(ctx,path.split('/')[4].split(':')[0],b,key,version);
       else if(/^\/api\/v1\/task-associations\/[^/]+$/.test(path)&&method==='GET')data=await associations.history(actor,path.split('/')[4]);
       else if(/^\/api\/v1\/task-details\/[^/]+$/.test(path)&&method==='GET'){const id=path.split('/')[4];data={...await production.taskDetail(actor,id),measurements:await measurements.taskSummary(actor,id)};}
+      else if(/^\/api\/v1\/work-orders\/[^/]+\/specifications$/.test(path)&&method==='POST')data=await workOrders.specifications(ctx,path.split('/')[4],b,key);
+      else if(/^\/api\/v1\/work-orders\/[^/]+\/task-labels$/.test(path)&&method==='GET')data=await taskLabels.list(actor,path.split('/')[4]);
       else if(path==='/api/v1/work-orders'&&method==='POST')data=await tasks.createWorkOrder(ctx,b,key);
       else if(/^\/api\/v1\/work-orders\/[^/:]+:delete$/.test(path)&&method==='POST')data=await workOrders.remove(ctx,path.split('/')[4].split(':')[0],b,key);
       else if(path==='/api/v1/spools'&&method==='POST')data=await tasks.createSpool(ctx,b,key);
@@ -262,5 +290,5 @@ class ApiController{
  }
 }
 @Module({controllers:[ApiController]})class AppModule{}
-async function main(){requireValue(process.env.DATABASE_URL&&process.env.CURSOR_SECRET,'CONFIG_INVALID','数据库和游标签名配置缺失');await pool.query('CREATE OR REPLACE VIEW m04.measurement_raw AS SELECT * FROM m04.measurement_record;').catch(()=>{});await mes.ensureViews().catch(()=>{});await qualityReports.ensureViews().catch(()=>{});const app=await NestFactory.create(AppModule,{bodyParser:false,logger:['error','warn']});app.enableShutdownHooks();await app.listen(Number(process.env.PORT||4192),process.env.BIND_HOST||'127.0.0.1');console.log(JSON.stringify({event:'API_READY',port:Number(process.env.PORT||4192)}));}
+async function main(){requireValue(process.env.DATABASE_URL&&process.env.CURSOR_SECRET,'CONFIG_INVALID','数据库和游标签名配置缺失');await pool.query('CREATE OR REPLACE VIEW m04.measurement_raw AS SELECT * FROM m04.measurement_record;').catch(()=>{});await mes.ensureViews().catch(()=>{});await qualityReports.ensureViews().catch(()=>{});const app=await NestFactory.create(AppModule,{bodyParser:false,logger:['error','warn']});app.enableShutdownHooks();await app.listen(Number(process.env.PORT||4192),process.env.BIND_HOST||'127.0.0.1');edgeSynchronization.start();console.log(JSON.stringify({event:'API_READY',port:Number(process.env.PORT||4192)}));}
 main().catch(()=>{console.error(JSON.stringify({event:'STARTUP_FAILED'}));process.exitCode=1;});

@@ -19,8 +19,11 @@ function renderLive(data){
  const run=entries.find(r=>r.id===liveRunId),feed=run?.feed,active=['STARTING','RUNNING','STOPPING'].includes(run?.job?.status),stopping=run?.job?.status==='STOPPING',sampling=active&&run?.job?.command==='run',paused=run?.control==='PAUSED';
  const status=run?.starting?[preparationStatus(run.job),'warn']:run?runStatus(run):['待送料',''];
  $('live-status').textContent=status[0];$('live-status').className='badge '+status[1];$('live-panel').classList.toggle('is-active',!!active);
- $('live-context').textContent=run?(feed?feed.cable_name+' → '+feed.detector_name+' · '+run.device_id+' · '+(feed.mode==='AUTO'?'自动进出料':'已有任务')+' · 步长 '+feed.step_m+' m':run.device_id+' · '+(run.starting?'尚未开始采样 · '+preparationStatus(run.job):'接口诊断运行')):'尚未开始送料。选择下方线缆与设备后开始。';
+ $('live-context').textContent=run?(feed?feed.cable_name+' → '+feed.detector_name+' · '+run.device_id+' · '+(feed.mode==='AUTO'?'自动进出料':'已有任务')+' · 采样间隔 '+(feed.sampling_interval_ms??feed.speed.interval_ms)+' ms'+(feed.sampling_interval_ms==null?'（历史距离采样）':''):run.device_id+' · '+(run.starting?'尚未开始采样 · '+preparationStatus(run.job):'接口诊断运行')):'尚未开始送料。选择下方线缆与设备后开始。';
  const last=feed?.last_sample;
+ let sampleTime=$('live-sample-time');if(!sampleTime){sampleTime=document.createElement('p');sampleTime.id='live-sample-time';sampleTime.className='small muted';$('live-context').after(sampleTime);}
+ sampleTime.textContent=last?.time?'采集时间（北京时间）：'+new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',fractionalSecondDigits:3,hour12:false}).format(new Date(last.time)):'采集时间：等待采样';
+ $('live-meter-box').hidden=run?.metric_code!=='OVALITY';$('live-meter-value').textContent=last?.meter?last.meter.delay_ms+' ms / '+last.meter.distance_mm+' mm · V'+last.meter.sync_revision:feed?.meter_delay_ms!=null&&feed.meter_delay_ms!==''?feed.meter_delay_ms+' ms · 等待采样':'未配置计米器输出';
  $('live-position').textContent=feed?(last?.position_m??'未采样')+' / '+feed.length_m+' m':'—';
  $('live-progress').textContent=run&&!run.starting?run.generated+' / '+run.target+' 点':'—';
  $('live-value').textContent=last?last.value+' '+last.unit:'—';if($('live-ovality-box')){$('live-ovality-box').hidden=run?.metric_code!=='OVALITY';const obs=last?.observation;$('live-ovality-axes').textContent=obs?.diameter_x_mm!==undefined?`X(202H) ${obs.diameter_x_mm} / Y(204H) ${obs.diameter_y_mm} mm · 长轴a ${obs.major_axis_mm||'0'} / 短轴b ${obs.minor_axis_mm||'0'} mm · OvAL ${obs.ovality_difference_mm||'0'} mm · 向心率f ${obs.centripetal_ratio_f||'—'} · 状态字 ${obs.registers?.['0x0200_status_word']||'0x0002'}`:'等待采样';}
@@ -40,7 +43,7 @@ function renderLive(data){
   $('live-speed-current').textContent='已设 '+feed.speed.speed_m_min+' m/min · 目标间隔 '+feed.speed.interval_ms+' ms · v'+feed.speed.version;
  }else{liveSpeedRun='';liveSpeedVersion=0;$('live-speed').value='';$('live-speed-current').textContent='线缆过料运行支持调速';}
  if(!liveActionBusy)$('live-message').textContent=run?.job?.message||feed?.exit_error||
-  (stopping?'停止指令已接收，正在释放采集进程；已有上传仍可能返回回执。':paused?'送料已暂停，已有队列继续补传。继续送料将从下一未采样位置恢复。':feed?.exited?'已出料，平台任务已结束。':run?.control==='STOPPED'?'送料已停止，历史和待传保留；未完成的任务不会自动结束。':'位置来自最近已生成样本；设定速度为模拟节拍，实际节拍还受接口响应影响。');
+  (stopping?'停止指令已接收，正在释放采集进程；已有上传仍可能返回回执。':paused?'送料已暂停，已有队列继续补传。继续送料将从下一未采样位置恢复。':feed?.exited?'已出料，平台任务已结束。':run?.control==='STOPPED'?'送料已停止，历史和待传保留；未完成的任务不会自动结束。':'位置来自最近已生成样本；按设定时间间隔采样，实际时间精度受系统调度与磁盘负载影响。');
  updateFreshness();
 }
 $('live-run').onchange=()=>{liveRunId=$('live-run').value;liveSpeedRun='';renderLive(state);};

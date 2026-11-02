@@ -30,7 +30,7 @@ export class TaskAssociations {
    const pending=(await db.query('SELECT 1 FROM m02.production_encounter WHERE task_id=$1 AND exit_payload IS NULL',[id])).rowCount;
    requireValue(!pending,'TASK_ENCOUNTER_OPEN','此任务尚未收到出料事件，请先完成过料闭环',409);
    requireValue(b.target_spool_id!==task.spool_id,'TASK_ASSOCIATION_UNCHANGED','目标与当前盘相同',422);
-   const contexts=(await db.query('SELECT s.id AS spool_id,s.spool_code,s.work_order_id,s.version AS spool_version,s.canonical_spool_id,w.external_code,w.specification_id FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.factory_id=$1 AND s.id=ANY($2::text[])',[ctx.actor.factory,[task.spool_id,b.target_spool_id]])).rows;
+   const contexts=(await db.query('SELECT s.id AS spool_id,s.spool_code,s.work_order_id,s.version AS spool_version,s.canonical_spool_id,w.external_code,s.specification_id FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.factory_id=$1 AND s.id=ANY($2::text[])',[ctx.actor.factory,[task.spool_id,b.target_spool_id]])).rows;
    const before=contexts.find(s=>s.spool_id===task.spool_id),after=contexts.find(s=>s.spool_id===b.target_spool_id);
    requireValue(after,'RESOURCE_NOT_FOUND','目标盘不存在或无权访问',404);
    requireValue(String(after.spool_version)===b.target_spool_version,'RESOURCE_VERSION_MISMATCH','目标盘已变化，请刷新后重新核对',412);

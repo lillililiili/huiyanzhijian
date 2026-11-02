@@ -1,3 +1,4 @@
+import type {CatalogApi} from '../m01-catalog/api';
 import type {IdentityApi,Context} from '../m00-identity/api';
 import {ApiError,idField,object,textField,requireValue} from '../../infrastructure/errors';
 import {lock} from '../../infrastructure/db';
@@ -19,7 +20,19 @@ export function deletionEligibility(w:any){
 }
 
 export class WorkOrderApi {
- constructor(private tasks:TaskApi,private identity:IdentityApi){}
+ constructor(private tasks:TaskApi,private identity:IdentityApi,private catalog:CatalogApi){}
+ async specifications(ctx:Context,id:string,b:any,key:string){
+  idField(id);object(b,['specification_ids']);requireValue(Array.isArray(b.specification_ids)&&b.specification_ids.length>0&&b.specification_ids.length<=100,'INVALID_INPUT','请选择1～100个规格');b.specification_ids.forEach(idField);
+  const ids=[...new Set<string>(b.specification_ids)];
+  return this.tasks.command(ctx,key,{action:'order-specifications',id,ids},async db=>{
+   await lock(db,'production:'+ctx.actor.factory);
+   const before=(await db.query('SELECT * FROM m02.work_order WHERE id=$1 AND factory_id=$2 FOR UPDATE',[id,ctx.actor.factory])).rows[0];requireValue(before,'RESOURCE_NOT_FOUND','工单不存在',404);
+   requireValue(before.source_system==='PLATFORM','SOURCE_NOT_ALLOWED','仅手工订单可修改规格',422);
+   for(const sid of ids){const spec=await this.catalog.getSpecification(ctx.actor.factory,sid,db);requireValue(spec.enabled||before.specification_ids.includes(sid),'SPEC_DISABLED','规格已停用',422)}
+   const used=await db.query('SELECT 1 FROM m02.cable_spool WHERE work_order_id=$1 AND NOT(specification_id=ANY($2::text[])) LIMIT 1',[id,ids]);requireValue(!used.rowCount,'SPEC_IN_USE','已登记线缆的规格不能移除',409);
+   const after=(await db.query('UPDATE m02.work_order SET specification_ids=$2 WHERE id=$1 RETURNING *',[id,ids])).rows[0];await this.identity.audit(ctx,'WORK_ORDER_SPECIFICATIONS_UPDATED','WORK_ORDER',id,{before:before.specification_ids,after:ids},db);return after;
+  });
+ }
  async remove(ctx:Context,id:string,b:any,key:string){
   try{
    idField(id);object(b,['reason']);textField(b.reason,1000);const reason=b.reason.trim();

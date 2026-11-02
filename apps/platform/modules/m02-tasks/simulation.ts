@@ -11,7 +11,7 @@ export class SimulationQueries {
   if(q.id){values.push(q.id);where.push(`r.id=$${values.length}`);}
   if(q.q){values.push('%'+q.q.trim().replace(/[\\%_]/g,'\\$&')+'%');where.push(`concat_ws(' ',r.spool_code,r.external_code,r.id) ILIKE $${values.length}`);}
   if(q.status&&q.status!=='all')where.push(q.status==='tested'?'r.has_samples':'NOT r.has_samples');
-  const cte=`WITH members AS(SELECT s.*,coalesce(s.canonical_spool_id,s.id) root_id,w.external_code,w.specification_id FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.factory_id=$1),
+  const cte=`WITH members AS(SELECT s.*,coalesce(s.canonical_spool_id,s.id) root_id,w.external_code FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.factory_id=$1),
   roots AS(SELECT s.* FROM members s WHERE s.canonical_spool_id IS NULL AND NOT EXISTS(SELECT 1 FROM m02.inspection_task x JOIN members m ON m.id=x.spool_id WHERE m.root_id=s.id AND x.data_environment='REAL')),
   scoped AS(SELECT t.*,m.root_id FROM m02.inspection_task t JOIN members m ON m.id=t.spool_id WHERE t.factory_id=$1 AND t.data_environment='SIMULATED' AND t.device_id=ANY($2::text[])),
   counts AS(SELECT s.*,count(t.id)::int task_count,count(t.id) FILTER(WHERE t.state='RUNNING')::int running_count,count(t.id) FILTER(WHERE t.state='CREATED')::int waiting_count,count(t.id) FILTER(WHERE t.state='ENDED')::int ended_count,coalesce(bool_or(t.id=ANY($3::text[])),false) has_samples FROM roots s LEFT JOIN scoped t ON t.root_id=s.id GROUP BY s.id,s.factory_id,s.work_order_id,s.spool_code,s.created_at,s.version,s.canonical_spool_id,s.root_id,s.external_code,s.specification_id),filtered AS(SELECT r.* FROM counts r WHERE ${where.join(' AND ')})`;

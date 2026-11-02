@@ -16,7 +16,7 @@ export function TaskAssociation({api,commands,task,data,user,refresh}:{api:ApiCl
  const [editing,setEditing]=useState<{task:Task;targets:Spool[]}|null>(null),[target,setTarget]=useState('');
  useEffect(()=>{let active=true;setHistory(null);setError('');api.request<History>(`/task-associations/${task.id}`).then(r=>{if(active)setHistory(r);}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[api,task.id,task.version,reload]);
  const current=history?.task||task;
- const eligible=data.spools.filter(s=>s.id!==current.spool_id&&!s.canonical_spool_id&&data.orders.find(o=>o.id===s.work_order_id)?.specification_id===current.specification_id);
+ const eligible=data.spools.filter(s=>s.id!==current.spool_id&&!s.canonical_spool_id&&s.specification_id===current.specification_id);
  const selected=editing?.targets.find(s=>s.id===target);
  const display=(c:ChangeContext)=><><HashLink route={`trace?spool=${c.spool_id}`}>{c.spool_code}</HashLink><div>{c.external_code}</div><small>{c.spool_id}</small></>;
  return <Panel core title="盘号关联更正" tools={<>{user.permissions.includes('task:write')&&['CREATED','ENDED'].includes(current.state)&&<Button disabled={!history||!eligible.length} onClick={()=>{setEditing({task:current,targets:eligible.map(s=>({...s}))});setTarget('');}}>更正关联盘号</Button>}<Button onClick={()=>setReload(n=>n+1)}>刷新更正履历</Button></>}>

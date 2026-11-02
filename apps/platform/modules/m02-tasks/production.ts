@@ -117,7 +117,7 @@ export class ProductionApi{
    const wo=(await db.query("INSERT INTO m02.work_order(id,factory_id,source_system,external_code,specification_id) VALUES($1,$2,'AUTO',$3,$4) ON CONFLICT(factory_id,source_system,external_code) DO UPDATE SET external_code=excluded.external_code RETURNING *",[randomUUID(),ctx.actor.factory,code,profile.specification_id])).rows[0];
    spoolId=randomUUID();await db.query('INSERT INTO m02.cable_spool(id,factory_id,work_order_id,spool_code) VALUES($1,$2,$3,$4)',[spoolId,ctx.actor.factory,wo.id,'临时盘-'+spoolId.slice(0,8)]);
   }
-  const spool=(await db.query('SELECT s.*,w.specification_id FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.id=$1 AND s.factory_id=$2',[spoolId,ctx.actor.factory])).rows[0];requireValue(spool&&spool.specification_id===profile.specification_id,'TASK_BINDING_INVALID','盘规格不匹配',422);requireValue(!spool.canonical_spool_id,'SPOOL_GROUPED','请使用归并后的主盘ID',409);
+  const spool=(await db.query('SELECT s.* FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.id=$1 AND s.factory_id=$2',[spoolId,ctx.actor.factory])).rows[0];requireValue(spool&&spool.specification_id===profile.specification_id,'TASK_BINDING_INVALID','盘规格不匹配',422);requireValue(!spool.canonical_spool_id,'SPOOL_GROUPED','请使用归并后的主盘ID',409);
   const foreign=(await db.query('SELECT 1 FROM m02.inspection_task WHERE spool_id=$1 AND data_environment<>$2',[spoolId,d.data_environment])).rowCount;requireValue(!foreign,'SOURCE_NOT_ALLOWED','同一盘不能混合真实与模拟来源',403);
   if(!task){const candidates=(await db.query("SELECT * FROM m02.inspection_task WHERE spool_id=$1 AND device_id=$2 AND state IN('CREATED','RUNNING') ORDER BY created_at FOR UPDATE",[spoolId,d.id])).rows;requireValue(candidates.length<=1,'TASK_SELECTION_REQUIRED','此盘存在多个候选任务，请明确task_id',409);task=candidates[0];}
   if(!task){task=await this.tasks.createInTransaction(ctx,{work_order_id:spool.work_order_id,spool_id:spoolId,specification_id:profile.specification_id,process_id:d.process_id,device_id:d.id,metric_code:d.metric_code,recipe_version_id:profile.recipe_version_id,planned_length_m:null},db,true);task=(await db.query("UPDATE m02.inspection_task SET creation_source='AUTO' WHERE id=$1 RETURNING *",[task.id])).rows[0];}
@@ -129,11 +129,11 @@ export class ProductionApi{
  async editSpool(ctx:Context,id:string,b:any,key:string,version:string){
   object(b,['spool_code','canonical_spool_id','reason']);textField(b.spool_code);textField(b.reason,1000);if(b.canonical_spool_id!==null)idField(b.canonical_spool_id);
   return this.tasks.command(ctx,key,{action:'spool-edit',id,b,version},async db=>{
-   await lock(db,'production:'+ctx.actor.factory);const row=(await db.query('SELECT s.*,w.specification_id FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.id=$1 AND s.factory_id=$2 FOR UPDATE OF s',[id,ctx.actor.factory])).rows[0];requireValue(row,'RESOURCE_NOT_FOUND','盘不存在',404);matchVersion(row.version,version);
+   await lock(db,'production:'+ctx.actor.factory);const row=(await db.query('SELECT s.* FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.id=$1 AND s.factory_id=$2 FOR UPDATE OF s',[id,ctx.actor.factory])).rows[0];requireValue(row,'RESOURCE_NOT_FOUND','盘不存在',404);matchVersion(row.version,version);
    if(b.canonical_spool_id!==row.canonical_spool_id){
     requireValue(b.canonical_spool_id!==id,'SPOOL_GROUP_INVALID','不能归并到自身',422);
     const children=(await db.query('SELECT 1 FROM m02.cable_spool WHERE canonical_spool_id=$1',[id])).rowCount;requireValue(!children,'SPOOL_GROUP_INVALID','请先解除子盘归并',409);
-    if(b.canonical_spool_id){const target=(await db.query('SELECT s.*,w.specification_id FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.id=$1 AND s.factory_id=$2',[b.canonical_spool_id,ctx.actor.factory])).rows[0];requireValue(target&&!target.canonical_spool_id&&target.specification_id===row.specification_id,'SPOOL_GROUP_INVALID','目标须是同规格主盘',422);}
+    if(b.canonical_spool_id){const target=(await db.query('SELECT s.* FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.id=$1 AND s.factory_id=$2',[b.canonical_spool_id,ctx.actor.factory])).rows[0];requireValue(target&&!target.canonical_spool_id&&target.specification_id===row.specification_id,'SPOOL_GROUP_INVALID','目标须是同规格主盘',422);}
     const ids=[id,row.canonical_spool_id,b.canonical_spool_id].filter(Boolean);const related=(await db.query('SELECT id FROM m02.cable_spool WHERE id=ANY($1) OR canonical_spool_id=ANY($1)',[ids])).rows.map(x=>x.id);
     const facts=(await db.query('SELECT state,data_environment FROM m02.inspection_task WHERE spool_id=ANY($1) FOR UPDATE',[related])).rows;requireValue(!facts.some(t=>t.state==='RUNNING'),'SPOOL_BUSY','请结束关联盘的运行任务后归并',409);requireValue(new Set(facts.map(t=>t.data_environment)).size<=1,'SOURCE_NOT_ALLOWED','不能合并不同来源环境',403);
    }
@@ -147,7 +147,7 @@ export class ProductionApi{
  async searchInTransaction(actor:Actor,q:Record<string,string>,db:PoolClient){
   const page=Number(q.page||1),limit=Number(q.limit||20);requireValue(Number.isSafeInteger(page)&&page>0&&page<=100000&&Number.isSafeInteger(limit)&&limit>0&&limit<=100);
   const values:any[]=[actor.factory],where=['t.factory_id=$1'];const add=(sql:string,value:any)=>{values.push(value);where.push(sql.replaceAll('?',`$${values.length}`));};
-  if(q.q){textField(q.q,128);add("concat_ws(' ',t.task_code,s.spool_code,w.external_code,t.specification_id,p.name) ILIKE ?",'%'+q.q+'%');}
+  if(q.q){textField(q.q,128);add("concat_ws(' ',t.task_code,t.context_snapshot->'scan_execution'->>'source_task_code',s.spool_code,w.external_code,t.specification_id,p.name) ILIKE ?",'%'+q.q+'%');}
   for(const k of ['state','device_id','metric_code','specification_id','data_environment','creation_source','work_order_id'])if(q[k])add('t.'+k+'=?',q[k]);
   if(q.plan_id)add('p.id=?',q.plan_id);if(q.line_id)add("t.context_snapshot->'device'->>'line_id'=?",q.line_id);
   for(const k of ['from','to'])if(q[k]){requireValue(Number.isFinite(Date.parse(q[k]))&&/T.*(Z|[+-]\d\d:\d\d)$/.test(q[k]));add('t.created_at'+(k==='from'?'>=':'<')+'?::timestamptz',q[k]);}

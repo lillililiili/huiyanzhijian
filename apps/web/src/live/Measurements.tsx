@@ -1,6 +1,10 @@
+import {RecordFilterSwitch} from './RecordFilterSwitch';
+import {startVisiblePolling} from '../shared/refreshPolicy';
+import {SheathResult} from './SheathResult';
 import {DefectExamples, DefectExampleViewer} from './DefectExamples';
 import {compactDecimal, detectionLimit} from './detectionDisplay';
 import {detectionTrendOption} from './detectionTrend';
+import {readTaskTrend} from './taskTrend';
 import {sortBySampleTime, compareSampleTime} from './sampleTime';
 import './detection-review.css';
 import {AdvancedFilters,DateTimeField,ScopedOptions} from "./UxFields";
@@ -21,7 +25,7 @@ import { navigate } from "../app/hashRoute";
 import { environmentLabel, codes, names, quality, taskState, ruleText, labelTime, type Rule, type ApiClient, type Measurement, type Page, type Task, type Workspace } from "./api";
 import { compareDecimal } from "./defectMatch";
 
-export function LiveTrend({ rows, unit, onSelect, rule }: { rows: Measurement[]; unit: string; onSelect: (r: Measurement) => void; rule?: Rule }) {
+export function LiveTrend({ rows, unit, onSelect, rule, showFailures = true }: { rows: Measurement[]; unit: string; onSelect: (r: Measurement) => void; rule?: Rule; showFailures?: boolean }) {
   const host = useRef<HTMLDivElement>(null);
   const instance = useRef<echarts.ECharts | null>(null);
   useEffect(() => {
@@ -39,16 +43,11 @@ export function LiveTrend({ rows, unit, onSelect, rule }: { rows: Measurement[];
     const select=(event: unknown)=>{const e=event as {componentType?:string;dataIndex?:number};if(e.componentType==='series'&&e.dataIndex!==undefined&&points[e.dataIndex])onSelect(points[e.dataIndex]);};
     chart.on('click',select);return()=>{if(typeof chart.off==='function')chart.off('click',select);};
   },[rows,unit,onSelect,rule]);
-  return <div className="review-chart"><div className="review-chart-toolbar"><span className="review-scope-tag">采样时间 · 北京时间</span><div className="review-chart-legend"><span>检测值</span><span className="is-fail">超限点</span></div><button type="button" className="review-chart-reset" onClick={()=>instance.current?.dispatchAction({type:'dataZoom',start:0,end:100})}>恢复全局</button></div><div ref={host} className="chart-host" style={{height:350}} role="img" aria-label="检测趋势，点击点查看原始记录，下方全局轴可拖动缩放"/><p className="review-zoom-hint">全局范围 <span>拖动下方滑块或两侧手柄，查看局部趋势</span></p></div>;
+  return <div className="review-chart"><div className="review-chart-toolbar"><span className="review-scope-tag">采样时间 · 北京时间</span><div className="review-chart-legend"><span>检测值</span>{showFailures&&<span className="is-fail">超限点</span>}</div><button type="button" className="review-chart-reset" onClick={()=>instance.current?.dispatchAction({type:'dataZoom',start:0,end:100})}>恢复全局</button></div><div ref={host} className="chart-host" style={{height:350}} role="img" aria-label="检测趋势，点击点查看原始记录，下方全局轴可拖动缩放"/><p className="review-zoom-hint">全局范围 <span>拖动下方滑块或两侧手柄，查看局部趋势</span></p></div>;
 }
 
 function MetricSchematic({metric}:{metric:string}){
-  if(metric==="OVALITY")return <svg className="review-schematic" viewBox="0 0 520 250" role="img" aria-label="电缆截面X向和Y向测量示意">
-    <defs><linearGradient id="ovality-core" x1="0" x2="1"><stop stopColor="#d9e4f2"/><stop offset="1" stopColor="#f5f8fc"/></linearGradient><marker id="ovality-arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse"><path d="M0 0L8 4L0 8" fill="none" stroke="#2464b7" strokeWidth="1.4"/></marker></defs>
-    <rect x="0" y="0" width="520" height="250" rx="12" fill="#f7faff"/><circle cx="260" cy="122" r="82" fill="#18324e"/><circle cx="260" cy="122" r="66" fill="url(#ovality-core)" stroke="#aac0dc" strokeWidth="2"/><circle cx="260" cy="122" r="39" fill="#b77b3d" stroke="#8d5b2d" strokeWidth="3"/>
-    {Array.from({length:14},(_,i)=><circle key={i} cx={232+(i%5)*14} cy={101+Math.floor(i/5)*14} r="4" fill="#e5b66f" stroke="#875d31"/>)}
-    <line x1="178" y1="224" x2="342" y2="224" stroke="#2464b7" strokeWidth="2" markerStart="url(#ovality-arrow)" markerEnd="url(#ovality-arrow)"/><line x1="370" y1="40" x2="370" y2="204" stroke="#2464b7" strokeWidth="2" markerStart="url(#ovality-arrow)" markerEnd="url(#ovality-arrow)"/><text x="260" y="244" textAnchor="middle" fill="#315272" fontSize="13">X向两点距离 (0°—180°)</text><text x="393" y="125" fill="#315272" fontSize="13" transform="rotate(90 393 125)">Y向两点距离 (90°—270°)</text>
-  </svg>;
+  if(metric==="OVALITY")return null;
   if(metric==="WIRE_GAP")return <svg className="review-schematic" viewBox="0 0 520 250" role="img" aria-label="相邻铜丝间隙测量示意">
     <defs><linearGradient id="wire-copper" x1="0" x2="0" y1="0" y2="1"><stop stopColor="#f4c27f"/><stop offset=".45" stopColor="#b66d35"/><stop offset="1" stopColor="#7c4827"/></linearGradient><marker id="gap-arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse"><path d="M0 0L8 4L0 8" fill="none" stroke="#2464b7" strokeWidth="1.4"/></marker></defs>
     <rect x="0" y="0" width="520" height="250" rx="12" fill="#f7faff"/><rect x="34" y="47" width="452" height="156" rx="14" fill="#22384c"/>
@@ -64,8 +63,11 @@ function MetricSchematic({metric}:{metric:string}){
 export function Measurements({ api, data, task, params, live = false }: {api:ApiClient;data:Workspace;task?:Task;params:URLSearchParams;live?:boolean}) {
   const [pages,setPages]=useState<Page<Measurement>[]>([]),[index,setIndex]=useState(0),[busy,setBusy]=useState(false),[error,setError]=useState("");
   const [chosen,setChosen]=useState<Measurement|null>(null),[following,setFollowing]=useState(live&&task?.state==="RUNNING"),[exporting,setExporting]=useState(false);
+  useEffect(()=>setFollowing(Boolean(live&&task?.state==='RUNNING')),[live,task?.state]);
   const [pageSize,setPageSize]=useState(()=>{const requested=Number(params.get("limit")||"25");return [25,50,100].includes(requested)?requested:25;});
   const [chartRows,setChartRows]=useState<Measurement[]>([]),[chartError,setChartError]=useState(""),[chartLoaded,setChartLoaded]=useState(false);
+  const [chartAsOf,setChartAsOf]=useState<string|undefined>();
+  const followTrend=useRef(following);followTrend.current=following;
   const [showFailures,setShowFailures]=useState(false);
   const [qualityFilter, setQualityFilter]=useState<string>(()=>params.get("quality")||"");
   const [taskTotal,setTaskTotal]=useState<number|undefined>();
@@ -82,8 +84,7 @@ export function Measurements({ api, data, task, params, live = false }: {api:Api
   }
   if(selectedSpool&&!task)search.set("spool_id",selectedSpool);
   const url=`/measurements?${search}`;
-  const chartSearch=new URLSearchParams({limit:"100",order:"desc",task_id:task?.id||""});
-  const chartUrl=`/measurements?${chartSearch}`;
+  const listPosition=useRef({index,chosen});listPosition.current={index,chosen};
   const generation=useRef(0);
   const [reload,setReload]=useState(0);
   useEffect(()=>{
@@ -102,24 +103,26 @@ export function Measurements({ api, data, task, params, live = false }: {api:Api
       catch(e){if(active&&!controller.signal.aborted)setError(e instanceof Error?e.message:"查询失败");}
       finally{inFlight=false;if(active)setBusy(false);}
     }
-    void load();const timer=live&&following&&task?.state==="RUNNING"?setInterval(()=>void load(),3000):null;
-    return()=>{active=false;generation.current++;controller.abort();if(timer)clearInterval(timer);};
+    void load();const timer=live&&following&&task?.state==="RUNNING"?startVisiblePolling(()=>{if(listPosition.current.index===0&&!listPosition.current.chosen)return load();},3000):null;
+    return()=>{active=false;generation.current++;controller.abort();if(timer)timer();};
   },[api,url,live,following,reload,task?.state,task?.id,qualityFilter]);
   const page=pages[index],rows=page?.items||[];
   useEffect(()=>{
-    if(!live||!task||task.state==="RUNNING"){setChartRows([]);setChartError("");setChartLoaded(false);return;}
-    const controller=new AbortController();let active=true;
-    setChartRows([]);setChartError("");setChartLoaded(false);
+    if(!live||!task){setChartRows([]);setChartError("");setChartLoaded(false);return;}
+    const controller=new AbortController();let active=true,inFlight=false,all:Measurement[]=[];
+    setChartRows([]);setChartError("");setChartLoaded(false);setChartAsOf(undefined);
     async function loadChartHistory(){
+      if(inFlight)return;inFlight=true;
       try{
-        let result=await api.request<Page<Measurement>>(chartUrl,undefined,{},controller.signal),all=[...result.items];
-        while(result.has_more&&result.next_cursor){result=await api.request<Page<Measurement>>(`${chartUrl}&cursor=${encodeURIComponent(result.next_cursor)}`,undefined,{},controller.signal);all.push(...result.items);}
-        if(active){setChartRows(all);setChartError("");setChartLoaded(true);}
-      }catch(e){if(active&&!controller.signal.aborted){setChartError(e instanceof Error?e.message:"完整检测趋势读取失败");setChartLoaded(false);}}
+        const result=await readTaskTrend(api,task!.id,all,controller.signal);
+        if(active){all=result.rows;setChartRows(all);setChartAsOf(result.asOf);setChartError("");setChartLoaded(true);}
+      }catch(e){if(active&&!controller.signal.aborted)setChartError(e instanceof Error?e.message:"完整检测趋势读取失败");}
+      finally{inFlight=false;}
     }
     void loadChartHistory();
-    return()=>{active=false;controller.abort();};
-  },[api,chartUrl,live,task?.id,task?.state,reload]);
+    const timer=task.state==='RUNNING'?startVisiblePolling(()=>{if(followTrend.current)return loadChartHistory();},3000):null;
+    return()=>{active=false;controller.abort();if(timer)timer();};
+  },[api,live,task?.id,task?.state,reload]);
   async function next(){
     if(!page?.next_cursor||busy)return;const gen=generation.current;setBusy(true);
     try{if(pages[index+1])setIndex(index+1);else{const result=await api.request<Page<Measurement>>(`${url}&cursor=${encodeURIComponent(page.next_cursor)}`);if(gen===generation.current){setPages([...pages,result]);setIndex(index+1);}}if(gen===generation.current)setError("");}
@@ -141,9 +144,9 @@ export function Measurements({ api, data, task, params, live = false }: {api:Api
     }catch(e){if(gen===generation.current)setError((e as Error).message);}finally{if(gen===generation.current)setExporting(false);}
   }
   const latest=rows[0],initialLoading=busy&&!page;
-  const summaryReady=!initialLoading&&(task?.state==="RUNNING"||!task||chartLoaded);
-  const summaryRows=task?.state==="RUNNING"?rows:task?chartRows:rows;
-  const summaryScope=task?.state==="RUNNING"?"当前页":task?"本任务完整记录":"当前查询范围";
+  const summaryReady=live&&task?chartLoaded:!initialLoading;
+  const summaryRows=live&&task?chartRows:rows;
+  const summaryScope=live&&task?"本任务完整记录":"当前查询范围";
   const samplingCounts={
     valid:summaryRows.filter(r=>r.raw_payload.data_status==="VALID").length,
     invalid:summaryRows.filter(r=>r.raw_payload.data_status==="INVALID").length,
@@ -165,7 +168,7 @@ export function Measurements({ api, data, task, params, live = false }: {api:Api
   },null);
   const newestMeasured=measuredValues.reduce<Measurement|null>((found,r)=>!found||compareSampleTime(r,found)>0?r:found,null);
   const recentFailure=measuredValues.filter(r=>r.quality_result==='FAIL').reduce<Measurement|null>((found,r)=>!found||compareSampleTime(r,found)>0?r:found,null);
-  const overviewReady=summaryReady&&!error;
+  const overviewReady=summaryReady;
   const metricUnit=newestMeasured?.unit||latest?.unit||(task?.metric_code==='WIRE_GAP'?'mm':'%');
   const returnTo=params.get("return_to")?.startsWith("detection?")?params.get("return_to"):null;
   const selectedTask=data.tasks.find(t=>t.id===params.get("task_id"));
@@ -200,11 +203,12 @@ export function Measurements({ api, data, task, params, live = false }: {api:Api
         <div className="review-kpi review-kpi-rule"><span>判定限值 <em>{task?.rule_snapshot.approval_state==='TEST_ONLY'?'测试规则':'任务规则'}</em></span><div className="review-kpi-value"><strong title={task?ruleText(task.rule_snapshot):undefined}>{detectionLimit(task?.rule_snapshot,metricUnit)}</strong></div><small>任务创建时冻结 · 方法版本 {task?.rule_snapshot.method_version||'—'}</small></div>
       </section>
       <section className="review-main-grid">
-        <Panel core className="review-trend-panel" title={task?.state==='RUNNING'?'实时检测趋势':'检测趋势回看'} tools={<><span className="review-scope-tag">{task?.state==='RUNNING'?'当前页趋势':chartError?'当前页预览':chartLoaded?'完整任务趋势':'完整趋势载入中'}</span>{task?.state==='RUNNING'?<Button onClick={()=>setFollowing(!following)}>{following?'暂停自动刷新':'继续自动刷新'}</Button>:<Button disabled={busy} onClick={()=>setReload(reload+1)}>刷新</Button>}</>}>
+        <Panel core className="review-trend-panel" title={task?.state==='RUNNING'?'实时检测趋势':'检测趋势回看'} tools={<><span className="review-scope-tag">{chartLoaded?`完整任务趋势 · ${chartRows.length}条`: '完整趋势载入中'}</span>{task?.state==='RUNNING'?<Button onClick={()=>setFollowing(!following)}>{following?'暂停自动刷新':'继续自动刷新'}</Button>:<Button disabled={busy} onClick={()=>setReload(reload+1)}>刷新</Button>}</>}>
           <div className="review-range"><span>有效值范围</span><strong title={overviewReady?`${smallestMeasured?.value??'—'} ～ ${largestMeasured?.value??'—'} ${metricUnit}`:undefined}>{overviewReady?compactDecimal(smallestMeasured?.value):'—'} <span>—</span> {overviewReady?compactDecimal(largestMeasured?.value):'—'} <small>{metricUnit}</small></strong><span className="review-range-scope">{summaryScope}</span></div>
-          {chartError&&<Note>完整趋势读取失败：{chartError}。当前仅展示已读取的列表记录。</Note>}
-          <LiveTrend rows={task?.state==='RUNNING'?rows:chartRows.length?chartRows:rows} unit={metricUnit} onSelect={setChosen} rule={task?.rule_snapshot}/>
-          <p className="review-footnote">按采样时间查看趋势；点击采样点查看原始记录。</p>
+          {chartError&&<Note>完整趋势更新失败：{chartError}。{chartLoaded?'保留上次成功读取的完整快照。':'尚未取得完整趋势。'}<Button onClick={()=>setReload(v=>v+1)}>重新加载完整趋势</Button></Note>}
+          <LiveTrend rows={chartRows} unit={metricUnit} onSelect={setChosen} rule={task?.rule_snapshot}/>
+          {chartRows.length>0&&<p className="review-footnote" aria-label="完整趋势采样范围">{labelTime(chartRows[0].raw_payload.sample_time)} → {labelTime(chartRows[chartRows.length-1].raw_payload.sample_time)}</p>}
+          <p className="review-footnote">从首条采样至末条采样，新增数据自动扩展时间范围；列表筛选不影响趋势。{chartAsOf&&<> 快照：{labelTime(chartAsOf)}</>}</p>
         </Panel>
         <Panel core className="review-judgment-panel" title="判定概况" tools={<span className="review-scope-tag">{summaryScope}</span>}>
           <div className="review-results" aria-label="服务端判定统计">{[['PASS','符合当前规则'],['FAIL','超限'],['NOT_EVALUATED','未判定']].map(([key,label])=><div className={`review-result-row review-result-${key.toLowerCase()}`} key={key}><span><i/>{label}</span><strong>{overviewReady?qualityCounts[key as keyof typeof qualityCounts]:'—'}<small> 条</small></strong></div>)}</div>
@@ -212,46 +216,21 @@ export function Measurements({ api, data, task, params, live = false }: {api:Api
           <div className="review-latest-failure">
             <span className="review-section-label">最近超限</span>
             {overviewReady&&recentFailure?<><button type="button" className="review-failure-record" onClick={()=>setChosen(recentFailure)}><strong title={`${recentFailure.value} ${recentFailure.unit}`}>{compactDecimal(recentFailure.value)} <small>{recentFailure.unit}</small></strong><span>查看记录 →</span></button><p>{labelTime(recentFailure.raw_payload.sample_time)}</p><p>接收：{labelTime(recentFailure.received_at)}</p></>:<p>{overviewReady?'当前范围暂无有效已存储的超限记录。':'记录读取后展示。'}</p>}
-            {overviewReady&&qualityCounts.FAIL>0&&task&&<Button onClick={()=>setShowFailures(true)}>查看超限记录与图片</Button>}
+            {overviewReady&&qualityCounts.FAIL>0&&task&&task.metric_code!=="OVALITY"&&<Button onClick={()=>setShowFailures(true)}>查看超限记录与图片</Button>}
           </div>
           <div className="review-sampling-line"><span>有效 <b>{overviewReady?samplingCounts.valid:'—'}</b></span><span>无效 <b>{overviewReady?samplingCounts.invalid:'—'}</b></span><span>缺测 <b>{overviewReady?samplingCounts.missing:'—'}</b></span><span>隔离 <b>{overviewReady?samplingCounts.quarantined:'—'}</b></span></div>
-          <details className="review-object-help"><summary>检测对象示意 <span>非现场实拍</span></summary><MetricSchematic metric={task?.metric_code||latest?.metric_code||'SHIELD_OVERLAP_RATE'}/><p className="review-footnote">仅说明检测对象，不关联当前记录或参与判定。</p></details>
+          {(task?.metric_code||latest?.metric_code)!=="OVALITY"&&<details className="review-object-help"><summary>检测对象示意 <span>非现场实拍</span></summary><MetricSchematic metric={task?.metric_code||latest?.metric_code||'SHIELD_OVERLAP_RATE'}/><p className="review-footnote">仅说明检测对象，不关联当前记录或参与判定。</p></details>}
         </Panel>
       </section>
       <details className="review-data-help"><summary>数据口径与规则说明</summary><p>总条数取服务端本任务累计接收数量；{summaryScope}用于有效性、判定和极值统计。未判定不等于符合。数字仅去除末尾零，原始精度保留在记录详情中。{task?ruleText(task.rule_snapshot):''}。采样时间为检测发生时间，接收时间为平台入库时间；不按米数或送料速度换算。</p></details>
     </div>}
+    {live&&task?.metric_code==="OVALITY"&&newestMeasured?.sheath_result?.pair&&<SheathResult result={newestMeasured.sheath_result}/>}
     <Panel core table className="detection-record-panel" title={live?(task?.state==='ENDED'||task?.state==='CANCELLED'?'检测记录回看':'当前页测量记录'):"测量明细"} tools={<>
-      <div className="review-filter-switch" role="group" aria-label="判定状态筛选">
-        <button
-          type="button"
-          aria-pressed={qualityFilter === ""}
-          disabled={busy}
-          onClick={() => { setQualityFilter(""); setIndex(0); }}
-        >
-          全部记录
-        </button>
-        <button
-          type="button"
-          className="filter-fail"
-          aria-pressed={qualityFilter === "FAIL"}
-          disabled={busy}
-          onClick={() => { setQualityFilter("FAIL"); setIndex(0); }}
-        >
-          <i className="filter-dot is-fail" />
-          仅超限项
-          {overviewReady && qualityCounts.FAIL > 0 ? <span className="filter-count">{qualityCounts.FAIL}</span> : null}
-        </button>
-        <button
-          type="button"
-          className="filter-pass"
-          aria-pressed={qualityFilter === "PASS"}
-          disabled={busy}
-          onClick={() => { setQualityFilter("PASS"); setIndex(0); }}
-        >
-          <i className="filter-dot is-pass" />
-          符合规则
-        </button>
-      </div>
+      <RecordFilterSwitch label="判定状态筛选" value={qualityFilter} disabled={busy} onChange={value=>{setQualityFilter(value);setIndex(0);}} options={[
+        {value:'',label:'全部记录'},
+        {value:'FAIL',label:'仅超限项',tone:'fail',count:overviewReady?qualityCounts.FAIL:undefined},
+        {value:'PASS',label:'符合规则',tone:'pass'},
+      ]}/>
       <span className="muted">{busy?"正在查询…":`第${index+1}页 · ${rows.length}条`}</span>
       <Button disabled={busy} onClick={()=>setReload(reload+1)}>刷新查询</Button>
       {!live&&<><Button disabled={exporting||!pages.length||busy||!!error} onClick={()=>void exportAll("csv")}>{exporting?"导出中…":"导出完整筛选CSV"}</Button><Button disabled={exporting||!pages.length||busy||!!error} onClick={()=>void exportAll("json")}>导出原始JSON</Button></>}
@@ -267,6 +246,6 @@ export function Measurements({ api, data, task, params, live = false }: {api:Api
         {!live&&<span className="muted small">查询截止：{labelTime(pages[0]?.as_of)}</span>}
       </div>
     </Panel>
-    <Drawer title="原始测量记录" open={!!chosen} onClose={()=>setChosen(null)}>{chosen&&<><p><strong>{chosen.value??"—"} {chosen.unit}</strong> · {{VALID:"有效",INVALID:"无效",MISSING:"缺测"}[chosen.raw_payload.data_status]||chosen.raw_payload.data_status}</p><p>采样时间：{labelTime(chosen.raw_payload.sample_time)}</p><p>设备：{chosen.raw_payload.device_id} · {names[chosen.metric_code]}</p><p>{!live&&<>来源米数：{chosen.raw_payload.position_m??"未知"}（未验证） · </>}{environmentLabel(chosen.raw_payload.data_environment)}</p><p>判定：{quality[chosen.quality_result]} · {chosen.evaluation_reason||"—"}</p><p>查询时关联盘号：{chosen.business_context?.spool_code||"—"} · 关联版本：{chosen.business_context?.association_version||"—"}</p><p>创建时盘号：{chosen.business_context?.original_spool_code||data.tasks.find(t=>t.id===chosen.raw_payload.task_id)?.context_snapshot?.spool_code||"未绑定"}</p><p>{!live&&<>位置资格：{chosen.position_eligibility==="UNVERIFIED"?"未验证":chosen.position_eligibility} · </>}接收：{chosen.receipt_status==="STORED"?"已存储":chosen.receipt_status==="QUARANTINED"?"隔离":chosen.receipt_status}</p><p>接收时间：{labelTime(chosen.received_at)}</p>{chosen.metric_code === "OVALITY" && (()=>{const rawData=(chosen.raw_payload as any)?.raw?.data as Record<string,unknown>|undefined;const obs=rawData?.observation as Record<string,unknown>|undefined;const hasAxes=obs?.diameter_x_mm!==undefined&&obs?.diameter_y_mm!==undefined&&Number.isFinite(Number(obs.diameter_x_mm))&&Number.isFinite(Number(obs.diameter_y_mm));if(!hasAxes)return <section className="sheath-thickness-card" aria-label="双向测径仪观测明细" data-testid="ovality-drawer-card"><div className="sheath-card-header"><strong>双向测径仪观测明细（170A-2D）</strong><Badge tone="gray">仅标量记录</Badge></div><p className="sheath-footnote">本条记录未携带 X/Y 轴两点距离原始观测字段（前端不虚构默认尺寸，仅展示服务端已存储的不圆度标量值 {chosen.value??"—"} {chosen.unit}）。</p></section>;const dx=String(obs!.diameter_x_mm),dy=String(obs!.diameter_y_mm),nx=Number(dx),ny=Number(dy);const major=obs!.major_axis_mm!==undefined?String(obs!.major_axis_mm):String(Math.max(nx,ny));const minor=obs!.minor_axis_mm!==undefined?String(obs!.minor_axis_mm):String(Math.min(nx,ny));const avgD=obs!.average_diameter_mm!==undefined?String(obs!.average_diameter_mm):((nx+ny)/2).toFixed(6);const diffD=obs!.ovality_difference_mm!==undefined?String(obs!.ovality_difference_mm):Math.abs(nx-ny).toFixed(6);const centripetalF=obs!.centripetal_ratio_f!==undefined?String(obs!.centripetal_ratio_f):(Math.max(nx,ny)>0?(Math.min(nx,ny)/Math.max(nx,ny)).toFixed(6):"—");const regs=obs!.registers as Record<string,unknown>|undefined;const posX=obs!.axis1_position_pct??regs?.["0x0203_axis1_position"]??0;const posY=obs!.axis2_position_pct??regs?.["0x0205_axis2_position"]??0;const modelName=String(obs!.instrument_model||rawData?.instrument_model||"Opmac-170AL2-2D");const panelSymbol=String(obs!.panel_display_symbol||(chosen.quality_result==="FAIL"?"Alm+":"Norm"));return <section className="sheath-thickness-card" aria-label="双向测径仪观测明细" data-testid="ovality-drawer-card"><div className="sheath-card-header"><strong>170A-2D 双向测径仪观测与椭圆长短轴数据（{modelName}）</strong><Badge tone={chosen.quality_result==="FAIL"?"red":chosen.quality_result==="PASS"?"green":"gray"}>面板状态 {panelSymbol} · 实报解析</Badge></div><div className="sheath-stats-row"><div className="sheath-stat-cell"><span className="stat-label">轴 1 测量直径 X (0°—180° 两点距离)</span><strong className="stat-value">{compactDecimal(dx)} <small>mm</small></strong><span className="stat-note">主机 X 轴 (202H/42H) · 光束位置偏移 {String(posX)}% (203H)</span></div><div className="sheath-stat-cell"><span className="stat-label">轴 2 测量直径 Y (90°—270° 两点距离)</span><strong className="stat-value">{compactDecimal(dy)} <small>mm</small></strong><span className="stat-note">从机 Y 轴 (204H/43H) · 光束位置偏移 {String(posY)}% (205H)</span></div><div className="sheath-stat-cell"><span className="stat-label">椭圆长轴 a / 短轴 b</span><strong className="stat-value">{compactDecimal(major)} / {compactDecimal(minor)} <small>mm</small></strong><span className="stat-note">椭圆度误差 OvAL = |X−Y| = {compactDecimal(diffD)} mm · 向心率 f(b/a) = {compactDecimal(centripetalF)}</span></div><div className="sheath-stat-cell"><span className="stat-label">平均直径 (X + Y) ÷ 2 (201H/41H)</span><strong className="stat-value">{compactDecimal(avgD)} <small>mm</small></strong><span className="stat-note">{chosen.unit==='1'?'圆整度 = min(X,Y)÷max(X,Y) = ':'历史不圆度 = 2×(a−b)÷(a+b)×100% = '}{compactDecimal(chosen.value)} {chosen.unit}</span></div></div>{regs&&<div className="sheath-drawer-points"><span>170A-2D / OpmacBL 寄存器：</span><code>200H状态:{String(regs["0x0200_status_word"]??"0x0002")}</code><code>201H均径:{String(regs["0x0201_avg_diameter_001mm"]??"—")}</code><code>202H X径:{String(regs["0x0202_axis1_diameter_001mm"]??"—")}</code><code>203H X位:{String(regs["0x0203_axis1_position"]??posX)}</code><code>204H Y径:{String(regs["0x0204_axis2_diameter_001mm"]??"—")}</code><code>205H Y位:{String(regs["0x0205_axis2_position"]??posY)}</code>{regs["0x003E_run_status"]!==undefined&&<code>3EH运行:{String(regs["0x003E_run_status"])}</code>}</div>}{regs?.rx_frame_hex!==undefined&&<div className="sheath-drawer-points"><span>Modbus-RTU 报文帧：</span>{regs.tx_frame_hex!==undefined&&<code>TX: {String(regs.tx_frame_hex)}</code>}<code>RX: {String(regs.rx_frame_hex)}</code></div>}<p className="sheath-footnote">数据严格取自本条记录 raw.data.observation（依据《OpmacBL说明书2026-06》与《170A-2D双向测径仪补充说明》：双轴测径仪实测 X/Y 两点距离，由椭圆长轴 a 与短轴 b 演算得到椭圆度 OvAL、向心率 f 及百分比不圆度）。</p></section>;})()}{chosen.metric_code === "SHIELD_OVERLAP_RATE" && <section className="measurement-illustration" aria-labelledby="measurement-illustration-title"><div className="measurement-illustration__header"><div><h3 id="measurement-illustration-title">金属屏蔽搭盖异常示例</h3><span className="measurement-illustration__tag">用户提供异常示例 · 非本次记录实拍</span></div><p>用于查看金属屏蔽搭盖异常的外观参考；该图未绑定当前测量记录，也不影响本条判定。</p></div><figure><img src="/measurement-examples/metal-shield-overlap-example.png" alt="金属屏蔽搭盖异常外观示例图" loading="lazy"/><figcaption>示例图片仅用于说明异常外观，不代表当前记录的实拍结果或质量判定。</figcaption></figure></section>}{chosen.quality_result==="FAIL"&&<DefectExamples timeOnly={live} api={api} record={chosen} task={task||data.tasks.find(t=>t.id===chosen.raw_payload.task_id)} compact key={chosen.id} failed={1} context={`记录 ${chosen.id} · ${labelTime(chosen.raw_payload.sample_time)}`}/>}<details className="ux-technical"><summary>技术详情（原始JSON与内部ID）</summary><p>记录ID：<code>{chosen.id}</code> <Button onClick={()=>void navigator.clipboard.writeText(chosen.id)}>复制记录ID</Button></p><p>原始值与来源序号按字符串保留；趋势图数值仅用于绘制。</p><pre className="b2-json">{JSON.stringify(chosen.raw_payload,null,2)}</pre></details><HashLink route={`task?id=${chosen.raw_payload.task_id}&back=${encodeURIComponent((live?"detection?":"history?")+params)}`}>关联任务</HashLink></>}</Drawer>
+    <Drawer title="原始测量记录" open={!!chosen} onClose={()=>setChosen(null)}>{chosen&&<><p><strong>{chosen.value??"—"} {chosen.unit}</strong> · {{VALID:"有效",INVALID:"无效",MISSING:"缺测"}[chosen.raw_payload.data_status]||chosen.raw_payload.data_status}</p><p>采样时间：{labelTime(chosen.raw_payload.sample_time)}</p><p>设备：{chosen.raw_payload.device_id} · {names[chosen.metric_code]}</p><p>{!live&&<>来源米数：{chosen.raw_payload.position_m??"未知"}（未验证） · </>}{environmentLabel(chosen.raw_payload.data_environment)}</p><p>判定：{quality[chosen.quality_result]} · {chosen.evaluation_reason||"—"}</p><p>查询时关联盘号：{chosen.business_context?.spool_code||"—"} · 关联版本：{chosen.business_context?.association_version||"—"}</p><p>创建时盘号：{chosen.business_context?.original_spool_code||data.tasks.find(t=>t.id===chosen.raw_payload.task_id)?.context_snapshot?.spool_code||"未绑定"}</p><p>{!live&&<>位置资格：{chosen.position_eligibility==="UNVERIFIED"?"未验证":chosen.position_eligibility} · </>}接收：{chosen.receipt_status==="STORED"?"已存储":chosen.receipt_status==="QUARANTINED"?"隔离":chosen.receipt_status}</p><p>接收时间：{labelTime(chosen.received_at)}</p>{chosen.metric_code === "OVALITY" && <SheathResult result={chosen.sheath_result}/>} {chosen.metric_code === "OVALITY" && (()=>{const rawData=(chosen.raw_payload as any)?.raw?.data as Record<string,unknown>|undefined;const obs=rawData?.observation as Record<string,unknown>|undefined;const hasAxes=obs?.diameter_x_mm!==undefined&&obs?.diameter_y_mm!==undefined&&Number.isFinite(Number(obs.diameter_x_mm))&&Number.isFinite(Number(obs.diameter_y_mm));if(!hasAxes)return <section className="sheath-thickness-card" aria-label="双向测径仪观测明细" data-testid="ovality-drawer-card"><div className="sheath-card-header"><strong>双向测径仪观测明细（170A-2D）</strong><Badge tone="gray">仅标量记录</Badge></div><p className="sheath-footnote">本条记录未携带 X/Y 轴两点距离原始观测字段（前端不虚构默认尺寸，仅展示服务端已存储的不圆度标量值 {chosen.value??"—"} {chosen.unit}）。</p></section>;const dx=String(obs!.diameter_x_mm),dy=String(obs!.diameter_y_mm),nx=Number(dx),ny=Number(dy);const major=obs!.major_axis_mm!==undefined?String(obs!.major_axis_mm):String(Math.max(nx,ny));const minor=obs!.minor_axis_mm!==undefined?String(obs!.minor_axis_mm):String(Math.min(nx,ny));const avgD=obs!.average_diameter_mm!==undefined?String(obs!.average_diameter_mm):((nx+ny)/2).toFixed(6);const diffD=obs!.ovality_difference_mm!==undefined?String(obs!.ovality_difference_mm):Math.abs(nx-ny).toFixed(6);const centripetalF=obs!.centripetal_ratio_f!==undefined?String(obs!.centripetal_ratio_f):(Math.max(nx,ny)>0?(Math.min(nx,ny)/Math.max(nx,ny)).toFixed(6):"—");const regs=obs!.registers as Record<string,unknown>|undefined;const posX=obs!.axis1_position_pct??regs?.["0x0203_axis1_position"]??0;const posY=obs!.axis2_position_pct??regs?.["0x0205_axis2_position"]??0;const modelName=String(obs!.instrument_model||rawData?.instrument_model||"Opmac-170AL2-2D");const panelSymbol=String(obs!.panel_display_symbol||(chosen.quality_result==="FAIL"?"Alm+":"Norm"));return <section className="sheath-thickness-card" aria-label="双向测径仪观测明细" data-testid="ovality-drawer-card"><div className="sheath-card-header"><strong>170A-2D 双向测径仪观测与椭圆长短轴数据（{modelName}）</strong><Badge tone={chosen.quality_result==="FAIL"?"red":chosen.quality_result==="PASS"?"green":"gray"}>面板状态 {panelSymbol} · 实报解析</Badge></div><div className="sheath-stats-row"><div className="sheath-stat-cell"><span className="stat-label">轴 1 测量直径 X (0°—180° 两点距离)</span><strong className="stat-value">{compactDecimal(dx)} <small>mm</small></strong><span className="stat-note">主机 X 轴 (202H/42H) · 光束位置偏移 {String(posX)}% (203H)</span></div><div className="sheath-stat-cell"><span className="stat-label">轴 2 测量直径 Y (90°—270° 两点距离)</span><strong className="stat-value">{compactDecimal(dy)} <small>mm</small></strong><span className="stat-note">从机 Y 轴 (204H/43H) · 光束位置偏移 {String(posY)}% (205H)</span></div><div className="sheath-stat-cell"><span className="stat-label">椭圆长轴 a / 短轴 b</span><strong className="stat-value">{compactDecimal(major)} / {compactDecimal(minor)} <small>mm</small></strong><span className="stat-note">椭圆度误差 OvAL = |X−Y| = {compactDecimal(diffD)} mm · 向心率 f(b/a) = {compactDecimal(centripetalF)}</span></div><div className="sheath-stat-cell"><span className="stat-label">平均直径 (X + Y) ÷ 2 (201H/41H)</span><strong className="stat-value">{compactDecimal(avgD)} <small>mm</small></strong><span className="stat-note">{chosen.unit==='1'?'圆整度 = min(X,Y)÷max(X,Y) = ':'历史不圆度 = 2×(a−b)÷(a+b)×100% = '}{compactDecimal(chosen.value)} {chosen.unit}</span></div></div>{regs&&<div className="sheath-drawer-points"><span>170A-2D / OpmacBL 寄存器：</span><code>200H状态:{String(regs["0x0200_status_word"]??"0x0002")}</code><code>201H均径:{String(regs["0x0201_avg_diameter_001mm"]??"—")}</code><code>202H X径:{String(regs["0x0202_axis1_diameter_001mm"]??"—")}</code><code>203H X位:{String(regs["0x0203_axis1_position"]??posX)}</code><code>204H Y径:{String(regs["0x0204_axis2_diameter_001mm"]??"—")}</code><code>205H Y位:{String(regs["0x0205_axis2_position"]??posY)}</code>{regs["0x003E_run_status"]!==undefined&&<code>3EH运行:{String(regs["0x003E_run_status"])}</code>}</div>}{regs?.rx_frame_hex!==undefined&&<div className="sheath-drawer-points"><span>Modbus-RTU 报文帧：</span>{regs.tx_frame_hex!==undefined&&<code>TX: {String(regs.tx_frame_hex)}</code>}<code>RX: {String(regs.rx_frame_hex)}</code></div>}<p className="sheath-footnote">数据严格取自本条记录 raw.data.observation（依据《OpmacBL说明书2026-06》与《170A-2D双向测径仪补充说明》：双轴测径仪实测 X/Y 两点距离，由椭圆长轴 a 与短轴 b 演算得到椭圆度 OvAL、向心率 f 及百分比不圆度）。</p></section>;})()}{chosen.metric_code === "SHIELD_OVERLAP_RATE" && <section className="measurement-illustration" aria-labelledby="measurement-illustration-title"><div className="measurement-illustration__header"><div><h3 id="measurement-illustration-title">金属屏蔽搭盖异常示例</h3><span className="measurement-illustration__tag">用户提供异常示例 · 非本次记录实拍</span></div><p>用于查看金属屏蔽搭盖异常的外观参考；该图未绑定当前测量记录，也不影响本条判定。</p></div><figure><img src="/measurement-examples/metal-shield-overlap-example.png" alt="金属屏蔽搭盖异常外观示例图" loading="lazy"/><figcaption>示例图片仅用于说明异常外观，不代表当前记录的实拍结果或质量判定。</figcaption></figure></section>}{chosen.quality_result==="FAIL"&&<DefectExamples timeOnly={live} api={api} record={chosen} task={task||data.tasks.find(t=>t.id===chosen.raw_payload.task_id)} compact key={chosen.id} failed={1} context={`记录 ${chosen.id} · ${labelTime(chosen.raw_payload.sample_time)}`}/>}<details className="ux-technical"><summary>技术详情（原始JSON与内部ID）</summary><p>记录ID：<code>{chosen.id}</code> <Button onClick={()=>void navigator.clipboard.writeText(chosen.id)}>复制记录ID</Button></p><p>原始值与来源序号按字符串保留；趋势图数值仅用于绘制。</p><pre className="b2-json">{JSON.stringify(chosen.raw_payload,null,2)}</pre></details><HashLink route={`task?id=${chosen.raw_payload.task_id}&back=${encodeURIComponent((live?"detection?":"history?")+params)}`}>关联任务</HashLink></>}</Drawer>
   </>;
 }

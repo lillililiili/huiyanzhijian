@@ -1,0 +1,13 @@
+.spec-picker{margin:18px 0;min-width:0}
+.spec-picker-label{display:block;color:#6d83a7;font-size:14px;margin-bottom:9px}
+.spec-picker-trigger{display:flex;justify-content:space-between;align-items:center;gap:16px;width:100%;min-height:46px;padding:11px 16px;border:1px solid #cfddf2;border-radius:7px;background:#fbfcff;color:#284b79;font:inherit;text-align:left;cursor:pointer}
+.spec-picker-trigger>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spec-picker-trigger:focus-visible{outline:2px solid #1763c2;outline-offset:2px}
+.spec-picker-dropdown{margin-top:6px;border:1px solid #cfddf2;border-radius:8px;background:white;box-shadow:0 6px 18px #214a8212;padding:12px}
+.spec-picker-dropdown>input{box-sizing:border-box;width:100%;padding:10px 12px;border:1px solid #cfddf2;border-radius:6px;font:inherit}
+.spec-picker-options{max-height:240px;overflow-y:auto;overscroll-behavior:contain;margin-top:8px}
+.spec-picker-options label{display:flex;gap:10px;align-items:flex-start;padding:11px 10px;border-radius:5px;cursor:pointer;font-weight:400;color:#284b79}
+.spec-picker-options label:hover,.spec-picker-options label.selected{background:#edf4ff}
+.spec-picker-options input[type=checkbox]{flex:none;width:16px;height:16px;margin-top:3px;accent-color:#1763c2}
+.spec-picker-options label span{overflow-wrap:anywhere}
+.spec-picker-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #e4ecf8;margin-top:8px;padding-top:10px;color:#6d83a7;font-size:12px;flex-wrap:wrap}

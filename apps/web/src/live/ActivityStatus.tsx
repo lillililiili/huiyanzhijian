@@ -1,3 +1,4 @@
+import {startVisiblePolling} from '../shared/refreshPolicy';
 import {useEffect,useState} from 'react';
 import {Badge} from '../ui/Badge';
 import {Note} from '../ui/Note';
@@ -57,8 +58,9 @@ export function ActivityStatus({activity:a}:{activity?:TaskActivity}){
 }
 
 export function TaskActivityPanel({api,task,compact=false}:{api:ApiClient;task:Task;compact?:boolean}){
- const [tick,setTick]=useState(0);useEffect(()=>{if(task.state!=='RUNNING')return;const timer=setInterval(()=>setTick(n=>n+1),5000);return()=>clearInterval(timer);},[task.state]);
+ const [tick,setTick]=useState(0);
  const {value,error}=useRead<TaskActivity>(api,'/task-activity/'+task.id,task.version+':'+tick);
+ useEffect(()=>{if(task.state!=='RUNNING'||(!value&&!error))return;return startVisiblePolling(()=>setTick(n=>n+1),5000);},[task.state,value,error]);
  if(compact)return <div>{error?<span role="alert">采集状态读取失败：{error}</span>:<ActivityStatus activity={value||undefined}/>}</div>;
  return <Note>{error?<span role="alert">采集状态读取失败：{error}</span>:<ActivityStatus activity={value||undefined}/>}任务状态、设备通信与采样有效性分别记录；30秒仅为显示观察窗，不是停线或断流报警标准。</Note>;
 }

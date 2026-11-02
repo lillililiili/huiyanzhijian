@@ -1,3 +1,4 @@
+import {hydrateMeasurementRows} from '../m04-measurements/storage-api';
 import type { PoolClient } from 'pg';
 import { randomUUID } from 'node:crypto';
 import { pool, transaction } from '../../infrastructure/db';
@@ -150,7 +151,7 @@ export class QualityReportService {
       // 4. 读取该批任务的所有测点数据与判定结果
       const queryCutoff = new Date();
       const recordsRes = await tx.query(
-        `SELECT r.id AS record_id, r.task_id, r.device_id, r.position_m, r.receipt_status, r.sample_time,
+        `SELECT r.id AS record_id, r.task_id, r.device_id, r.position_m, r.receipt_status, r.sample_time, r.raw_payload,
                 v.metric_code, v.value, v.unit, v.data_status, e.quality_result
          FROM m04.measurement_record r
          JOIN m04.measurement_value v ON v.record_id = r.id
@@ -161,6 +162,7 @@ export class QualityReportService {
       );
 
       const rows = recordsRes.rows;
+      await hydrateMeasurementRows(actor.factory,rows);
       requireValue(rows.length > 0, 'RESOURCE_NOT_FOUND', `指定的任务范围内暂无有效测量数据`);
 
       // 5. 统计与整盘判定计算（最大值、最小值、均值、标准差、不合格区段总长）

@@ -4,6 +4,9 @@ import {join} from 'node:path';
 import {Queue} from './queue';
 import {FeedControl} from './feed-control';
 import {DeviceClient, HttpFailure, verifyAssignment} from './client';
+import {edgeRequest} from './edge-client';
+import {EdgeDelivery} from './edge-delivery';
+import {SpecificationStore,previewSpecification} from './specification';
 import {ModelStore,hashInput} from './model-store';
 import {insist,keys,fixed} from './cable-model';
 import {record,SCENARIO_PERFECT,SCENARIO_OVERLAP_DEFECT,SCENARIO_GAP_GLITCH,SCENARIO_OVALITY_OUT_OF_BOUNDS,SCENARIO_SENSOR_BLOCKED,INDUSTRIAL_SCENARIOS} from './scenarios';
@@ -23,19 +26,24 @@ export class WebManager {
   readonly queue: Queue;
   readonly client: DeviceClient;
   readonly models: ModelStore;
+  readonly specifications: SpecificationStore;
   readonly feed: FeedControl;
   private modelBusy=new Set<string>();
   private children = new Map<string, ChildProcess>();
   private deviceCache: {expires: number; result: any} | null = null;
   private deviceRequest: Promise<any> | null = null;
   private closing = false;
+  private receiptTimer?:ReturnType<typeof setInterval>;
+  private receiptSync:Promise<void>|null=null;
+  private receiptRotation=0;
   private productionBusy = new Set<string>();
 
   constructor(readonly databasePath: string, readonly apiUrl: string, token: string) {
     this.queue = new Queue(databasePath);
     this.models=new ModelStore(this.queue);
+    this.specifications=new SpecificationStore(this.queue);
     this.feed=new FeedControl(this.queue);
-    this.client = new DeviceClient(apiUrl, token);
+    this.client = new DeviceClient(apiUrl, token, this.queue);
     this.queue.db.exec(`
       CREATE TABLE IF NOT EXISTS web_production_event(id TEXT PRIMARY KEY,device_id TEXT NOT NULL,input TEXT NOT NULL,payload TEXT NOT NULL,response TEXT,created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS web_execution(
@@ -49,6 +57,17 @@ export class WebManager {
     // Restart never silently resumes generation. The original queue and lease stay intact.
     this.queue.db.prepare("UPDATE web_execution SET status='INTERRUPTED',ended_at=?,message=? WHERE status IN('STARTING','RUNNING','STOPPING')")
       .run(new Date().toISOString(), '服务已重启；历史保留，请选择继续采集或补传');
+    this.receiptTimer=setInterval(()=>this.reconcileReceipts(),1000);this.receiptTimer.unref();
+  }
+
+  private reconcileReceipts(){
+    if(this.closing||this.receiptSync)return;
+    const runs=this.queue.db.prepare(`SELECT DISTINCT s.run_id FROM sample s JOIN edge_local_accept a ON a.record_id=s.record_id
+      WHERE s.state IN('PENDING','UNKNOWN') AND NOT EXISTS(SELECT 1 FROM web_execution e WHERE e.run_id=s.run_id AND e.status IN('STARTING','RUNNING','STOPPING'))
+      ORDER BY s.run_id LIMIT 1000`).all() as {run_id:string}[];
+    if(!runs.length)return;
+    const run=runs[this.receiptRotation++%runs.length].run_id;
+    this.receiptSync=new EdgeDelivery(this.queue,run).receipts().catch(()=>{}).finally(()=>{this.receiptSync=null;});
   }
 
   productionHistory(){return this.queue.db.prepare('SELECT id,device_id,payload,response,created_at FROM web_production_event ORDER BY created_at DESC LIMIT 50').all().map((x:any)=>({...x,payload:JSON.parse(x.payload),response:x.response?JSON.parse(x.response):null}));}
@@ -91,7 +110,7 @@ export class WebManager {
   }
 
   private detectorId(factory:string,device:string){const h=createHash('sha256').update('SIM05:'+factory+':'+device).digest('hex');return h.slice(0,8)+'-'+h.slice(8,12)+'-4'+h.slice(13,16)+'-a'+h.slice(17,20)+'-'+h.slice(20,32);}
-  private localModel(kind:string,id:string){try{const row=this.models.get(kind,id);return {...row,inspection:this.models.inspection(kind,id,row.version)};}catch(e){if((e as any).code==='MODEL_NOT_FOUND')return null;throw e;}}
+  private localModel(kind:string,id:string){try{const row=this.models.get(kind,id);return {...row,inspection:this.models.inspection(kind,id,row.version),...(kind==='cables'?{specifications:Object.fromEntries(Object.entries(row.data.simulation_specs||{}).map(([metric,ref]:[string,any])=>[metric,this.models.get('specs',ref.id,ref.version).data]))}:{})};}catch(e){if((e as any).code==='MODEL_NOT_FOUND')return null;throw e;}}
   async catalog(params:Record<string,string>){
     let data;try{data=await this.client.catalog(params);}catch(e){this.upstreamError(e);}
     let assignments:any[];try{assignments=await Promise.all(data.devices.map(async(d:any)=>{const response=await this.client.request('/devices/'+encodeURIComponent(d.id)+'/assignment','AssignmentResponse');const a=response.data.assignment;if(a)verifyAssignment(a);return a?{task_id:a.task_id,spool_id:a.spool_id,metric_code:a.metric_code}:null;}));}catch(e){this.upstreamError(e);}
@@ -106,6 +125,13 @@ export class WebManager {
     return this.models.save(kind,{id,version:b.version,data,reason:b.reason});
   }
 
+  async confirmSpecification(b:any){
+    requireWeb(b&&validId(b.cable_id),400,'INVALID_ID','请选择线缆');
+    const catalog=await this.catalog({id:b.cable_id});const source=catalog.items.find((x:any)=>x.id===b.cable_id);
+    requireWeb(source,404,'CABLE_NOT_FOUND','线缆不在当前授权目录');
+    return this.specifications.confirm(b,source);
+  }
+  previewSpecification(b:any){return previewSpecification(b);}
   async devices() {
     if (this.deviceCache && this.deviceCache.expires > Date.now()) return this.deviceCache.result;
     if (this.deviceRequest) return this.deviceRequest;
@@ -134,6 +160,7 @@ export class WebManager {
   state() {
     const totals = this.queue.db.prepare(`SELECT count(*) AS generated,
       COALESCE(sum(state IN('PENDING','UNKNOWN')),0) AS pending,
+      (SELECT count(*) FROM sample s JOIN edge_local_accept a ON a.record_id=s.record_id WHERE s.state IN('PENDING','UNKNOWN')) AS edge_saved_pending,
       COALESCE(sum(state='STORED'),0) AS stored,COALESCE(sum(state='QUARANTINED'),0) AS quarantined,
       COALESCE(sum(state='REJECTED'),0) AS rejected,
       COALESCE(sum(json_extract(receipt,'$.receipt_status')='DUPLICATE'),0) AS duplicate_receipts FROM sample`).get();
@@ -141,6 +168,7 @@ export class WebManager {
       json_extract(r.assignment,'$.task_id') AS task_id,json_extract(r.assignment,'$.spool_id') AS spool_id,
       json_extract(r.assignment,'$.metric_code') AS metric_code,
       (SELECT count(*) FROM sample s WHERE s.run_id=r.id AND s.state IN('PENDING','UNKNOWN')) AS pending,
+      (SELECT count(*) FROM sample s JOIN edge_local_accept a ON a.record_id=s.record_id WHERE s.run_id=r.id AND s.state IN('PENDING','UNKNOWN')) AS edge_saved_pending,
       (SELECT count(*) FROM sample s WHERE s.run_id=r.id AND s.state='STORED') AS stored,
       (SELECT count(*) FROM sample s WHERE s.run_id=r.id AND s.state='QUARANTINED') AS quarantined,
       (SELECT count(*) FROM sample s WHERE s.run_id=r.id AND s.state='REJECTED') AS rejected
@@ -224,8 +252,38 @@ export class WebManager {
     return this.job(id)!;
   }
 
+  async barcode(b:any){
+    keys(b,['cable_id','device_id','task_id']);
+    insist(validId(b.cable_id)&&validId(b.device_id)&&validId(b.task_id),'请选择线缆、设备和明确任务');
+    const catalog=await this.catalog({id:b.cable_id}),row=catalog.items.find((x:any)=>x.id===b.cable_id);
+    const task=row?.tasks.find((x:any)=>x.id===b.task_id&&x.device_id===b.device_id&&x.metric_code==='OVALITY');
+    insist(task&&task.state==='RUNNING','请先在主平台开始该线缆的不圆度任务');
+    const a=(await this.client.request('/devices/'+b.device_id+'/assignment','AssignmentResponse')).data.assignment;
+    insist(a&&a.task_id===task.id,'设备当前任务与选择不一致');verifyAssignment(a);
+    const label={barcode:'HYOV1'+createHash('sha256').update(a.binding_id+':'+a.snapshot_hash).digest('hex').slice(0,20).toUpperCase(),device_id:b.device_id,task_id:task.id,binding_id:a.binding_id,snapshot_hash:a.snapshot_hash,
+      order:{code:row.external_code,spool:row.spool_code,spec:row.specification_code,length:Number(task.planned_length_m),externalId:task.id}};
+    try{return await edgeRequest('/barcodes',label)}catch(e){throw new WebError(409,'EDGE_BARCODE',e instanceof Error?e.message:'条码登记失败')}
+  }
+  async resolveBarcode(b:any){
+    keys(b,['barcode']);insist(typeof b.barcode==='string'&&/^(HYOV1[0-9A-F]{20}|HYT1[0-9A-F]{32}V[1-9][0-9]{0,18})$/.test(b.barcode),'不是本系统任务条码');
+    try{return await edgeRequest('/barcodes/'+b.barcode)}catch(e){throw new WebError(409,'EDGE_BARCODE',e instanceof Error?e.message:'条码读取失败')}
+  }
+  async scannerState(){
+    try{return await edgeRequest('/scanner-state')}catch(e){throw new WebError(503,'EDGE_OFFLINE',e instanceof Error?e.message:'边缘终端暂不可用')}
+  }
+  async scanBarcode(b:any){
+    keys(b,['barcode',...('request_id' in b?['request_id']:[])]);if(b.request_id!==undefined)insist(typeof b.request_id==='string'&&/^[a-f0-9-]{36}$/.test(b.request_id),'扫码请求标识无效');insist(typeof b.barcode==='string'&&/^(HYOV1[0-9A-F]{20}|HYT1[0-9A-F]{32}V[1-9][0-9]{0,18})$/.test(b.barcode),'不是本系统任务码');
+    try{const state=await edgeRequest('/scan',{barcode:b.barcode,...(b.request_id?{request_id:b.request_id}:{})});
+      const label=await edgeRequest('/barcodes/'+state.run.barcode);
+      const a=(await this.client.request('/devices/'+encodeURIComponent(label.device_id)+'/assignment','AssignmentResponse')).data.assignment;
+      insist(a?.task_id===label.task_id,'设备任务已变化，请重新扫描',409,'TASK_MISMATCH');
+      const previous=this.queue.db.prepare("SELECT id FROM sim_run WHERE device_id=? AND json_extract(assignment,'$.task_id')<>? AND control<>'STOPPED'").all(label.device_id,label.task_id) as {id:string}[];
+      for(const run of previous)this.control(run.id,'stop');
+      return {label,spool_id:a.spool_id,state:{state:state.state,run:state.run,stored:state.stored,tsPending:state.tsPending,centerPending:state.centerPending,centerRejected:state.centerRejected,time:state.time}};
+    }catch(e){throw new WebError(409,'EDGE_SCAN',e instanceof Error?e.message:'扫码未被边缘接受')}
+  }
   async createPass(b:any){
-    keys(b,['request_id','cable_id','cable_version','detector_id','detector_version','mode','task_id','spool_id']);
+    keys(b,['request_id','cable_id','cable_version','detector_id','detector_version','mode','task_id','spool_id',...('barcode' in b?['barcode']:[])]);
     insist(typeof b.request_id==='string'&&/^[a-f0-9-]{36}$/.test(b.request_id),'请求ID无效');
     insist(['BOUND','AUTO'].includes(b.mode),'请选择已有任务或自动进出料');
     for(const k of ['cable_id','detector_id'])insist(typeof b[k]==='string'&&/^[a-f0-9-]{36}$/.test(b[k]),'模型ID无效');
@@ -235,6 +293,9 @@ export class WebManager {
     insist(!existing||existing.input_hash===hash,'同一请求ID内容已变化',409,'REQUEST_CONFLICT');
     const old=this.lastJob(id);if(old)return old;
     const snapshot=existing?.snapshot||this.models.snapshot(b.cable_id,b.detector_id,b.cable_version,b.detector_version),device=snapshot.detector.data.device_id;
+    if(snapshot.detector.data.metric==='OVALITY'){
+      insist(b.mode==='BOUND','不圆度请使用已开始的检测任务');
+    }
     insist(!this.modelBusy.has(device),'设备正在准备检测',409,'DEVICE_BUSY');
     const active=this.queue.db.prepare("SELECT id FROM web_execution WHERE device_id=? AND status IN('STARTING','RUNNING','STOPPING')").get(device);insist(!active,'设备正在采样，请先停止或等待完成',409,'DEVICE_BUSY');
     this.modelBusy.add(device);
@@ -255,6 +316,20 @@ export class WebManager {
       const assignment=(await this.client.request('/devices/'+device+'/assignment','AssignmentResponse')).data.assignment;
       insist(assignment,'设备没有运行任务；请在平台开始任务，或启用自动发现',409,'NO_ASSIGNMENT');verifyAssignment(assignment);
       insist(assignment.metric_code===snapshot.detector.data.metric&&(!b.task_id||b.task_id===assignment.task_id)&&(!b.spool_id||b.spool_id===assignment.spool_id)&&(!entered||entered.task_id===assignment.task_id),'任务或盘与设备模型不匹配',409,'TASK_MISMATCH');
+      if(assignment.metric_code==='OVALITY'){
+        try{const edge=await edgeRequest('/scanner-state');
+          insist(edge.state==='RUNNING','边缘尚未开始采集；请先在独立扫码枪模拟页面完成任务绑定',409,'EDGE_NOT_READY');
+          insist(edge.run?.taskId===assignment.task_id&&edge.run?.bindingId===assignment.binding_id&&edge.run?.config?.deviceId===device,'边缘正在采集其他任务或绑定已变更，请核对所选任务',409,'EDGE_TASK_MISMATCH');
+          const meter=snapshot.detector.data.meter_delay_ms;
+          if(meter!==undefined&&meter!==''){
+            const config=edge.run?.config?.sync;
+            insist(Number.isInteger(config?.distanceMm)&&config.distanceMm>0,'请先在4182初始化配置填写间距并推送；如本盘已开始，请结束后重新扫码');
+            if(snapshot.edge_sync)insist(snapshot.edge_sync.runId===edge.run.id&&snapshot.edge_sync.revision===config.revision,'边缘本盘或距离版本已变更，请创建新的送料运行');
+            else {snapshot.edge_sync={distanceMm:config.distanceMm,revision:config.revision,runId:edge.run.id};this.queue.db.prepare('UPDATE model_pass SET snapshot=? WHERE run_id=?').run(JSON.stringify(snapshot),id);}
+          }
+        }
+        catch(e){if(e instanceof WebError)throw e;throw new WebError(409,'EDGE_NOT_READY',e instanceof Error?e.message:'边缘采集状态读取失败')}
+      }
       return this.launch(id,device,'run',{request_id:b.request_id,device_id:device,scenario:'cable',count:snapshot.count,interval_ms:snapshot.interval_ms,seed:0},hash);
     }catch(e){if(e instanceof HttpFailure)this.upstreamError(e);throw e;}finally{this.modelBusy.delete(device);}
   }
@@ -470,11 +545,12 @@ export class WebManager {
   }
 
   async close() {
-    this.closing=true;
+    this.closing=true;clearInterval(this.receiptTimer);
     for(const child of this.children.values())child.kill('SIGTERM');
     for(let i=0;i<80 && this.children.size;i++)await new Promise(r=>setTimeout(r,100));
     for(const child of this.children.values())child.kill('SIGKILL');
     for(let i=0;i<20 && this.children.size;i++)await new Promise(r=>setTimeout(r,100));
+    if(this.receiptSync)await this.receiptSync;
     this.queue.db.close();
   }
 }

@@ -31,6 +31,7 @@ export const routeTitles: Record<string, string> = {
   sync: "同步监控",
   users: "用户角色与权限",
   audit: "操作审计",
+  initialization: "初始化配置",
   settings: "系统设置与运行状态"
 };
 
@@ -83,6 +84,7 @@ export function breadcrumbTitle(route: string, params: URLSearchParams) {
   if(route==="tasks"&&params.get("view")==="auto")return "自动发现配置";
   if (route === "detection") {
     const key = params.get("metric") || "dg";
+    if(key === "ht") return "护套厚度检测";
     const name = isMetricId(key) ? METRICS[key].name : undefined;
     return `${name}检测`;
   }
@@ -90,6 +92,7 @@ export function breadcrumbTitle(route: string, params: URLSearchParams) {
 }
 
 export function detectionHeading(metric: string | null) {
+  if (metric === "ht") return "护套厚度检测";
   if (metric === "jx") return "铜丝屏蔽相邻铜丝间隙检测";
   if (metric === "by") return "电缆不圆度检测";
   return "金属屏蔽搭盖率检测";

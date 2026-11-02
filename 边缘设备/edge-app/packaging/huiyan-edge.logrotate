@@ -1,0 +1,10 @@
+/var/lib/huiyan-edge/edge.log /var/lib/huiyan-edge/tsdb.log {
+ daily
+ rotate 14
+ size 20M
+ compress
+ missingok
+ notifempty
+ copytruncate
+ su huiyan-edge huiyan-edge
+}

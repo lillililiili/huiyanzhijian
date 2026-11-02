@@ -217,7 +217,7 @@ export function AppShell({ store, session, state, parsed, children, onLogout, co
         <div className="sidebar-platform">{state.settings.platformName || "线缆质量管控平台"}</div>
         <nav className="nav-scroll">
           {application === "admin" && <>
-            {[["users","用户角色与权限","user"],["audit","操作审计","clipboard"],["audit?view=logs","运行日志","history"],["audit?view=diagnostics","采集诊断","connect"],["settings","系统设置","settings"]].map(([route,label,icon])=><HashLink key={route} route={route} className={parsed.route+(parsed.params.get('view')?'?view='+parsed.params.get('view'):'')===route?'nav-item active':'nav-item'}><Icon name={icon}/><span>{label}</span></HashLink>)}
+            {[["users","用户角色与权限","user"],["audit","操作审计","clipboard"],["audit?view=logs","运行日志","history"],["audit?view=diagnostics","采集诊断","connect"],["initialization","初始化配置","adjustments"],["settings","系统设置","settings"]].map(([route,label,icon])=><HashLink key={route} route={route} className={parsed.route+(parsed.params.get('view')?'?view='+parsed.params.get('view'):'')===route?'nav-item active':'nav-item'}><Icon name={icon}/><span>{label}</span></HashLink>)}
             <a className="nav-item" href={applicationUrl('business','dashboard')}><Icon name="home"/><span>返回业务平台</span></a>
           </>}
           {(application === "admin" ? [] : application === "business" ? businessNavEntries : navEntries).map(entry => {

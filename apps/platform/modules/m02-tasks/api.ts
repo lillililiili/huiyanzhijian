@@ -17,8 +17,14 @@ export class TaskApi{
    const result=await fn(db);await db.query('INSERT INTO m02.command_receipt(factory_id,actor_id,command_key,payload_hash,response) VALUES($1,$2,$3,$4,$5)',[ctx.actor.factory,ctx.actor.id,key,hash,JSON.stringify(result)]);return result;
   });
  }
- async createWorkOrder(ctx:Context,b:any,key:string){object(b,['external_code','specification_id']);textField(b.external_code);idField(b.specification_id);return this.command(ctx,key,{action:'work-order',body:b},async db=>{await lock(db,'production:'+ctx.actor.factory);const spec=await this.catalog.getSpecification(ctx.actor.factory,b.specification_id,db);requireValue(spec.enabled,'SPEC_DISABLED','规格已停用，不能创建新工单',422);const id=randomUUID();const r=await db.query("INSERT INTO m02.work_order(id,factory_id,source_system,external_code,specification_id) VALUES($1,$2,'PLATFORM',$3,$4) RETURNING *",[id,ctx.actor.factory,b.external_code,b.specification_id]);await this.identity.audit(ctx,'WORK_ORDER_CREATED','WORK_ORDER',id,{},db);return r.rows[0];});}
- async createSpool(ctx:Context,b:any,key:string){object(b,['work_order_id','spool_code']);idField(b.work_order_id);textField(b.spool_code);return this.command(ctx,key,{action:'spool',body:b},async db=>{const wo=await db.query('SELECT 1 FROM m02.work_order WHERE id=$1 AND factory_id=$2 FOR KEY SHARE',[b.work_order_id,ctx.actor.factory]);requireValue(wo.rowCount,'RESOURCE_NOT_FOUND','工单不存在',404);const id=randomUUID();const r=await db.query('INSERT INTO m02.cable_spool(id,factory_id,work_order_id,spool_code) VALUES($1,$2,$3,$4) RETURNING *',[id,ctx.actor.factory,b.work_order_id,b.spool_code]);await this.identity.audit(ctx,'SPOOL_CREATED','SPOOL',id,{},db);return r.rows[0];});}
+ async createWorkOrder(ctx:Context,b:any,key:string){
+  object(b,['external_code'],['specification_id','specification_ids']);textField(b.external_code);
+  requireValue(!(b.specification_id&&b.specification_ids),'INVALID_INPUT','请使用规格集合');
+  const ids=b.specification_ids??[b.specification_id];requireValue(Array.isArray(ids)&&ids.length>0&&ids.length<=100,'INVALID_INPUT','请选择1～100个规格');ids.forEach(idField);requireValue(new Set(ids).size===ids.length,'INVALID_INPUT','规格不能重复');
+  return this.command(ctx,key,{action:'work-order',body:b},async db=>{await lock(db,'production:'+ctx.actor.factory);for(const sid of ids){const spec=await this.catalog.getSpecification(ctx.actor.factory,sid,db);requireValue(spec.enabled,'SPEC_DISABLED','规格已停用',422)}
+   const id=randomUUID();const r=await db.query("INSERT INTO m02.work_order(id,factory_id,source_system,external_code,specification_id,specification_ids) VALUES($1,$2,'PLATFORM',$3,$4,$5) RETURNING *",[id,ctx.actor.factory,b.external_code,ids[0],ids]);await this.identity.audit(ctx,'WORK_ORDER_CREATED','WORK_ORDER',id,{specification_ids:ids},db);return r.rows[0];});
+ }
+ async createSpool(ctx:Context,b:any,key:string){object(b,['work_order_id','spool_code'],['specification_id']);idField(b.work_order_id);textField(b.spool_code);if(b.specification_id)idField(b.specification_id);return this.command(ctx,key,{action:'spool',body:b},async db=>{const wo=await db.query('SELECT * FROM m02.work_order WHERE id=$1 AND factory_id=$2 FOR KEY SHARE',[b.work_order_id,ctx.actor.factory]);requireValue(wo.rowCount,'RESOURCE_NOT_FOUND','工单不存在',404);const ids=wo.rows[0].specification_ids;const spec=b.specification_id||(ids.length===1?ids[0]:null);requireValue(spec&&ids.includes(spec),'SPEC_REQUIRED','请选择本订单中的一个线缆规格',422);const catalog=await this.catalog.getSpecification(ctx.actor.factory,spec,db);requireValue(catalog.enabled,'SPEC_DISABLED','规格已停用',422);const id=randomUUID();const r=await db.query('INSERT INTO m02.cable_spool(id,factory_id,work_order_id,spool_code,specification_id) VALUES($1,$2,$3,$4,$5) RETURNING *',[id,ctx.actor.factory,b.work_order_id,b.spool_code,spec]);await this.identity.audit(ctx,'SPOOL_CREATED','SPOOL',id,{specification_id:spec},db);return r.rows[0];});}
  async create(ctx:Context,b:any,key:string){
   return this.command(ctx,key,{action:'task-create',body:b},db=>this.createInTransaction(ctx,b,db));
  }
@@ -33,12 +39,25 @@ export class TaskApi{
   requireValue((automatic&&b.planned_length_m===null)||typeof b.planned_length_m==='string'&&/^\d{1,14}(\.\d{1,10})?$/.test(b.planned_length_m)&&new Decimal(b.planned_length_m).gt(0));
    const device=await this.catalog.getDevice(ctx.actor.factory,b.device_id,db),spec=await this.catalog.getSpecification(ctx.actor.factory,b.specification_id,db);
    requireValue(device.enabled&&spec.enabled&&device.process_id===b.process_id&&device.metric_code===b.metric_code&&await this.catalog.applicable(spec.id,b.process_id,b.metric_code,db),'TASK_BINDING_INVALID','设备、规格、工序和指标不相容',422);
-   const context=await db.query('SELECT s.spool_code,s.canonical_spool_id,w.external_code FROM m02.cable_spool s JOIN m02.work_order w ON s.work_order_id=w.id WHERE s.id=$1 AND w.id=$2 AND s.factory_id=$3 AND w.specification_id=$4',[b.spool_id,b.work_order_id,ctx.actor.factory,b.specification_id]);requireValue(context.rowCount,'TASK_BINDING_INVALID','工单与盘号或规格不一致',422);
+   const context=await db.query('SELECT s.spool_code,s.canonical_spool_id,w.external_code FROM m02.cable_spool s JOIN m02.work_order w ON s.work_order_id=w.id WHERE s.id=$1 AND w.id=$2 AND s.factory_id=$3 AND s.specification_id=$4',[b.spool_id,b.work_order_id,ctx.actor.factory,b.specification_id]);requireValue(context.rowCount,'TASK_BINDING_INVALID','工单与盘号或规格不一致',422);
    requireValue(!context.rows[0].canonical_spool_id,'SPOOL_GROUPED','请向主盘分配新任务',409);
    const mixed=await db.query('SELECT 1 FROM m02.inspection_task WHERE spool_id IN(SELECT id FROM m02.cable_spool WHERE id=$1 OR canonical_spool_id=$1) AND data_environment<>$2',[b.spool_id,device.data_environment]);requireValue(!mixed.rowCount,'SOURCE_NOT_ALLOWED','同一盘不能混合真实与模拟来源',403);
    const rule=await this.rules.getSnapshot(ctx.actor.factory,b.recipe_version_id,b.metric_code,device.data_environment,db,b.specification_id);const id=randomUUID(),code=await this.nextCode(db,ctx.actor.factory);
    const r=await db.query(`INSERT INTO m02.inspection_task(id,factory_id,task_code,work_order_id,spool_id,device_id,process_id,specification_id,metric_code,recipe_version_id,planned_length_m,data_environment,state,rule_snapshot,context_snapshot) VALUES($1,$2,$14,$3,$4,$5,$6,$7,$8,$9,$10,$11,'CREATED',$12,$13) RETURNING *`,[id,ctx.actor.factory,b.work_order_id,b.spool_id,b.device_id,b.process_id,b.specification_id,b.metric_code,b.recipe_version_id,b.planned_length_m,device.data_environment,JSON.stringify(rule),JSON.stringify({device,specification:spec,...context.rows[0]}),code]);
    await this.identity.audit(ctx,'TASK_CREATED','TASK',id,{},db);return r.rows[0];
+ }
+ // Repeated scans create a new execution, never reopen immutable capture windows.
+ async repeatScanInTransaction(ctx:Context,source:any,db:PoolClient){
+  await lock(db,'production:'+ctx.actor.factory);
+  const family=source.context_snapshot.scan_execution;
+  const sourceId=family?.source_task_id||source.id,sourceCode=family?.source_task_code||source.task_code;
+  const round=Number((await db.query("SELECT COALESCE(MAX((context_snapshot->'scan_execution'->>'round')::int),1)+1 AS n FROM m02.inspection_task WHERE factory_id=$1 AND context_snapshot->'scan_execution'->>'source_task_id'=$2",[ctx.actor.factory,sourceId])).rows[0].n);
+  const c=(await this.businessContexts(ctx.actor,[source.id],db))[0];
+  const snapshot={...source.context_snapshot,spool_code:c.spool_code,external_code:c.external_code,scan_execution:{source_task_id:sourceId,source_task_code:sourceCode,previous_task_id:source.id,round}};
+  const id=randomUUID(),code=await this.nextCode(db,ctx.actor.factory);
+  const row=(await db.query(`INSERT INTO m02.inspection_task(id,factory_id,task_code,work_order_id,spool_id,device_id,process_id,specification_id,metric_code,recipe_version_id,planned_length_m,data_environment,state,rule_snapshot,context_snapshot) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'CREATED',$13,$14) RETURNING *`,[id,ctx.actor.factory,code,source.work_order_id,source.spool_id,source.device_id,source.process_id,source.specification_id,source.metric_code,source.recipe_version_id,source.planned_length_m,source.data_environment,JSON.stringify(source.rule_snapshot),JSON.stringify(snapshot)])).rows[0];
+  await this.identity.audit(ctx,'TASK_SCAN_REPEAT','TASK',id,{source_task_id:sourceId,previous_task_id:source.id,round,reason:'重复扫码，独立采集'},db);
+  return row;
  }
  async get(actor:Actor,id:string){const r=await pool.query('SELECT * FROM m02.inspection_task WHERE id=$1 AND factory_id=$2',[id,actor.factory]);if(!r.rowCount)throw new ApiError(404,'RESOURCE_NOT_FOUND','任务不存在');return r.rows[0];}
  // Public read models for M04; all association SQL stays in M02.
@@ -54,7 +73,7 @@ export class TaskApi{
   const selected=(await db.query('SELECT * FROM m02.cable_spool WHERE factory_id=$1 AND id=$2',[actor.factory,id])).rows[0];
   requireValue(selected,'RESOURCE_NOT_FOUND','线缆不存在或无权访问',404);
   const root=selected.canonical_spool_id||selected.id;
-  const members=(await db.query('SELECT s.*,w.external_code,w.specification_id FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.factory_id=$1 AND (s.id=$2 OR s.canonical_spool_id=$2) ORDER BY s.id',[actor.factory,root])).rows;
+  const members=(await db.query('SELECT s.*,w.external_code FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.factory_id=$1 AND (s.id=$2 OR s.canonical_spool_id=$2) ORDER BY s.id',[actor.factory,root])).rows;
   const tasks=(await db.query('SELECT * FROM m02.inspection_task WHERE factory_id=$1 AND spool_id=ANY($2::text[]) ORDER BY created_at,id',[actor.factory,members.map(s=>s.id)])).rows;
   return {requested_id:id,root_id:root,members,tasks,scope_hash:digest({members:members.map(s=>[s.id,s.version,s.canonical_spool_id]),tasks:tasks.map(t=>[t.id,t.spool_id,t.association_version])})};
  }

@@ -12,7 +12,7 @@ vi.mock("../ui/download", async importOriginal => ({...await importOriginal<type
 let root: Root; let container: HTMLDivElement;
 async function render(node: ReactNode){container=document.createElement("div");document.body.append(container);root=createRoot(container);await act(async()=>root.render(node));}
 async function click(name:string){const button=[...container.querySelectorAll("button")].find(b=>b.textContent===name)!;expect(button).toBeTruthy();await act(async()=>button.click());}
-afterEach(async () => { if(root)await act(async()=>root.unmount()); container?.remove(); vi.clearAllMocks(); });
+afterEach(async () => { if(root)await act(async()=>root.unmount()); container?.remove(); vi.clearAllMocks(); vi.useRealTimers(); });
 const row = (id: string, position="1.0"): Measurement => ({id,ingest_order:id,value:"8.0000000001",unit:"%",metric_code:"OVALITY",quality_result:"FAIL",evaluation_reason:null,receipt_status:"STORED",eligibility:"TEST_ONLY",position_eligibility:"UNVERIFIED",received_at:"2026-10-26T00:00:00.123456Z",raw_payload:{task_id:"task",device_id:"HY-BY-01",record_id:id,sample_time:"2026-10-26T00:00:00.123456Z",position_m:position,position_quality:"UNKNOWN",data_status:"VALID",data_environment:"SIMULATED",capture_sequence:id,recipe_version_id:null,values:[]}});
 test("history paging shows filtered totals and exports all frozen pages without losing decimals", async () => {
   const api = new ApiClient();
@@ -53,11 +53,11 @@ test("ended task chart loads every cursor page while detection rows remain pagin
   const task={id:"task",task_code:"T-1",state:"ENDED",metric_code:"OVALITY",device_id:"HY-BY-01",spool_id:"spool",context_snapshot:{spool_code:"线缆1号"},rule_snapshot:{comparison:null},data_environment:"SIMULATED"} as any;
   await render(<Measurements api={api} data={emptyWorkspace} task={task} params={new URLSearchParams()} live/>);
   await act(async()=>{await Promise.resolve();});
-  await click("米数轴");
+  expect(container.textContent).not.toContain("米数轴");
   const option=chartMocks.setOption.mock.calls.at(-1)?.[0];
-  expect(option.xAxis.data).toHaveLength(200);
-  expect(option.xAxis.data[0]).toBe("0.0");
-  expect(option.xAxis.data.at(-1)).toBe("99.5");
+  expect(option.series[0].data).toHaveLength(200);
+  expect(option.xAxis[0].type).toBe("time");
+  expect(container.querySelector("table")?.textContent).not.toContain("来源米数");
   expect(container.textContent).toContain("第 1 / 8 页 · 共 200 条");
   expect(request.mock.calls.some(([path])=>path.includes("limit=25")&&path.includes("task_id=task"))).toBe(true);
   expect(request.mock.calls.some(([path])=>path.includes("cursor=chart-cursor"))).toBe(true);
@@ -85,14 +85,14 @@ test("ended task summary uses complete records and focuses the latest server fai
   expect(container.querySelector('.review-result-fail strong')?.textContent).toBe('1 条');
   expect(container.querySelector('.review-result-not_evaluated strong')?.textContent).toBe('1 条');
   expect(container.querySelector('.review-latest-failure')?.textContent).toContain('7.6 %');
-  expect(container.querySelector('.review-latest-failure')?.textContent).toContain('12 m（未验证）');
+  expect(container.querySelector('.review-latest-failure')?.textContent).toContain('接收：');
   await click("下一页");
   expect(container.textContent).toContain("第 2 / 2 页");
   expect(cards[1].querySelector('strong')?.textContent).toBe('30');
   expect(container.querySelector('.review-result-fail strong')?.textContent).toBe('1 条');
   await act(async()=>container.querySelector<HTMLButtonElement>('.review-failure-record')!.click());
   expect(document.body.textContent).toContain("原始测量记录");
-  expect(document.body.textContent).toContain("来源米数：12（未验证）");
+  expect(document.body.textContent).not.toContain("来源米数：");
   expect(request.mock.calls.some(([path])=>path.includes("limit=100")&&path.includes("task_id=task"))).toBe(true);
 });
 test("pending records remain separate and an unjudged high value is not shown as a failure",async()=>{
@@ -109,18 +109,44 @@ test("pending records remain separate and an unjudged high value is not shown as
   expect(container.querySelector('.review-range')?.textContent).toContain('8.8 %');
   expect(container.querySelector('.review-latest-failure button')).toBeNull();
 });
-test("running task card shows the server total and labels page breakdown",async()=>{
+test("running task chart and breakdown use all records independently of the table page",async()=>{
   const api=new ApiClient();
-  vi.spyOn(api,"request").mockResolvedValue({items:[row("live")],total:40,has_more:true,next_cursor:"table-cursor",as_of:"cutoff"});
+  vi.spyOn(api,"request").mockImplementation(async path=>path.includes('limit=100')?{items:Array.from({length:40},(_,i)=>row(String(i))),total:40,has_more:false,next_cursor:null,as_of:"cutoff"}:{items:[row("live")],total:40,has_more:true,next_cursor:"table-cursor",as_of:"cutoff"});
   const task={id:"task",task_code:"202610270001",state:"RUNNING",metric_code:"OVALITY",device_id:"HY-BY-01",spool_id:"spool",context_snapshot:{spool_code:"线缆1号"},rule_snapshot:{comparison:null},data_environment:"SIMULATED"} as any;
   await render(<Measurements api={api} data={emptyWorkspace} task={task} params={new URLSearchParams()} live/>);
   const cards=container.querySelectorAll(".review-kpi");
   expect(cards[1].textContent).toContain('接收记录总数');
   expect(cards[1].querySelector('strong')?.textContent).toBe('40');
-  expect(cards[2].textContent).toContain('当前页');
-  expect(container.querySelector('.review-sampling-line')?.textContent).toContain('有效 1');
-  await click('查看超限记录与图片');
-  expect(container.querySelector('[role=dialog]')?.textContent).toContain('异常记录图片预览');
+  expect(cards[2].textContent).toContain('本任务完整记录');
+  expect(container.querySelector('.review-sampling-line')?.textContent).toContain('有效 40');
+  expect(chartMocks.setOption.mock.calls.at(-1)?.[0].series[0].data).toHaveLength(40);
+  expect(container.textContent).not.toContain('查看超限记录与图片');
+  expect(container.querySelector('.review-object-help')).toBeNull();
+  expect(container.querySelector('[role=dialog]')).toBeNull();
+});
+
+test.each(['OVALITY','WIRE_GAP','SHIELD_OVERLAP_RATE'])('DET06 %s live full trend survives filter, pause, failed update, resume and task switch',async(metric)=>{
+ vi.useFakeTimers();const api=new ApiClient();let count=140,broken=false;
+ const request=vi.spyOn(api,'request').mockImplementation(async path=>{
+  const q=new URLSearchParams(path.split('?')[1]);const total=q.get('task_id')==='other'?1:count;
+  const all=Array.from({length:total},(_,i)=>({...row(String(i+1)),metric_code:metric,raw_payload:{...row(String(i+1)).raw_payload,sample_time:new Date(1700000000000+i*1000).toISOString()}})).reverse();
+  if(q.get('limit')==='100'){
+   if(broken)throw Error('offline');const offset=Number(q.get('cursor')||0);
+   return {items:all.slice(offset,offset+100),total,has_more:offset+100<total,next_cursor:offset+100<total?String(offset+100):null};
+  }
+  return {items:all.slice(0,25),total,has_more:false,next_cursor:null};
+ });
+ const task={id:'task',state:'RUNNING',metric_code:metric,context_snapshot:{},rule_snapshot:{comparison:null}} as any;
+ await render(<Measurements api={api} data={emptyWorkspace} task={task} params={new URLSearchParams()} live/>);
+ const size=()=>chartMocks.setOption.mock.calls.at(-1)?.[0].series[0].data.length;
+ expect(size()).toBe(140);
+ await act(async()=>container.querySelector<HTMLButtonElement>('.filter-fail')!.click());expect(size()).toBe(140);
+ count=260;await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(size()).toBe(260);
+ await click('暂停自动刷新');count=270;const reads=request.mock.calls.filter(([p])=>p.includes('limit=100')).length;
+ await act(async()=>{await vi.advanceTimersByTimeAsync(6000);});expect(size()).toBe(260);expect(request.mock.calls.filter(([p])=>p.includes('limit=100'))).toHaveLength(reads);
+ broken=true;await click('继续自动刷新');await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(size()).toBe(260);expect(container.textContent).toContain('保留上次成功读取的完整快照');
+ broken=false;await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(size()).toBe(270);
+ await act(async()=>root.render(<Measurements api={api} data={emptyWorkspace} task={{...task,id:'other'}} params={new URLSearchParams()} live/>));expect(size()).toBe(1);
 });
 test("an empty spool never falls through to all measurement records", async () => {
   const api=new ApiClient(),request=vi.spyOn(api,"request").mockRejectedValue(new Error("线缆不存在或无权访问"));
@@ -219,15 +245,18 @@ test("measurement filter switch toggles between all records, anomalies (FAIL), a
   expect(buttons).toHaveLength(3);
   expect(buttons[0].textContent).toBe("全部记录");
   expect(buttons[0].getAttribute("aria-pressed")).toBe("true");
-  expect(buttons[1].textContent).toContain("仅异常项");
+  expect(buttons[1].textContent).toContain("仅超限项");
   expect(buttons[1].textContent).toContain("1");
   expect(buttons[2].textContent).toBe("符合规则");
 
-  // Click 仅异常项
+  // Click 仅超限项
   await act(async () => buttons[1].click());
   expect(requests.some(r => r.includes("task_id=task-001") && r.includes("quality=FAIL"))).toBe(true);
   expect(buttons[1].getAttribute("aria-pressed")).toBe("true");
-  expect(container.textContent).toContain("已筛选：仅显示异常超限记录");
+  expect(container.textContent).toContain("已筛选：仅显示服务端判定为超限的记录");
+  expect(container.querySelectorAll('.review-kpi')[1].querySelector('strong')?.textContent).toBe('2');
+  expect(container.querySelectorAll('tbody tr')).toHaveLength(1);
+  expect(container.querySelector('tbody')?.textContent).toContain('8.5');
 
   // Click 符合规则
   await act(async () => buttons[2].click());
@@ -238,4 +267,27 @@ test("measurement filter switch toggles between all records, anomalies (FAIL), a
   // Click 全部记录
   await act(async () => buttons[0].click());
   expect(buttons[0].getAttribute("aria-pressed")).toBe("true");
+});
+
+test("zero failures and failed filter requests are distinct, and receipt totals stay unfiltered", async () => {
+  const api=new ApiClient();
+  let failRequest=false;
+  const pass={...row('pass'),value:'5.1282051282',quality_result:'PASS'} as Measurement;
+  const request=vi.spyOn(api,'request').mockImplementation(async path=>{
+    if(path.includes('quality=FAIL')) {
+      if(failRequest) throw new Error('服务暂不可用');
+      return {items:[],total:0,has_more:false,next_cursor:null,as_of:'cutoff'};
+    }
+    return {items:[pass],total:200,has_more:false,next_cursor:null,as_of:'cutoff'};
+  });
+  const task={id:'task',task_code:'202610280021',state:'ENDED',metric_code:'OVALITY',device_id:'HY-BY-01',spool_id:'spool',context_snapshot:{},rule_snapshot:{comparison:null},data_environment:'SIMULATED'} as any;
+  await render(<Measurements api={api} data={emptyWorkspace} task={task} params={new URLSearchParams()} live/>);
+  await act(async()=>container.querySelector<HTMLButtonElement>('.filter-fail')!.click());
+  expect(container.textContent).toContain('当前范围没有服务端判定为超限的记录');
+  expect(container.querySelectorAll('.review-kpi')[1].querySelector('strong')?.textContent).toBe('200');
+  expect(request.mock.calls.some(([path])=>path.includes('limit=1&')&&!path.includes('quality='))).toBe(true);
+  failRequest=true;
+  await click('刷新查询');
+  expect(container.textContent).toContain('筛选查询失败');
+  expect(container.textContent).not.toContain('当前范围没有服务端判定为超限的记录');
 });

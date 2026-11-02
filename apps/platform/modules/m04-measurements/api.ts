@@ -1,3 +1,6 @@
+import {storeProjection} from './projection';
+import {hydrateMeasurementRows,ovalityTaskStats,readTaskStatistics,hydrateCalculatedValues} from './storage-api';
+import {ovalityTimeseries} from './timeseries';
 import {randomUUID,createHmac} from 'node:crypto';
 import Decimal from 'decimal.js';
 import type {PoolClient} from 'pg';
@@ -178,21 +181,22 @@ export class MeasurementApi{
     requireValue(r.evidence_refs.length===0,'EVIDENCE_NOT_READY','本阶段未开通证据上传');
     const assignment=await this.tasks.verifyRecord(ctx.actor.factory,r);
     let reason=assignment?null:'TASK_BINDING_UNVERIFIED';if(Date.parse(r.sample_time)>Date.now()+5000)reason='SAMPLE_TIME_UNVERIFIED';
-    const rule=assignment?.rule_snapshot||unapproved;const evaluation=reason?{quality_result:'NOT_EVALUATED',reason_code:reason}:this.rules.evaluate(r.values[0],rule,r.data_environment);
+    const rule=assignment?.rule_snapshot||unapproved;
     item=await transaction(async db=>{
      await lock(db,`measurement:${ctx.actor.factory}:${r.device_id}`);
      const old=await db.query(`SELECT *,${timestamp('received_at')} AS received FROM m04.measurement_record WHERE factory_id=$1 AND device_id=$2 AND source_record_key=$3`,[ctx.actor.factory,r.device_id,r.record_id]);
      if(old.rowCount){if(old.rows[0].payload_hash===hash)return this.receipt(old.rows[0],index,true);await db.query('INSERT INTO m04.ingestion_conflict(id,factory_id,device_id,source_id,original_record_id,conflicting_hash,request_id,reason_code) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[randomUUID(),ctx.actor.factory,r.device_id,r.record_id,old.rows[0].id,hash,ctx.requestId,'RECORD_PAYLOAD_CONFLICT']);return this.reject(index,r.record_id,'RECORD_PAYLOAD_CONFLICT');}
      const seq=await db.query('SELECT id FROM m04.measurement_record WHERE factory_id=$1 AND device_id=$2 AND capture_session_id=$3 AND capture_sequence=$4',[ctx.actor.factory,r.device_id,r.capture_session_id,r.capture_sequence]);if(seq.rowCount)return this.reject(index,r.record_id,'CAPTURE_SEQUENCE_CONFLICT');
-     const id=randomUUID();const fields=['id','factory_id','device_id','source_record_key','capture_session_id','capture_sequence','source_record_id','source_session_id','source_sequence','task_id','binding_id','binding_version','recipe_version_id','sample_kind','sample_time','time_source','position_m','position_quality','position_segment_id','source_type','data_environment','data_status','receipt_status','isolation_reason','raw_payload','payload_hash','schema_version'];
-     const values=[id,ctx.actor.factory,r.device_id,r.record_id,r.capture_session_id,r.capture_sequence,r.source_record_id,r.source_session_id,r.source_sequence,assignment?r.task_id:null,r.binding_id,r.binding_version,r.recipe_version_id,r.sample_kind,r.sample_time,r.time_source,r.position_m??null,r.position_quality??'UNKNOWN',r.position_segment_id??null,r.source_type,r.data_environment,r.data_status,reason?'QUARANTINED':'STORED',reason,JSON.stringify(r),hash,'1.0'];
+     const id=randomUUID();const sampleRaw=r.values[0].metric_code==='OVALITY'?await ovalityTimeseries.write(ctx.actor.factory,r.device_id,r.record_id,hash!,r,r.values[0].value):r;const external=r.values[0].metric_code==='OVALITY';const evaluation=reason?{quality_result:'NOT_EVALUATED',reason_code:reason}:this.rules.evaluate(r.values[0],rule,r.data_environment);const fields=['id','factory_id','device_id','source_record_key','capture_session_id','capture_sequence','source_record_id','source_session_id','source_sequence','task_id','binding_id','binding_version','recipe_version_id','sample_kind','sample_time','time_source','position_m','position_quality','position_segment_id','source_type','data_environment','data_status','receipt_status','isolation_reason','raw_payload','payload_hash','schema_version'];
+     const values=[id,ctx.actor.factory,r.device_id,r.record_id,r.capture_session_id,r.capture_sequence,r.source_record_id,r.source_session_id,r.source_sequence,assignment?r.task_id:null,r.binding_id,r.binding_version,r.recipe_version_id,r.sample_kind,r.sample_time,r.time_source,r.position_m??null,r.position_quality??'UNKNOWN',r.position_segment_id??null,r.source_type,r.data_environment,r.data_status,reason?'QUARANTINED':'STORED',reason,JSON.stringify(sampleRaw),hash,'1.0'];
      const stored=await db.query(`INSERT INTO m04.measurement_record(${fields.join(',')}) VALUES(${values.map((_,i)=>'$'+(i+1)).join(',')}) RETURNING *,${timestamp('received_at')} AS received`,values);const v=r.values[0];
-     await db.query('INSERT INTO m04.measurement_value(record_id,metric_code,value,unit,data_status,source_quality_result,method_id,window_definition,reason_code) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[id,v.metric_code,v.value,v.unit,v.data_status,v.source_quality_result,v.method_id,JSON.stringify(v.window),v.reason_code]);
+     await db.query('INSERT INTO m04.measurement_value(record_id,metric_code,value,unit,data_status,source_quality_result,method_id,window_definition,reason_code,sample_storage) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[id,v.metric_code,external?null:v.value,v.unit,v.data_status,v.source_quality_result,v.method_id,JSON.stringify(v.window),v.reason_code,external?'INFLUXDB':'POSTGRESQL']);
      await db.query('INSERT INTO m04.measurement_evaluation(record_id,version,quality_result,reason_code,recipe_version_id,rule_snapshot) VALUES($1,1,$2,$3,$4,$5)',[id,evaluation.quality_result,evaluation.reason_code,r.recipe_version_id,JSON.stringify(rule)]);
      await db.query('INSERT INTO m04.measurement_qualification(record_id,version,eligibility,reason_code) VALUES($1,1,$2,$3)',[id,reason?'QUARANTINED':'EFFECTIVE',reason]);
+     await storeProjection(db,id,v.metric_code,r,v.value);
      await db.query("INSERT INTO m04.measurement_outbox(event_id,event_type,schema_version,factory_id,data_environment,aggregate_id,aggregate_version,payload) VALUES($1,'MeasurementStored.v1','1.0',$2,$3,$4,1,$5)",[randomUUID(),ctx.actor.factory,r.data_environment,id,JSON.stringify({record_id:id,task_id:assignment?r.task_id:null,eligibility:reason?'QUARANTINED':'EFFECTIVE',quality_result:evaluation.quality_result,evaluation_version:1})]);return this.receipt(stored.rows[0],index);
     });
-   }catch(e){if(e instanceof ApiError)item=this.reject(index,typeof r?.record_id==='string'&&idPattern.test(r.record_id)?r.record_id:null,e.code,e.fields);else throw new ApiError(503,'DEPENDENCY_UNAVAILABLE','接收结果可能部分提交，请保留来源键后对账',[],'UNKNOWN');}
+   }catch(e){if(e instanceof ApiError&&e.status>=500)throw e;if(e instanceof ApiError)item=this.reject(index,typeof r?.record_id==='string'&&idPattern.test(r.record_id)?r.record_id:null,e.code,e.fields);else throw new ApiError(503,'DEPENDENCY_UNAVAILABLE','接收结果可能部分提交，请保留来源键后对账',[],'UNKNOWN');}
    await pool.query('INSERT INTO m04.ingestion_item(batch_id,input_index,source_id,stored_id,receipt_status,error_code,field_errors,payload_hash) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[batch,index,item.source_id,item.stored_id,item.receipt_status,item.error_code,JSON.stringify(item.field_errors),hash]);items.push(item);
   }
   const counts={total:items.length,stored:0,duplicate:0,quarantined:0,rejected:0};for(const item of items)counts[item.receipt_status.toLowerCase() as 'stored']++;
@@ -224,7 +228,7 @@ export class MeasurementApi{
   else{const r=await db.query('SELECT COALESCE(MAX(ingest_order),0)::text AS upper FROM m04.measurement_record WHERE factory_id=$1',[actor.factory]);upper=r.rows[0].upper;asOf=new Date().toISOString();if(filter.order==='desc')after=(BigInt(upper)+1n).toString();}
   const total=Number((await db.query(`SELECT count(*)::int AS total FROM m04.measurement_record r JOIN m04.measurement_value v ON v.record_id=r.id JOIN m04.measurement_evaluation e ON e.record_id=r.id AND e.version=1 JOIN m04.measurement_qualification q ON q.record_id=r.id AND q.version=1 WHERE r.factory_id=$1 AND ($2::text IS NULL OR r.device_id=$2) AND ($3::text IS NULL OR r.task_id=$3) AND ($4::text IS NULL OR v.metric_code=$4) AND r.ingest_order<=$5 AND ($6::text[] IS NULL OR r.task_id=ANY($6)) AND ($7::timestamptz IS NULL OR r.sample_time >= $7) AND ($8::timestamptz IS NULL OR r.sample_time < $8) AND ($9::text IS NULL OR e.quality_result=$9) AND ($10::text IS NULL OR r.data_environment=$10) AND ($11::text IS NULL OR r.data_status=$11) AND ($12::text IS NULL OR r.receipt_status=$12)`,[actor.factory,filter.device,filter.task,filter.metric,upper,filter.tasks,filter.from,filter.to,filter.quality,filter.environment,filter.validity,filter.receipt])).rows[0].total);
   const rows=(await db.query(`SELECT r.id,r.task_id,r.ingest_order::text,r.raw_payload,r.receipt_status,r.position_eligibility,to_char(r.received_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS received_at,v.value,v.metric_code,v.unit,e.quality_result,e.reason_code AS evaluation_reason,q.eligibility FROM m04.measurement_record r JOIN m04.measurement_value v ON v.record_id=r.id JOIN m04.measurement_evaluation e ON e.record_id=r.id AND e.version=1 JOIN m04.measurement_qualification q ON q.record_id=r.id AND q.version=1 WHERE r.factory_id=$1 AND ($2::text IS NULL OR r.device_id=$2) AND ($3::text IS NULL OR r.task_id=$3) AND ($4::text IS NULL OR v.metric_code=$4) AND r.ingest_order${filter.order==='desc'?'<':'>'}$5 AND r.ingest_order<=$6 AND ($8::text[] IS NULL OR r.task_id=ANY($8)) AND ($9::timestamptz IS NULL OR r.sample_time >= $9) AND ($10::timestamptz IS NULL OR r.sample_time < $10) AND ($11::text IS NULL OR e.quality_result=$11) AND ($12::text IS NULL OR r.data_environment=$12) AND ($13::text IS NULL OR r.data_status=$13) AND ($14::text IS NULL OR r.receipt_status=$14) ORDER BY r.ingest_order ${filter.order==='desc'?'DESC':'ASC'} LIMIT $7`,[actor.factory,filter.device,filter.task,filter.metric,after,upper,limit+1,filter.tasks,filter.from,filter.to,filter.quality,filter.environment,filter.validity,filter.receipt])).rows;
-  const more=rows.length>limit,items=rows.slice(0,limit);
+  const more=rows.length>limit,items=rows.slice(0,limit);await hydrateMeasurementRows(actor.factory,items);
   const contexts=await this.tasks.businessContexts(actor,[...new Set(items.map(r=>r.task_id).filter(Boolean))],db);
   for(const item of items){item.business_context=contexts.find(c=>c.task_id===item.task_id)||null;if(item.metric_code==='OVALITY')item.ovality_telemetry=extractOvalityTelemetry(item.raw_payload);}
   let cursor=null;if(more){const s=Buffer.from(JSON.stringify({filter:filterHash,upper,after:items.at(-1).ingest_order,as_of:asOf})).toString('base64url');cursor=s+'.'+sign(s);}return {items,total,has_more:more,next_cursor:cursor,as_of:asOf,scope:scope?{root_id:scope.root_id,members:scope.members,task_count:scope.tasks.length,scope_hash:scope.scope_hash}:null};
@@ -234,36 +238,23 @@ export class MeasurementApi{
   return (await db.query("SELECT DISTINCT task_id FROM m04.measurement_record WHERE factory_id=$1 AND device_id=ANY($2::text[]) AND data_environment='SIMULATED' AND receipt_status='STORED' AND task_id IS NOT NULL",[actor.factory,actor.devices])).rows.map(r=>r.task_id as string);
  }
  async taskSummaries(actor:Actor,ids:string[],db:Pick<PoolClient,'query'>=pool){
-  return (await db.query(`SELECT r.task_id,count(*)::int AS total,
-   count(*) FILTER(WHERE v.data_status='VALID')::int AS valid,
-   count(*) FILTER(WHERE v.data_status<>'VALID')::int AS invalid,
-   count(*) FILTER(WHERE e.quality_result='PASS')::int AS passed,
-   count(*) FILTER(WHERE e.quality_result='FAIL')::int AS failed,
-   count(*) FILTER(WHERE e.quality_result='NOT_EVALUATED')::int AS unevaluated,
-   count(*) FILTER(WHERE r.receipt_status='QUARANTINED')::int AS quarantined,
-   to_char(min(r.sample_time) AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS first_sample_at,
-   to_char(max(r.sample_time) AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS latest_sample_at,
-   min(v.value) FILTER(WHERE v.data_status='VALID' AND r.receipt_status='STORED')::text AS minimum,
-   max(v.value) FILTER(WHERE v.data_status='VALID' AND r.receipt_status='STORED')::text AS maximum,
-   avg(v.value) FILTER(WHERE v.data_status='VALID' AND r.receipt_status='STORED')::text AS mean,
-   min(v.unit) AS unit
-   FROM m04.measurement_record r JOIN m04.measurement_value v ON v.record_id=r.id
-   JOIN m04.measurement_evaluation e ON e.record_id=r.id AND e.version=1
-   WHERE r.factory_id=$1 AND r.task_id=ANY($2::text[]) GROUP BY r.task_id`,[actor.factory,ids])).rows;
+  return readTaskStatistics(actor.factory,ids,db);
  }
  async taskActivity(actor:Actor,ids:string[],db:Pick<PoolClient,'query'>=pool){
-  return (await db.query(`SELECT DISTINCT ON (r.task_id) r.task_id,r.id AS record_id,r.ingest_order::text,
+  const rows=(await db.query(`SELECT DISTINCT ON (r.task_id) r.task_id,r.id AS record_id,r.ingest_order::text,r.raw_payload,
    to_char(r.received_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS received_at,
    to_char(r.sample_time AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS sample_time,
    v.value::text,v.unit,v.data_status,r.receipt_status,e.quality_result
    FROM m04.measurement_record r JOIN m04.measurement_value v ON v.record_id=r.id
    JOIN m04.measurement_evaluation e ON e.record_id=r.id AND e.version=1
    WHERE r.factory_id=$1 AND r.task_id=ANY($2::text[]) ORDER BY r.task_id,r.ingest_order DESC`,[actor.factory,ids])).rows;
+  await hydrateCalculatedValues(actor.factory,rows,db);for(const row of rows)delete row.raw_payload;return rows;
  }
  async taskSummary(actor:Actor,id:string){
-  const r=await pool.query(`SELECT count(*)::int AS total,count(*) FILTER(WHERE v.data_status='VALID')::int AS valid,count(*) FILTER(WHERE v.data_status<>'VALID')::int AS invalid,count(*) FILTER(WHERE e.quality_result='FAIL')::int AS failed,count(*) FILTER(WHERE e.quality_result='NOT_EVALUATED')::int AS unevaluated,count(*) FILTER(WHERE r.receipt_status='QUARANTINED')::int AS quarantined,min(r.sample_time) AS first_sample_at,max(r.sample_time) AS latest_sample_at,min(v.value)::text AS minimum,max(v.value)::text AS maximum FROM m04.measurement_record r JOIN m04.measurement_value v ON v.record_id=r.id JOIN m04.measurement_evaluation e ON e.record_id=r.id AND e.version=1 WHERE r.factory_id=$1 AND r.task_id=$2`,[actor.factory,id]);return r.rows[0];
+  const rows=await readTaskStatistics(actor.factory,[id],pool,true);
+  return rows[0]||{total:0,valid:0,invalid:0,failed:0,unevaluated:0,quarantined:0,first_sample_at:null,latest_sample_at:null,minimum:null,maximum:null};
  }
- async detail(actor:Actor,id:string){const r=await pool.query(`SELECT *,${timestamp('received_at')} AS received_at,${timestamp('sample_time')} AS sample_time FROM m04.measurement_record WHERE factory_id=$1 AND id=$2`,[actor.factory,id]);if(!r.rowCount)throw new ApiError(404,'RESOURCE_NOT_FOUND','记录不存在');const [v,e,q]=await Promise.all([pool.query('SELECT * FROM m04.measurement_value WHERE record_id=$1',[id]),pool.query('SELECT * FROM m04.measurement_evaluation WHERE record_id=$1 ORDER BY version',[id]),pool.query('SELECT * FROM m04.measurement_qualification WHERE record_id=$1 ORDER BY version',[id])]);const ovality_telemetry=v.rows[0]?.metric_code==='OVALITY'?extractOvalityTelemetry(r.rows[0].raw_payload):undefined;return {...r.rows[0],values:v.rows,evaluations:e.rows,qualifications:q.rows,...(ovality_telemetry?{ovality_telemetry}:{})};}
+ async detail(actor:Actor,id:string){const r=await pool.query(`SELECT *,${timestamp('received_at')} AS received_at,${timestamp('sample_time')} AS sample_time FROM m04.measurement_record WHERE factory_id=$1 AND id=$2`,[actor.factory,id]);if(!r.rowCount)throw new ApiError(404,'RESOURCE_NOT_FOUND','记录不存在');const [v,e,q]=await Promise.all([pool.query('SELECT * FROM m04.measurement_value WHERE record_id=$1',[id]),pool.query('SELECT * FROM m04.measurement_evaluation WHERE record_id=$1 ORDER BY version',[id]),pool.query('SELECT * FROM m04.measurement_qualification WHERE record_id=$1 ORDER BY version',[id])]);await hydrateMeasurementRows(actor.factory,r.rows);if(r.rows[0].sample_storage==='INFLUXDB')v.rows[0].value=r.rows[0].value;const ovality_telemetry=v.rows[0]?.metric_code==='OVALITY'?extractOvalityTelemetry(r.rows[0].raw_payload):undefined;return {...r.rows[0],values:v.rows,evaluations:e.rows,qualifications:q.rows,...(ovality_telemetry?{ovality_telemetry}:{})};}
  async batches(actor:Actor,limit:number,after:string){return (await pool.query('SELECT * FROM m04.ingestion_batch WHERE factory_id=$1 AND ($2=\'\' OR id::text>$2) ORDER BY id LIMIT $3',[actor.factory,after,limit])).rows;}
  async batch(actor:Actor,id:string){const r=await pool.query('SELECT * FROM m04.ingestion_batch WHERE factory_id=$1 AND id::text=$2',[actor.factory,id]);if(!r.rowCount)throw new ApiError(404,'RESOURCE_NOT_FOUND','批次不存在');return {...r.rows[0],items:(await pool.query('SELECT * FROM m04.ingestion_item WHERE batch_id=$1 ORDER BY input_index',[r.rows[0].id])).rows};}
 }

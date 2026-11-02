@@ -1,3 +1,4 @@
+import {startVisiblePolling} from '../shared/refreshPolicy';
 import {ExecutionSummary,taskDisplayLabel} from './ExecutionSummary';
 import {useState,useEffect} from 'react';
 import {PageTitle} from '../ui/PageTitle';
@@ -12,8 +13,9 @@ import {useRead} from './ServerLists';
 import {ActivityStatus,communicationNames} from './ActivityStatus';
 import {names,labelTime,taskState,environmentLabel,type Workspace,type ApiClient,type Commands,type Person,type Task,type DeviceStatus,type Specification} from './api';
 export function OperationsPage({api,data,compact=false}:{api:ApiClient;data:Workspace;compact?:boolean}){
- const [tick,setTick]=useState(0);useEffect(()=>{const t=setInterval(()=>setTick(n=>n+1),5000);return()=>clearInterval(t);},[]);
+ const [tick,setTick]=useState(0);
  const {value,error}=useRead<{as_of:string;connections:DeviceStatus[];tasks:Task[]}>(api,'/operations/overview',tick);
+ useEffect(()=>{if(!value&&!error)return;return startVisiblePolling(()=>setTick(n=>n+1),5000);},[value,error]);
  if(compact)return <Panel core title="当前执行摘要" tools={<HashLink route="monitor">查看完整采集监控</HashLink>}>
  {error?<Note>摘要读取失败：{error}</Note>:!value?<Note>正在读取执行摘要…</Note>:<>
  <ExecutionSummary tasks={value.tasks} data={data} asOf={value.as_of}/>

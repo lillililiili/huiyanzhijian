@@ -2,8 +2,11 @@ import type { EChartsOption } from 'echarts';
 import { labelTime, type Measurement, type Rule } from './api';
 import { timeTick } from './displayTime';
 import { compactDecimal } from './detectionDisplay';
+import { plotTime } from './sampleTime';
 
-export function detectionTrendOption(points: Measurement[], unit: string, axis: string, rule?: Rule): EChartsOption {
+export function detectionTrendOption(points: Measurement[], unit: string, rule?: Rule): EChartsOption {
+  const firstTime=points.length?plotTime(points[0].raw_payload.sample_time):undefined;
+  const lastTime=points.length?plotTime(points[points.length-1].raw_payload.sample_time):undefined;
   const subsecond = points.length > 1 && Math.abs(Date.parse(points[points.length - 1].raw_payload.sample_time) - Date.parse(points[0].raw_payload.sample_time)) < 60000;
   const comparison = rule?.comparison;
   const boundaries: { name: string; yAxis: number }[] = [];
@@ -20,23 +23,27 @@ export function detectionTrendOption(points: Measurement[], unit: string, axis: 
   const step = [1, 2, 2.5, 5, 10].find(n => n * magnitude >= rawStep)! * magnitude;
   const axisMin = Math.floor((low - padding) / step) * step;
   const axisMax = Math.ceil((high + padding) / step) * step;
+  const timeMin=firstTime??'dataMin';
+  const timeMax=lastTime===firstTime&&firstTime!==undefined?firstTime+1:lastTime??'dataMax';
+  const valueExtent=extent.length?{min:low>=0?Math.max(0,axisMin):axisMin,max:axisMax,interval:step}:{};
+  // Use a real second series: ECharts' slider shadow skips samples and rescales Y.
+  const completeData=values.map((value,i)=>[plotTime(points[i].raw_payload.sample_time),value]);
   const escape = (text: string) => text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
   return {
     animation: false,
     color: ['#2569c6'],
-    grid: { left: 54, right: 24, bottom: 94, top: 30 },
+    grid: [{ left: 54, right: 24, bottom: 94, top: 30 }, { left: 54, right: 24, bottom: 7, height: 30 }],
     tooltip: { trigger: 'axis', backgroundColor: '#fff', borderColor: '#e3eaf3', padding: [12, 14], textStyle: { color: '#233f61', fontSize: 12 }, axisPointer: { type: 'line', lineStyle: { color: '#9cb6d8', type: 'dashed' } }, formatter: (items: any) => {
       const point = points[items?.[0]?.dataIndex];
       if (!point) return '';
-      const position = point.raw_payload.position_m == null ? '位置未知' : `${point.raw_payload.position_m} m（未验证）`;
-      return `${escape(labelTime(point.raw_payload.sample_time))}<br/>${escape(position)}<br/><b>${escape(point.value ?? '无效 / 缺测')} ${escape(point.unit)}</b><br/>${point.quality_result === 'FAIL' ? '超限' : point.quality_result === 'PASS' ? '符合当前规则' : '未判定'} · 点击查看原始记录`;
+      return `${escape(labelTime(point.raw_payload.sample_time))}<br/><b>${escape(point.value ?? '无效 / 缺测')} ${escape(point.unit)}</b><br/>${point.quality_result === 'FAIL' ? '超限' : point.quality_result === 'PASS' ? '符合当前规则' : '未判定'} · 点击查看原始记录`;
     } },
-    xAxis: { type: 'category', boundaryGap: false, data: points.map(r => axis === 'time' ? r.raw_payload.sample_time : r.raw_payload.position_m ?? '位置未知'), name: axis === 'time' ? '北京时间' : '来源米数（未验证）', nameLocation: 'middle', nameGap: 31, nameTextStyle: { color: '#8190a5', fontSize: 11 }, axisLine: { lineStyle: { color: '#dce5f0' } }, axisTick: { show: false }, axisLabel: { color: '#7a8ba2', fontSize: 11, hideOverlap: true, formatter: (v: string) => axis === 'time' ? timeTick(v, subsecond) : compactDecimal(v) } },
-    yAxis: { type: 'value', name: unit, scale: true, ...(extent.length ? { min: low >= 0 ? Math.max(0, axisMin) : axisMin, max: axisMax, interval: step } : {}), splitNumber: 4, nameTextStyle: { color: '#8190a5' }, axisLabel: { color: '#7a8ba2', fontSize: 11 }, splitLine: { lineStyle: { color: '#e9eff6', type: 'dashed' } } },
+    xAxis: [{ type: 'time', min:timeMin,max:timeMax,boundaryGap:[0,0], name: '采样时间（北京时间）', nameLocation: 'middle', nameGap: 31, nameTextStyle: { color: '#8190a5', fontSize: 11 }, axisLine: { lineStyle: { color: '#dce5f0' } }, axisTick: { show: false }, axisLabel: { color: '#7a8ba2', fontSize: 11, hideOverlap: true, formatter: (v: number) => timeTick(new Date(v).toISOString(), subsecond) } }, {type:'time',gridIndex:1,min:timeMin,max:timeMax,boundaryGap:[0,0],show:false}],
+    yAxis: [{ type: 'value', name: unit, scale: true, ...valueExtent, splitNumber: 4, nameTextStyle: { color: '#8190a5' }, axisLabel: { color: '#7a8ba2', fontSize: 11 }, splitLine: { lineStyle: { color: '#e9eff6', type: 'dashed' } } }, {type:'value',gridIndex:1,scale:true,...valueExtent,show:false}],
     dataZoom: [
-      { id: 'review-inside', type: 'inside', filterMode: 'none' },
-      { id: 'review-global', type: 'slider', filterMode: 'none', height: 30, bottom: 7, showDetail: false, borderColor: '#e0e8f3', backgroundColor: '#f5f8fc', fillerColor: 'rgba(37,105,198,.09)', handleSize: '100%', handleStyle: { color: '#fff', borderColor: '#82a8d8' }, moveHandleSize: 5, moveHandleStyle: { color: '#b0c5e1' }, dataBackground: { lineStyle: { color: '#adc4e3', width: 1 }, areaStyle: { color: '#e3ecf8', opacity: 1 } }, selectedDataBackground: { lineStyle: { color: '#6c98cf', width: 1 }, areaStyle: { color: '#d4e3f7', opacity: 1 } } }
+      { id: 'review-inside', type: 'inside', xAxisIndex:[0], filterMode: 'none' },
+      { id: 'review-global', type: 'slider', xAxisIndex:[0], showDataShadow:false, left:54,right:24, filterMode: 'none', height: 30, bottom: 7, showDetail: false, borderColor: '#e0e8f3', backgroundColor: 'transparent', fillerColor: 'rgba(37,105,198,.09)', handleSize: '100%', handleStyle: { color: '#fff', borderColor: '#82a8d8' }, moveHandleSize: 5, moveHandleStyle: { color: '#b0c5e1' }, dataBackground: { lineStyle: { color: '#adc4e3', width: 1 }, areaStyle: { color: '#e3ecf8', opacity: 1 } }, selectedDataBackground: { lineStyle: { color: '#6c98cf', width: 1 }, areaStyle: { color: '#d4e3f7', opacity: 1 } } }
     ],
-    series: [{ type: 'line', smooth: false, connectNulls: false, showSymbol: true, symbol: 'circle', symbolSize: 5, lineStyle: { width: 2.5 }, itemStyle: { borderColor: '#fff', borderWidth: 1.5 }, areaStyle: { origin: 'start', color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(56,128,225,.24)' }, { offset: 1, color: 'rgba(56,128,225,.025)' }] } }, data: values.map((value, i) => ({ value, ...(value !== null && points[i].quality_result === 'FAIL' ? { itemStyle: { color: '#df5966', borderColor: '#fff' }, symbolSize: 7 } : {}) })), markLine: { silent: true, symbol: 'none', lineStyle: { color: '#da8290', type: 'dashed', width: 1 }, label: { position: 'insideEndTop', formatter: '{b}', color: '#b56976', fontSize: 11 }, data: boundaries } }]
+    series: [{ id:'review-main-series', type: 'line', smooth: false, connectNulls: false, showSymbol: true, symbol: 'circle', symbolSize: points.length>300?2:5, lineStyle: { width: 2.5 }, itemStyle: { borderColor: '#fff', borderWidth: points.length>300?0:1.5 }, areaStyle: { origin: 'start', color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(56,128,225,.24)' }, { offset: 1, color: 'rgba(56,128,225,.025)' }] } }, data: values.map((value, i) => ({ value: [plotTime(points[i].raw_payload.sample_time), value], ...(value !== null && points[i].quality_result === 'FAIL' ? { itemStyle: { color: '#df5966', borderColor: '#fff' }, symbolSize: 7 } : {}) })), markLine: { silent: true, symbol: 'none', lineStyle: { color: '#da8290', type: 'dashed', width: 1 }, label: { position: 'insideEndTop', formatter: '{b}', color: '#b56976', fontSize: 11 }, data: boundaries } }, {id:'review-overview-series',type:'line',xAxisIndex:1,yAxisIndex:1,silent:true,tooltip:{show:false},animation:false,smooth:false,connectNulls:false,showSymbol:false,lineStyle:{color:'#6c98cf',width:1},areaStyle:{origin:'start',color:'rgba(56,128,225,.16)'},data:completeData}]
   };
 }

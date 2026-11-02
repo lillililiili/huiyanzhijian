@@ -1,3 +1,4 @@
+import {ovalityTaskStats} from '../m04-measurements/storage-api';
 import type { PoolClient } from 'pg';
 import { randomUUID, createHash } from 'node:crypto';
 import { pool, transaction } from '../../infrastructure/db';
@@ -192,6 +193,7 @@ export class MesService {
         [actor.factory, taskId]
       );
 
+      if(statRes.rows.some(r=>r.metric_code==='OVALITY')){const g=(await ovalityTaskStats(actor.factory,[taskId],tx,true)).get(taskId);for(const row of statRes.rows)if(row.metric_code==='OVALITY'){row.mean_value=g?.n?Number(g.sum.div(g.n).toFixed(2)):null;row.min_value=g?.min?Number(g.min.toFixed(2)):null;row.max_value=g?.max?Number(g.max.toFixed(2)):null;}}
       const metricResults = statRes.rows.map((row: any) => ({
         metric_code: row.metric_code as 'SHIELD_OVERLAP_RATE' | 'WIRE_GAP' | 'OVALITY',
         metric_name: row.metric_code === 'SHIELD_OVERLAP_RATE' ? '金属屏蔽铜带搭盖率' : row.metric_code === 'WIRE_GAP' ? '铜丝屏蔽相邻间隙' : '电缆不圆度',

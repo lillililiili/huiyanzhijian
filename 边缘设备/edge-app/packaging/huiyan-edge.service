@@ -1,0 +1,25 @@
+[Unit]
+Description=Huiyan cable inspection edge terminal
+After=network.target
+
+[Service]
+Type=simple
+User=huiyan-edge
+Group=huiyan-edge
+SupplementaryGroups=dialout
+Environment=EDGE_ROOT=/opt/huiyan-edge
+Environment=EDGE_DATA_DIR=/var/lib/huiyan-edge
+ExecStart=/opt/huiyan-edge/run-services.sh
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+KillMode=control-group
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/huiyan-edge
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

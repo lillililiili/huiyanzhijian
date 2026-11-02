@@ -3,6 +3,9 @@ import {resolve} from 'node:path';
 import Ajv from 'ajv/dist/2020';
 import formats from 'ajv-formats';
 import {createHash} from 'node:crypto';
+import {edgeRequest} from './edge-client';
+import {readVendorMeasurements,vendorContract} from './vendor-http';
+import type {Queue} from './queue';
 const contractPaths = [
  process.env.CONTRACT_ROOT ? resolve(process.env.CONTRACT_ROOT, 'devices/v1/device-ingestion.schema.json') : '',
  resolve('contracts/devices/v1/device-ingestion.schema.json'),
@@ -18,7 +21,7 @@ export function verifyAssignment(a:any){
 }
 export class HttpFailure extends Error{constructor(public status:number,public retryMs:number){super('HTTP '+status);}}
 export class DeviceClient{
- constructor(private url:string,private token:string){const u=new URL(url);if(!['http:','https:'].includes(u.protocol)||u.username||u.password)throw Error('Invalid API URL');}
+ constructor(private url:string,private token:string,private queue?:Queue){const u=new URL(url);if(!['http:','https:'].includes(u.protocol)||u.username||u.password)throw Error('Invalid API URL');}
  async catalog(params:Record<string,string>){
   const r=await fetch(this.url+'/api/v1/simulator/catalog?'+new URLSearchParams(params),{headers:{Authorization:'Bearer '+this.token},signal:AbortSignal.timeout(5000),redirect:'error'});
   if(!r.ok)throw new HttpFailure(r.status,0);const b=await r.json() as any;
@@ -37,5 +40,16 @@ export class DeviceClient{
   };
   return this.productionRequest(event);
  }
- async request(path:string,definition:string,payload?:unknown){const r=await fetch(this.url+'/api/v1'+path,{method:payload===undefined?'GET':'POST',headers:{Authorization:'Bearer '+this.token,...(payload===undefined?{}:{'Content-Type':'application/json'})},body:payload===undefined?undefined:JSON.stringify(payload),signal:AbortSignal.timeout(5000),redirect:'error'});if(!r.ok){const retry=Number(r.headers.get('retry-after')||0)*1000;throw new HttpFailure(r.status,Number.isFinite(retry)?retry:0);}const b=await r.json();check(definition,b);return b;}
+ async request(path:string,definition:string,payload?:unknown){
+  const records=(payload as any)?.records;
+  if(path==='/measurements:ingest'&&Array.isArray(records)&&records.some((r:any)=>Object.values(vendorContract.schemas).includes(r.raw?.schema_version))){
+   if(!this.queue)throw Error('Vendor delivery requires persisted source queue');
+   payload={...(payload as any),records:await readVendorMeasurements(this.queue.db,records)};
+  }
+  if(path==='/measurements:ingest'&&Array.isArray(records)&&records.some((r:any)=>r.values?.some((v:any)=>v.metric_code==='OVALITY'))){
+   if(!records.every((r:any)=>r.values?.length===1&&r.values[0].metric_code==='OVALITY'))throw Error('不圆度必须独立批次经边缘上传');
+   const b=await edgeRequest('/measurements',payload);check(definition,b);return b;
+  }
+  const r=await fetch(this.url+'/api/v1'+path,{method:payload===undefined?'GET':'POST',headers:{Authorization:'Bearer '+this.token,...(payload===undefined?{}:{'Content-Type':'application/json'})},body:payload===undefined?undefined:JSON.stringify(payload),signal:AbortSignal.timeout(5000),redirect:'error'});if(!r.ok){const retry=Number(r.headers.get('retry-after')||0)*1000;throw new HttpFailure(r.status,Number.isFinite(retry)?retry:0);}const b=await r.json();check(definition,b);return b;
+ }
 }

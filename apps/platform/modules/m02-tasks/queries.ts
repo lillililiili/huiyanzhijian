@@ -67,7 +67,7 @@ export class ProductionQueries {
   if(match.length>1)p.where.push(`EXISTS(SELECT 1 FROM linked x WHERE ${match.join(' AND ')})`);
   if(q.q)p.add(`(EXISTS(SELECT 1 FROM members m WHERE m.root_id=r.id AND concat_ws(' ',m.spool_code,m.external_code,m.id) ILIKE ?) OR EXISTS(SELECT 1 FROM linked x WHERE x.root_id=r.id AND concat_ws(' ',x.task_code,x.context_snapshot->>'spool_code') ILIKE ?))`,literal(q.q));
   const cte=`WITH members AS(
-   SELECT s.*,COALESCE(s.canonical_spool_id,s.id) AS root_id,w.external_code,w.specification_id
+   SELECT s.*,COALESCE(s.canonical_spool_id,s.id) AS root_id,w.external_code
    FROM m02.cable_spool s JOIN m02.work_order w ON w.id=s.work_order_id WHERE s.factory_id=$1
   ), linked AS(SELECT t.*,m.root_id FROM m02.inspection_task t JOIN members m ON m.id=t.spool_id WHERE t.factory_id=$1), counts AS(
    SELECT s.*,(SELECT count(*)::int FROM members m WHERE m.root_id=s.id) AS identity_count,
@@ -85,7 +85,7 @@ export class ProductionQueries {
   const {page,limit}=filters(q,['specification_id','id'],['NO_TASK','WAITING','RUNNING','PARTIAL','COMPLETED','CANCELLED']);
   const p=new Predicate(actor.factory);p.dates(q);
   if(q.id)p.add('r.id=?',q.id);
-  if(q.specification_id)p.add('r.specification_id=?',q.specification_id);
+  if(q.specification_id)p.add('?=ANY(r.specification_ids)',q.specification_id);
   if(q.state)p.add('r.state=?',q.state);
   if(q.q)p.add("concat_ws(' ',r.external_code,r.id) ILIKE ?",literal(q.q));
   const cte=`WITH counts AS (

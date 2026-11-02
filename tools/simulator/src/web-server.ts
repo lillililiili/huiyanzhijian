@@ -4,16 +4,20 @@ import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {WebManager,WebError,requireWeb,validId} from './web-manager';
 import {ModelError} from './cable-model';
+import {vendorQuery,vendorMetric} from './vendor-http';
 
 const password=process.env.SIM_WEB_PASSWORD||'',token=process.env.DEVICE_TOKEN||'';
 if(password.length<(process.env.SIM_LOCAL_SIMPLE_PASSWORD==='true'?6:16)||!token)throw Error('SIM_WEB_PASSWORD (16+ characters) and DEVICE_TOKEN are required');
 const salt=randomBytes(16),passwordHash=scryptSync(password,salt,32);
 const apiUrl=process.env.API_URL||'http://127.0.0.1:4192',port=Number(process.env.SIM_WEB_PORT||4196);
+process.env.SIM_VENDOR_BASE_URL||=('http://127.0.0.1:'+port);
+process.env.SIM_VENDOR_TOKEN||=randomBytes(32).toString('base64url');
 const manager=new WebManager(resolve(process.env.SIM_DB||'../../runtime/simulator/simulator.sqlite'),apiUrl,token);
 const webRoot=resolve(process.env.SIM_WEB_ROOT||'web');
 const allowedHosts=new Set((process.env.SIM_ALLOWED_HOSTS||'127.0.0.1,localhost').split(','));
 const sessions=new Map<string,{csrf:string;expires:number}>(),attempts=new Map<string,{count:number;expires:number}>();
 const assets:Record<string,[string,string]>={'/':['index.html','text/html; charset=utf-8'],'/app.js':['app.js','text/javascript; charset=utf-8'],'/random-defects.js':['random-defects.js','text/javascript; charset=utf-8'],'/models.js':['models.js','text/javascript; charset=utf-8'],'/device-status.js':['device-status.js','application/javascript; charset=utf-8'],'/catalog.js':['catalog.js','text/javascript; charset=utf-8'],'/live.js':['live.js','text/javascript; charset=utf-8'],'/style.css':['style.css','text/css; charset=utf-8'],'/logo.png':['logo.png','image/png']};
+for(const file of ['specifications.js','scanner.js','vendor/JsBarcode.code128.min.js','vendor/zxing.min.js'])assets['/'+file]=[file,'text/javascript; charset=utf-8'];
 
 function json(res:ServerResponse,status:number,data:unknown){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data));}
 async function body(req:IncomingMessage){
@@ -34,11 +38,18 @@ function loginRate(req:IncomingMessage){
 const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
-  res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+  res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   try {
     const host=req.headers.host||'',url=new URL(req.url||'/','http://'+host);
     requireWeb(allowedHosts.has(url.hostname),403,'HOST_DENIED','不允许的访问主机');
     if(req.method==='GET'&&url.pathname==='/health'){json(res,200,{ready:true,service:'huiyan-simulator',auto_capture:false});return;}
+    const metric=vendorMetric(url.pathname);
+    if(metric){
+      requireWeb(req.method==='POST',405,'METHOD_NOT_ALLOWED','模拟接口约定使用POST；真机方式待确认');
+      requireWeb(req.headers.authorization==='Bearer '+process.env.SIM_VENDOR_TOKEN,401,'VENDOR_AUTH_REQUIRED','设备查询鉴权失败');
+      const device=req.headers['x-sim-device-id'];requireWeb(typeof device==='string'&&validId(device),400,'DEVICE_REQUIRED','模拟器多设备查询必须明确设备');
+      try{json(res,200,vendorQuery(manager.queue.db,metric,device as string,await body(req)));}catch{json(res,400,{code:400,msg:'查询参数不正确',data:[],success:false,timestamp:String(Date.now()),count:0});}return;
+    }
     if(req.method==='GET'&&assets[url.pathname]){const [file,type]=assets[url.pathname];res.writeHead(200,{'Content-Type':type});res.end(readFileSync(resolve(webRoot,file)));return;}
     requireWeb(url.pathname.startsWith('/api/'),404,'NOT_FOUND','页面不存在');
     if(req.method==='POST')requireWeb(!req.headers.origin||req.headers.origin==='http://'+host||req.headers.origin==='https://'+host,403,'ORIGIN_DENIED','跨站操作被拒绝');
@@ -56,8 +67,10 @@ const server=createServer(async(req,res)=>{
     if(req.method==='GET'&&url.pathname==='/api/session'){json(res,200,{csrf:current.csrf,username:'admin',api_url:apiUrl,platform_url:process.env.SIM_PLATFORM_URL||''});return;}
     if(req.method==='GET'&&url.pathname==='/api/production-events'){json(res,200,manager.productionHistory());return;}
     if(req.method==='GET'&&url.pathname==='/api/state'){json(res,200,manager.state());return;}
+    if(req.method==='GET'&&url.pathname==='/api/scanner/state'){json(res,200,await manager.scannerState());return;}
     if(req.method==='GET'&&url.pathname==='/api/devices'){json(res,200,await manager.devices());return;}
     if(req.method==='GET'&&url.pathname==='/api/ui-config'){json(res,200,{platform_url:process.env.SIM_PLATFORM_URL||''});return;}
+    if(req.method==='GET'&&url.pathname==='/api/specifications'){json(res,200,manager.specifications.list());return;}
     if(req.method==='GET'&&url.pathname==='/api/scenarios'){json(res,200,manager.scenarios());return;}
     if(req.method==='GET'&&url.pathname==='/api/catalog'){json(res,200,await manager.catalog(Object.fromEntries(url.searchParams)));return;}
     const historyMatch=url.pathname.match(/^\/api\/models\/(cables|detectors)\/([a-f0-9-]{36})\/history$/);
@@ -76,8 +89,13 @@ const server=createServer(async(req,res)=>{
       const input=await body(req);
       if(url.pathname==='/api/logout'){sessions.delete(cookie(req));res.setHeader('Set-Cookie','sim_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');json(res,200,{logged_out:true});return;}
       if(url.pathname==='/api/production-events'){json(res,200,await manager.production(input));return;}
+      if(url.pathname==='/api/barcodes'){json(res,200,await manager.barcode(input));return;}
+      if(url.pathname==='/api/barcodes/resolve'){json(res,200,await manager.resolveBarcode(input));return;}
+      if(url.pathname==='/api/scanner/scan'){json(res,200,await manager.scanBarcode(input));return;}
       const catalogMatch=url.pathname.match(/^\/api\/catalog\/(cables|detectors)$/);if(catalogMatch){json(res,200,await manager.saveCatalog(catalogMatch[1],input));return;}
       if(modelMatch){json(res,200,manager.models.save(modelMatch[1],input));return;}
+      if(url.pathname==='/api/specifications/preview'){json(res,200,manager.previewSpecification(input));return;}
+      if(url.pathname==='/api/specifications/confirm'){json(res,200,await manager.confirmSpecification(input));return;}
       if(url.pathname==='/api/passes'){json(res,202,await manager.createPass(input));return;}
       if(passMatch?.[2]==='speed'){json(res,200,manager.changeSpeed(passMatch[1],input));return;}
       if(passMatch?.[2]==='finish'){json(res,200,await manager.finishPass(passMatch[1]));return;}

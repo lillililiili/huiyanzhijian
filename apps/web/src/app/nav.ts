@@ -13,7 +13,8 @@ export const navGroups: NavGroup[] = [
     items: [
       ["detection?metric=dg", "金属屏蔽搭盖率检测"],
       ["detection?metric=jx", "铜丝屏蔽相邻铜丝间隙检测"],
-      ["detection?metric=by", "电缆不圆度检测"]
+      ["detection?metric=by", "电缆不圆度检测"],
+      ["detection?metric=ht", "护套厚度检测"]
     ]
   },
   {

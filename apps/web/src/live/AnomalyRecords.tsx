@@ -1,3 +1,4 @@
+import {startVisiblePolling} from '../shared/refreshPolicy';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { navigate } from "../app/hashRoute";
 import { Badge } from "../ui/Badge";
@@ -94,7 +95,8 @@ export function AnomalyRecords({ api, data, params }: { api: ApiClient; data: Wo
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(!params.get("from")&&!params.get("to"));
+  const alarmPending=useRef<AbortController|null>(null);
   const [reload, setReload] = useState(0);
   const [selected, setSelected] = useState<Measurement | null>(null);
   const generation = useRef(0);
@@ -110,6 +112,7 @@ export function AnomalyRecords({ api, data, params }: { api: ApiClient; data: Wo
 
   // ===================== 加载 M05 工业级报警列表 =====================
   const loadAlarms = useCallback(async () => {
+    if(alarmPending.current)return;const controller=new AbortController();alarmPending.current=controller;
     setAlarmLoading(true);
     setAlarmError("");
     try {
@@ -121,12 +124,14 @@ export function AnomalyRecords({ api, data, params }: { api: ApiClient; data: Wo
       if (alarmFilterLifecycle) q.set("lifecycle", alarmFilterLifecycle);
 
       // 查询当前筛选下的报警
-      const res = await api.request<AlarmListResponse>(`/alarms?${q.toString()}`);
+      const res = await api.request<AlarmListResponse>(`/alarms?${q.toString()}`,undefined,{},controller.signal);
+      if(controller.signal.aborted)return;
       setAlarms(res.items || []);
 
       // 统计各状态的报警数
       try {
-        const allRes = await api.request<AlarmListResponse>("/alarms?limit=100");
+        const allRes = await api.request<AlarmListResponse>("/alarms?limit=100",undefined,{},controller.signal);
+        if(controller.signal.aborted)return;
         const allItems = allRes.items || [];
         setAlarmKpis({
           pending: allItems.filter(a => a.handling_state === "PENDING").length,
@@ -138,24 +143,22 @@ export function AnomalyRecords({ api, data, params }: { api: ApiClient; data: Wo
         // KPI 查询忽略降级
       }
     } catch (cause) {
-      setAlarmError(cause instanceof Error ? cause.message : "获取报警列表失败");
+      if(!controller.signal.aborted)setAlarmError(cause instanceof Error ? cause.message : "获取报警列表失败");
     } finally {
-      setAlarmLoading(false);
+      if(alarmPending.current===controller){alarmPending.current=null;setAlarmLoading(false);}
     }
   }, [api, alarmFilterState, alarmFilterSeverity, alarmFilterMetric, alarmFilterDevice, alarmFilterLifecycle]);
 
   useEffect(() => {
-    void loadAlarms();
-  }, [loadAlarms, alarmReload]);
+    if(activeTab==="alarms")void loadAlarms();
+    return()=>{alarmPending.current?.abort();alarmPending.current=null;};
+  }, [loadAlarms, alarmReload,activeTab]);
 
-  // 定时自动刷新报警
+  // Only the visible latest alarm workspace refreshes; never interrupt handling or history.
   useEffect(() => {
-    if (!autoRefresh) return;
-    const timer = window.setInterval(() => {
-      void loadAlarms();
-    }, 5000);
-    return () => window.clearInterval(timer);
-  }, [autoRefresh, loadAlarms]);
+    if (!autoRefresh||activeTab!=="alarms"||selectedAlarm||handleModalAlarm||reviewModalAlarm||alarmFilterState==='REVIEWED'||alarmFilterLifecycle==='CLOSED') return;
+    return startVisiblePolling(loadAlarms,5000);
+  }, [autoRefresh,activeTab,selectedAlarm,handleModalAlarm,reviewModalAlarm,alarmFilterState,alarmFilterLifecycle,loadAlarms]);
 
   // 加载单条报警详情与审计时间线
   const loadAlarmDetail = useCallback(async (alarmId: string) => {
@@ -293,6 +296,11 @@ export function AnomalyRecords({ api, data, params }: { api: ApiClient; data: Wo
       inFlight.current = false;
     };
   }, [activeTab, loadFirstPage, reload]);
+
+  useEffect(()=>{
+    if(!autoRefresh||activeTab!=="raw_fails"||index!==0||selected||params.get('from')||params.get('to'))return;
+    return startVisiblePolling(loadFirstPage,5000);
+  },[autoRefresh,activeTab,index,selected,params,loadFirstPage]);
 
   async function nextPage() {
     const current = pages[index];

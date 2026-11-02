@@ -1,3 +1,4 @@
+import {startVisiblePolling,watchesTask} from '../shared/refreshPolicy';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AppShell } from "../app/shell/AppShell";
 import { LoginPage } from "../app/shell/LoginPage";
@@ -31,16 +32,16 @@ export function LiveApp() {
   const target = useRef(parsed.route === "login" ? "tasks" : parsed.raw);
   const clear = useCallback(() => { generation.current++; setUser(null); setData(emptyWorkspace); setWorkspaceStatus("loading"); api.csrf = ""; }, [api]);
   api.onExpired = clear;
-  useSessionWatch(api,Boolean(user),()=>setSettingsTick(n=>n+1));
+  useSessionWatch(api,Boolean(user),()=>{});
   const listOnly=["users","settings","audit","workorders","monitor","devices","metrics","recipes","specs"].includes(parsed.route)||(parsed.route==='trace'&&!parsed.params.get('spool'))||(parsed.route==='tasks'&&!parsed.params.get('plan')&&parsed.params.get('view')!=='auto')||(parsed.route==='detection'&&!parsed.params.get('task'));
   const refresh = useCallback(async (forceWorkspace=false):Promise<void> => {
     if (loading.current) { if(forceWorkspace){await new Promise(r=>setTimeout(r,100));return refresh(true);} return; }
     loading.current = true; const gen = generation.current;
     try {
       const [catalog, tasks, spools, orders, devices, health] = await Promise.all([
-        api.request<Catalog>("/catalog"), !listOnly||forceWorkspace?api.all<Task>("/tasks"):Promise.resolve(null), !listOnly||forceWorkspace?api.all<Spool>("/spools"):Promise.resolve(null), !listOnly||forceWorkspace?api.all<WorkOrder>("/work-orders"):Promise.resolve(null), api.request<DeviceStatus[]>("/device-status"),api.request<{database:string;analysis_worker:{healthy:boolean}}>("/health/ready")
+        api.request<Catalog>("/catalog"), !listOnly||forceWorkspace?api.all<Task>("/tasks"):Promise.resolve(null), !listOnly||forceWorkspace?api.all<Spool>("/spools"):Promise.resolve(null), !listOnly||forceWorkspace?api.all<WorkOrder>("/work-orders"):Promise.resolve(null), api.request<DeviceStatus[]>("/device-status"),api.request<{database:string;ovality_timeseries?:string;analysis_worker:{healthy:boolean}}>("/health/ready")
       ]);
-      if (gen === generation.current) { if(tasks && spools && orders)setWorkspaceStatus("ready"); setData(previous=>({catalog,tasks:tasks||previous.tasks,spools:spools||previous.spools,orders:orders||previous.orders,devices})); setError("");setConnection(health.database==="UP"&&health.analysis_worker.healthy?"平台与数据库正常 · 来源见任务":"平台部分服务异常"); }
+      if (gen === generation.current) { if(tasks && spools && orders)setWorkspaceStatus("ready"); setData(previous=>({catalog,tasks:tasks||previous.tasks,spools:spools||previous.spools,orders:orders||previous.orders,devices})); setError("");setConnection(health.ovality_timeseries==="DOWN"?"不圆度历史存储异常 · 其他服务状态见监控":health.database==="UP"&&health.analysis_worker.healthy?"平台与数据库正常 · 来源见任务":"平台部分服务异常"); }
     } catch (e) { if (gen === generation.current) {setError(e instanceof Error ? e.message : "刷新失败");setWorkspaceStatus(s=>s==="ready"?s:"failed");} if(forceWorkspace)throw e; }
     finally { loading.current = false; }
   }, [api,listOnly]);
@@ -49,7 +50,18 @@ export function LiveApp() {
     api.request<{user: Person; csrf_token: string}>("/auth/me").then(result => { if (!disposed) { api.csrf = result.csrf_token; setUser(result.user); } }).catch(e => { if (!disposed && (!(e instanceof ApiError) || e.status !== 401)) setError(e.message); }).finally(() => { if (!disposed) setChecking(false); });
     return () => { disposed = true; };
   }, [api]);
-  useEffect(() => { if (!user) return; void refresh(); const timer = setInterval(() => void refresh(), 5000); return () => clearInterval(timer); }, [user, refresh]);
+  useEffect(() => { if (user) void refresh(); }, [user, refresh, parsed.raw]);
+  const selectedId=parsed.route==='task'?parsed.params.get('id'):parsed.route==='detection'?parsed.params.get('task'):null;
+  const selectedState=data.tasks.find(t=>t.id===selectedId)?.state;
+  useEffect(()=>{
+    if(!user)return;
+    if(selectedId&&watchesTask(selectedState)){
+      let active=true;
+      const stop=startVisiblePolling(async()=>{try{const t=await api.request<Task>('/tasks/'+encodeURIComponent(selectedId));if(active)setData(old=>({...old,tasks:old.tasks.map(v=>v.id===t.id?t:v)}));}catch(e){if(active)setError(e instanceof Error?e.message:'任务状态读取失败');}},5000);
+      return()=>{active=false;stop();};
+    }
+    if(parsed.route==='dashboard')return startVisiblePolling(()=>refresh(),5000);
+  },[api,user,parsed.route,selectedId,selectedState,refresh]);
   useEffect(() => { document.title = documentTitle(parsed.route); if (user && parsed.route === "login") navigate(target.current); }, [parsed.route, user]);
   if (['users','audit','settings'].includes(parsed.route)) return <AdminRedirect route={parsed.route} params={parsed.params}/>;
   if (checking) return <div className="shell-proof"><h1>慧眼智检</h1><p>正在验证平台会话…</p></div>;

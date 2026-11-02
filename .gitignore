@@ -1,33 +1,39 @@
-/release/
-/apps/simulator/
-
-# Local dependencies and generated output
+# Dependencies and generated files
 node_modules/
-**/node_modules/
 dist/
-**/dist/
 build/
 target/
-**/target/
-*.class
 coverage/
 .vite/
 *.tsbuildinfo
+__pycache__/
+*.pyc
 
-# Secrets, local runtime state and database files
+# Runtime credentials and persisted data
 .env
 .env.*
 !.env.example
-!**/.env.example
-**/access.json
+access.json
 runtime/
-**/*.sqlite
-**/*.sqlite3
-**/*.db
-**/*.dump
-**/backups/
-
-# Local logs and editor/OS files
+*.token
+*.pem
+*.key
+*.sqlite*
+*.db
+*.dump
 *.log
+backups/
+
+# Local work and delivery evidence
+/_worktrees/
+/scratch/
+/临时文件夹/
+/备份/
+/垃圾桶/
+/交付包/
+artifacts/
+downloads/
+test-results/
+playwright-report/
 .DS_Store
 Thumbs.db

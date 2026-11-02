@@ -1,0 +1,17 @@
+name: huiyan-edge
+services:
+  app-access:
+    image: nginx:1.27-alpine
+    pull_policy: never
+    container_name: huiyan-edge-app-access
+    ports:
+      - "127.0.0.1:4198:4198"
+    volumes:
+      - ./packaging/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - edge
+    restart: unless-stopped
+networks:
+  edge:
+    external: true
+    name: huiyan-edge_default

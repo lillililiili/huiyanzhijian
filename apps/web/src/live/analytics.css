@@ -1,108 +1,11 @@
-/* 质量统计分析页面样式 */
-.analytics-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.analytics-filter-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  background: var(--panel, #ffffff);
-  border: 1px solid var(--line, #dce4ee);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-}
-
-@media (max-width: 900px) {
-  .analytics-filter-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 560px) {
-  .analytics-filter-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.metric-analysis-cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-@media (max-width: 1024px) {
-  .metric-analysis-cards {
-    grid-template-columns: 1fr;
-  }
-}
-
-.metric-card-inner {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.metric-val-hero {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.metric-val-num {
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.metric-val-num small {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--muted, #65758b);
-  margin-left: 4px;
-}
-
-.metric-strip-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  background: #f4f7fc;
-  border-radius: 6px;
-  padding: 10px;
-  font-size: 12px;
-  text-align: center;
-}
-
-.metric-strip-item strong {
-  display: block;
-  font-size: 14px;
-  color: var(--text, #17324f);
-  margin-top: 2px;
-}
-
-/* 简易波动直方模拟 */
-.metric-mini-chart {
-  height: 50px;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  padding: 6px 10px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #ffffff;
-  border-radius: 4px;
-}
-
-.metric-mini-bar {
-  flex: 1;
-  background: #bfdbfe;
-  border-radius: 2px 2px 0 0;
-  min-height: 6px;
-  transition: height 0.2s ease;
-}
-
-.metric-mini-bar.fail {
-  background: #fca5a5;
-}
+.ana2{display:flex;flex-direction:column;gap:20px;color:#193451}
+.ana2 .page-title{margin-bottom:0}.ana2 .panel{margin:0;border-radius:14px;box-shadow:0 3px 16px #163d6e03;overflow:hidden}.ana2 .panel-head{padding:20px 24px}.ana2 .panel-head h2{font-size:17px}.ana2 .core-panel-body{padding:20px 24px}.ana2 .core-panel-table{padding:0 20px}
+.ana-scope{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px;color:#7a8da8;margin-top:-8px}.ana-scope span:first-child{color:#5e7798}.ana-scope i{display:inline-block;width:6px;height:6px;background:#26a18b;border-radius:50%;margin-right:7px}.ana-scope b{padding:0 7px;color:#adbbcc}
+.ana2 .analytics-filter-grid{display:grid;grid-template-columns:1.1fr .75fr 1fr .8fr 1.3fr auto;gap:14px;align-items:end;background:#fff;border:1px solid #e2eaf5;border-radius:14px;padding:18px 22px}.ana2 .field{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0;min-width:0}.ana2 .field>span{font-size:12px;color:#7487a2}.ana2 input,.ana2 select{width:100%;min-width:0;height:40px;background:#fbfcff}.ana2 .analytics-filter-grid .btn{height:40px;min-height:40px}
+.ana-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.ana-kpi{background:#fff;border:1px solid #e1eaf5;border-radius:14px;padding:22px 24px;position:relative;overflow:hidden;min-height:166px}.ana-kpi>span{display:flex;align-items:center;justify-content:space-between;color:#6a819e;font-size:13px}.ana-kpi>span>b{font-size:10px;letter-spacing:1.4px;font-weight:500;opacity:.6}.ana-kpi>strong{font-size:36px;line-height:1.3;display:block;margin:14px 0 8px;letter-spacing:-1px;font-variant-numeric:tabular-nums}.ana-kpi strong small{font-size:13px;font-weight:400;margin-left:8px;letter-spacing:0;color:#8194b0}.ana-kpi p{margin:0 0 8px;font-size:12px;color:#7b8eaa}.ana-kpi em{font-style:normal;margin:0 6px}.ana-kpi-primary{background:linear-gradient(125deg,#123e7a,#226ac7);border-color:#225b9e;color:#fff}.ana-kpi-primary>span,.ana-kpi-primary p,.ana-kpi-primary strong small{color:#c4d9f6}.ana-kpi-track{height:3px;background:#ffffff25;border-radius:2px;margin-top:13px;overflow:hidden}.ana-kpi-track i{display:block;height:100%;background:#a8d8ff}.ana-dot{width:8px;height:8px;border-radius:50%}.ana-dot.green{background:#25a18c;box-shadow:0 0 0 5px #eaf7f3}.ana-dot.red{background:#ed6974;box-shadow:0 0 0 5px #fff0f2}.ana-dot.slate{background:#aab7cc;box-shadow:0 0 0 5px #f0f4fa}.ana-red{color:#d95164!important}.ana-caption{font-size:11px;color:#8798ae;line-height:1.7}.ana-text-button{border:0;background:none;color:#507fb9;font-size:12px;padding:0;cursor:pointer}.ana-text-button:hover{text-decoration:underline}.ana-text-button:focus-visible,.ana-chart-tabs button:focus-visible{outline:2px solid #2468cc;outline-offset:3px}
+.ana-overview-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:20px}.ana-eyebrow{font-size:11px;color:#91a0b6}.ana-donut-layout{display:grid;grid-template-columns:minmax(150px,1.1fr) 1fr;align-items:center;gap:15px}.ana-donut{position:relative;min-width:0}.ana-donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none}.ana-donut-center strong{font-size:28px;letter-spacing:-.5px}.ana-donut-center span{font-size:11px;color:#8c9bb0;margin-top:4px}.ana-result-legend{display:grid;gap:20px}.ana-result-legend>div{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px}.ana-result-legend span{color:#7387a2;white-space:nowrap}.ana-result-legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:9px}.ana-result-legend strong{font-size:16px;text-align:right;font-variant-numeric:tabular-nums}.ana-result-legend small{display:block;font-size:10px;color:#97a6bb;font-weight:400;margin-top:4px}.ana-source-line{border-top:1px solid #edf2f8;display:flex;gap:24px;padding-top:15px;color:#8a9ab1;font-size:11px}.ana-source-line b{margin-left:8px;color:#547296;font-weight:600}.ana-section-label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 -7px}.ana-section-label>div{display:flex;align-items:center;gap:10px}.ana-section-label h2{font-size:16px;margin:0}.ana-section-label>div>span{color:#8ba6c9;font-size:11px;font-weight:600}.ana-section-label p{font-size:11px;color:#899bb3;margin:0}
+.ana2 .metric-analysis-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.ana-metric{background:#fff;border:1px solid #e1eaf5;border-radius:14px;padding:23px;min-width:0}.ana-metric header{display:flex;align-items:center;gap:12px}.ana-metric header h3{font-size:15px;margin:0 0 5px;color:#29486c}.ana-metric header div>span{font-size:11px;color:#91a1b5}.ana-metric header a{margin-left:auto;font-size:11px;white-space:nowrap}.ana-metric-icon{width:36px;height:36px;display:grid;place-items:center;background:color-mix(in srgb,var(--metric-color) 8%,white);color:var(--metric-color);border-radius:10px;font-size:14px;font-weight:600}.ana-metric-range{margin:22px 0 16px}.ana-metric-range>span{color:#8c9cb2;font-size:11px}.ana-metric-range strong{display:block;font-size:23px;margin-top:8px;color:var(--metric-color);font-variant-numeric:tabular-nums}.ana-metric-range em{color:#b5c4d7;font-weight:400;font-style:normal;margin:0 7px}.ana-metric-range small{font-size:11px;font-weight:400;color:#8497b1}.ana-segment-bar{height:5px;background:#edf2f8;border-radius:4px;display:flex;overflow:hidden;gap:2px}.ana-segment-bar i{height:100%}.ana-metric footer{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;margin-top:20px}.ana-metric footer span{display:block;color:#8395ae;font-size:11px}.ana-metric footer b{display:block;font-size:16px;margin-top:7px;font-variant-numeric:tabular-nums}
+.ana-chart-tabs{display:flex;gap:4px;padding:3px;background:#f2f6fc;border:1px solid #e6edf7;border-radius:8px;flex-wrap:wrap}.ana-chart-tabs button{border:0;border-radius:5px;color:#7b8fa9;background:none;font-size:12px;padding:6px 12px;cursor:pointer}.ana-chart-tabs button[aria-pressed=true]{background:#fff;color:#1b60b9;box-shadow:0 1px 5px #224a7720;font-weight:600}.ana-trend-meta{display:flex;justify-content:space-between;gap:10px;color:#8b9ab0;font-size:11px;margin-bottom:12px}.ana-trend-meta strong{font-weight:500}.ana-trend-meta i{display:inline-block;width:14px;height:3px;border-radius:3px;vertical-align:middle;margin-right:7px}.ana-chart-empty,.ana-loading{display:grid;place-items:center;min-height:258px;color:#93a2b7;font-size:13px;background:linear-gradient(#fff,#fafcff);border-radius:12px}.ana-loading{border:1px solid #e1eaf5}.ana-subcell{font-size:11px;color:#8595ac;margin-top:5px}.ana-result-numbers{display:flex;gap:8px;font-size:13px;font-variant-numeric:tabular-nums}.ana-result-numbers b:first-child{color:#259886}.ana-result-numbers b:last-child{color:#91a0b7}.ana-result-numbers em{font-style:normal;color:#c5d0e0}.ana2 td{font-size:12px}.ana2 th{font-size:11px}.ana-links{display:flex;gap:12px;white-space:nowrap}.ana-pagination{display:flex;align-items:center;justify-content:space-between;padding:18px 0;font-size:12px;color:#8899b0}.ana-pagination>div{display:flex;gap:8px}.ana-definitions{color:#8a9ab1;font-size:11px;line-height:1.8;padding:0 4px}.ana-definitions summary{cursor:pointer}.ana-definitions p{max-width:1000px}
+@media(min-width:1800px){.ana2{gap:24px}.ana-kpi{padding:25px 28px}.ana-kpi>strong{font-size:40px}.ana2 .panel-head h2{font-size:18px}}
+@media(max-width:1250px){.ana2 .analytics-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.ana-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ana-overview-grid{grid-template-columns:1fr}.ana-donut-layout{grid-template-columns:220px 1fr;max-width:600px;margin:auto}.ana2 .metric-analysis-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.ana2 .analytics-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ana-kpis,.ana2 .metric-analysis-cards{grid-template-columns:1fr}.ana-kpi{min-height:140px}.ana-section-label{align-items:flex-start;flex-direction:column}.ana-donut-layout{grid-template-columns:1fr}.ana-result-legend{padding:0 12px 20px}.ana2 .panel-head{flex-wrap:wrap;gap:12px}.ana2 .panel-head,.ana2 .core-panel-body{padding:16px}.ana2 .core-panel-table{overflow:auto}.ana-scope{line-height:1.7}.ana-trend-meta{flex-wrap:wrap}}

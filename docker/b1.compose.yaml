@@ -31,6 +31,10 @@ services:
       PORT: "4192"
       BIND_HOST: 0.0.0.0
       CONTRACT_ROOT: /app/contracts
+      OVALITY_EDGE_TOKEN: ${OVALITY_EDGE_TOKEN:-}
+      EDGE_SYNC_TARGETS_FILE: /run/huiyan-edge-sync/targets.json
+    volumes:
+      - ../runtime/edge-sync:/run/huiyan-edge-sync:ro
     ports: ["127.0.0.1:4192:4192"]
     depends_on:
       database: {condition: service_healthy}

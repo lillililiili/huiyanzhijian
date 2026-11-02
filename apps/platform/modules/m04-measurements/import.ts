@@ -1,3 +1,5 @@
+import {storeProjection} from './projection';
+import {ovalityTimeseries} from './timeseries';
 import type { PoolClient } from 'pg';
 import { randomUUID, createHash } from 'node:crypto';
 import Decimal from 'decimal.js';
@@ -249,6 +251,8 @@ export class MeasurementImportService {
         };
         const payloadHash = createHash('sha256').update(JSON.stringify(rawPayload)).digest('hex');
 
+        const external=metricCode==='OVALITY';
+        const storedRaw=external?await ovalityTimeseries.write(ctx.actor.factory,task.device_id,sourceKey,payloadHash,rawPayload,row.value):rawPayload;
         // 插入 m04.measurement_record
         await tx.query(
           `INSERT INTO m04.measurement_record(
@@ -270,7 +274,7 @@ export class MeasurementImportService {
             row.sample_time,
             row.position_m,
             task.data_environment || 'SIMULATED',
-            JSON.stringify(rawPayload),
+            JSON.stringify(storedRaw),
             payloadHash,
           ]
         );
@@ -278,9 +282,9 @@ export class MeasurementImportService {
         // 插入 m04.measurement_value
         await tx.query(
           `INSERT INTO m04.measurement_value(
-            record_id, metric_code, value, unit, data_status, source_quality_result, window_definition
-          ) VALUES($1, $2, $3, $4, 'VALID', $5, '{"kind":"POINT"}')`,
-          [recordId, metricCode, row.value, row.unit, qualityResult]
+            record_id, metric_code, value, unit, data_status, source_quality_result, window_definition, sample_storage
+          ) VALUES($1, $2, $3, $4, 'VALID', $5, '{"kind":"POINT"}', $6)`,
+          [recordId, metricCode, external?null:row.value, row.unit, qualityResult, external?'INFLUXDB':'POSTGRESQL']
         );
 
         // 插入 m04.measurement_evaluation
@@ -297,6 +301,7 @@ export class MeasurementImportService {
           [recordId]
         );
 
+        await storeProjection(tx,recordId,metricCode,rawPayload,row.value);
         insertedCount++;
       }
 
