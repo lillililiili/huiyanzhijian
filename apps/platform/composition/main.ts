@@ -1,3 +1,9 @@
+import {PeriodicReports} from '../modules/m06-quality/periodic-reports';
+import {deviceRateBucket} from '../infrastructure/device-rate';
+import {newLogContext,withLogContext,currentLogContext,setLogActor,setLogInput,logEvent,requestLevel,requestEvent} from '../infrastructure/structured-log';
+import {assertDatabaseViews,DatabaseReadinessError} from '../infrastructure/database-readiness';
+import {ovalityTimeseries} from '../modules/m04-measurements/timeseries';
+import {EdgeSynchronization} from '../modules/m09-edge/synchronization';
 import {RuleManagement} from '../modules/m03-rules/management';
 import {SimulationQueries} from '../modules/m02-tasks/simulation';
 import 'reflect-metadata';
@@ -5,13 +11,13 @@ import {AlarmService} from '../modules/m05-alarms/service';
 import {MesService} from '../modules/m07-mes/service';
 import {QualityReportService} from '../modules/m06-quality/service';
 import {AdminApi} from '../modules/m00-identity/admin';
-import {queryLogs,recordLog,runtimeStatus,safeRoute} from '../infrastructure/runtime-log';
+import {queryLogs,runtimeStatus,safeRoute} from '../infrastructure/runtime-log';
 import {diagnostics} from '../modules/m04-measurements/diagnostics';
 import {taskActivity} from './activity';
 import {All,Controller,Module,Req,Res} from '@nestjs/common';
 import {NestFactory} from '@nestjs/core';
 import type {Request,Response} from 'express';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,timingSafeEqual} from 'node:crypto';
 import {pool,transaction} from '../infrastructure/db';
 import {ApiError,requireValue,object,textField,idPattern} from '../infrastructure/errors';
 import {parseJson} from '../infrastructure/schema';
@@ -24,19 +30,25 @@ import {ProductionApi} from '../modules/m02-tasks/production';
 import {TaskAssociations} from '../modules/m02-tasks/associations';
 import {TaskApi} from '../modules/m02-tasks/api';
 import {WorkOrderApi} from '../modules/m02-tasks/work-orders';
+import {TaskLabels} from '../modules/m02-tasks/task-labels';
+import {ScanLifecycle} from '../modules/m02-tasks/scan-lifecycle';
 import {MeasurementApi} from '../modules/m04-measurements/api';
 import {MeasurementImportService} from '../modules/m04-measurements/import';
 const identity=new IdentityApi(),catalog=new CatalogApi(),rules=new RuleApi(),tasks=new TaskApi(identity,catalog,rules),measurements=new MeasurementApi(identity,catalog,tasks,rules);
 const ruleManagement=new RuleManagement(identity,catalog,rules);
 const productionQueries=new ProductionQueries();
 const adminApi=new AdminApi(identity);
+const edgeSynchronization=new EdgeSynchronization(identity,adminApi,catalog);
 const catalogManagement=new CatalogManagement(identity,catalog);
 const associations=new TaskAssociations(tasks,identity);
 const production=new ProductionApi(tasks,identity,catalog,rules);
-const workOrders=new WorkOrderApi(tasks,identity);
+const workOrders=new WorkOrderApi(tasks,identity,catalog);
+const taskLabels=new TaskLabels(tasks,catalog);
+const scanLifecycle=new ScanLifecycle(tasks,catalog);
 const alarms=new AlarmService(identity);
 const mes=new MesService();
 const qualityReports=new QualityReportService();
+const periodicReports=new PeriodicReports();
 const measurementImport=new MeasurementImportService();
 function summaryFor(id:string,rows:any[]){return rows.find(r=>r.task_id===id)||{task_id:id,total:0,valid:0,invalid:0,passed:0,failed:0,unevaluated:0,quarantined:0,first_sample_at:null,latest_sample_at:null,minimum:null,maximum:null,mean:null,unit:null};}
 const rates=new Map<string,{count:number;until:number}>();
@@ -50,29 +62,35 @@ function paged(rows:any[],limit:number){return {items:rows.slice(0,limit),has_mo
 class ApiController{
  @All('{*path}')
  async route(@Req() req:Request,@Res() res:Response){
-  const requestId=typeof req.headers['x-request-id']==='string'&&idPattern.test(req.headers['x-request-id'])?req.headers['x-request-id']:randomUUID(),started=Date.now();let status=200,code='OK';res.setHeader('X-Request-Id',requestId);res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
+  const requestId=typeof req.headers['x-request-id']==='string'&&idPattern.test(req.headers['x-request-id'])?req.headers['x-request-id']:randomUUID();
+  const context=newLogContext(requestId,req.method,safeRoute(req.path),typeof req.headers.traceparent==='string'?req.headers.traceparent:undefined);
+  res.setHeader('Traceparent',`00-${context.trace_id}-${context.span_id}-00`);
+  return withLogContext(context,()=>this.handle(req,res));
+ }
+ private async handle(req:Request,res:Response){
+  const requestId=currentLogContext()!.request_id,started=Date.now();let status=200,code='OK',failure:unknown;res.setHeader('X-Request-Id',requestId);res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
   let logActor:Actor|undefined;
   try{
    const path=req.path.replace(/\/$/,'');const method=req.method;let data:any;
    if(method==='GET'&&path==='/api/v1/health/live')data={alive:true};
    else if(method==='GET'&&path==='/api/v1/health/ready'){
-    await pool.query('SELECT 1');const w=await pool.query("SELECT process_name,last_seen_at>now()-interval '15 seconds' AS healthy,capabilities FROM ops.process_heartbeat WHERE process_name='analysis-worker'");data={database:'UP',analysis_worker:w.rows[0]||{healthy:false,capabilities:[]},implemented:['device-ingestion-1.0','task-binding'],not_implemented:['analysis','reports','MES','hardware','source-alarms','evidence','position-1.1']};
+    await pool.query('SELECT 1');const w=await pool.query("SELECT process_name,last_seen_at>now()-interval '15 seconds' AS healthy,capabilities FROM ops.process_heartbeat WHERE process_name='analysis-worker'");data={database:'UP',ovality_timeseries:await ovalityTimeseries.health(),analysis_worker:w.rows[0]||{healthy:false,capabilities:[]},implemented:['device-ingestion-1.0','task-binding'],not_implemented:['analysis','reports','MES','hardware','source-alarms','evidence','position-1.1']};
    }else{
     requireValue(path.startsWith('/api/v1/'),'RESOURCE_NOT_FOUND','接口不存在',404);rate('ip:'+req.ip,600);
     if(path==='/api/v1/mes/mock-receiver'&&method==='POST'){
      data=mes.mockReceiver(await body(req),req.headers);
     }else if(path==='/api/v1/auth/login'&&method==='POST'){
-     rate('login:'+req.ip,15);const b=await body(req);object(b,['username','password']);textField(b.username);textField(b.password,256);const login=await identity.login(b.username,b.password,requestId);res.cookie('hy_session',login.token,cookieOptions);res.cookie('hy_csrf',login.csrf,{...cookieOptions,httpOnly:false});data={user:login.user,csrf_token:login.csrf};
+     rate('login:'+req.ip,15);const b=await body(req);object(b,['username','password']);textField(b.username);textField(b.password,256);const login=await identity.login(b.username,b.password,requestId);res.cookie('hy_session',login.token,cookieOptions);res.cookie('hy_csrf',login.csrf,{...cookieOptions,httpOnly:false});data={user:login.user,csrf_token:login.csrf};setLogActor({id:login.user.id,kind:'USER',factory:login.user.factory_id});
     }else{
      const bearer=req.headers.authorization?.match(/^Bearer (.+)$/)?.[1];const actor:Actor=bearer?await identity.device(bearer):await identity.person(cookie(req,'hy_session'));const ctx={actor,requestId};
-     logActor=actor;
-     if(actor.kind==='USER'&& !['GET','HEAD'].includes(method))identity.csrf(actor,String(req.headers['x-csrf-token']||''));if(actor.kind==='DEVICE')rate('device:'+actor.id,120);
-     const b=await body(req),key=String(req.headers['idempotency-key']||''),version=String(req.headers['if-match']||'');const p=page(req);
+     logActor=actor;setLogActor(actor);setLogInput(undefined,req.query,path);
+     if(actor.kind==='USER'&& !['GET','HEAD'].includes(method))identity.csrf(actor,String(req.headers['x-csrf-token']||''));
+     const b=await body(req);if(actor.kind==='DEVICE')rate(deviceRateBucket(actor.id,actor.devices,path,b),120);const key=String(req.headers['idempotency-key']||''),version=String(req.headers['if-match']||'');const p=page(req);setLogInput(b,req.query,path);
      if(path==='/api/v1/auth/me'&&method==='GET'){requireValue(actor.kind==='USER','ACCESS_DENIED','需要人员身份',403);const csrf=cookie(req,'hy_csrf');identity.csrf(actor,csrf);data={user:await identity.profile(actor),csrf_token:csrf};}
      else if(path==='/api/v1/auth/logout'&&method==='POST'){allow(actor,'data:read','USER');data=await identity.logout(ctx);res.clearCookie('hy_session',cookieOptions);res.clearCookie('hy_csrf',{...cookieOptions,httpOnly:false});}
      else if(path==='/api/v1/ingestion/profile'&&method==='GET'){allow(actor,'device:ingest','DEVICE');data=await measurements.profile(actor);}
      else if(path==='/api/v1/simulator/catalog'&&method==='GET'){
-      allow(actor,'device:ingest','DEVICE');requireValue(actor.environment==='SIMULATED','SOURCE_NOT_ALLOWED','仅模拟来源可查询',403);
+      allow(actor,'device:ingest','DEVICE');requireValue(actor.environment==='SIMULATED','SOURCE_NOT_ALLOWED','当前来源不支持此查询',403);
       data=await transaction(async db=>{await db.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
        const result=await new SimulationQueries().catalog(actor,req.query as Record<string,string>,await measurements.simulationSampledTasks(actor,db),db);
        const devices=[];for(const id of actor.devices){const d=await catalog.getDevice(actor.factory,id,db);if(d.data_environment==='SIMULATED')devices.push({id:d.id,name:d.name,metric_code:d.metric_code,enabled:d.enabled,version:d.version});}
@@ -85,7 +103,16 @@ class ApiController{
      else if(path==='/api/v1/production-events'&&method==='POST'){deviceScope(actor,b?.device_id);await measurements.checkConnection(actor,b?.device_id,b?.connection_id);data=await production.productionEvent(ctx,b);}
      else if(path==='/api/v1/measurements:ingest'&&method==='POST'){
       allow(actor,'device:ingest','DEVICE');
-      data=await measurements.ingest(ctx,b);
+      if(Array.isArray(b?.records)&&b.records.some((r:any)=>r?.values?.some((v:any)=>v?.metric_code==='OVALITY'))){
+       const expected=process.env.OVALITY_EDGE_TOKEN||'',provided=String(req.headers['x-huiyan-edge-token']||'');
+       requireValue(expected.length>=32&&Buffer.byteLength(provided)===Buffer.byteLength(expected)&&timingSafeEqual(Buffer.from(provided),Buffer.from(expected)),'EDGE_REQUIRED','不圆度检测记录须经边缘终端采集上传',403);
+       requireValue(b.records.filter((r:any)=>r?.values?.some((v:any)=>v?.metric_code==='OVALITY')).every((r:any)=>r?.raw?.data?.edge_gateway?.run_id),'EDGE_PROVENANCE_REQUIRED','缺少边缘采集履历',400);
+      }
+       // Go edge envelopes use RFC3339Nano. Only normalize this authenticated
+       // OVALITY transport timestamp; sample timestamps and raw evidence stay exact.
+       const edgeOnly=Array.isArray(b?.records)&&b.records.length>0&&b.records.every((r:any)=>r?.values?.length===1&&r.values[0].metric_code==='OVALITY');
+       const envelope=edgeOnly&&typeof b.sent_at==='string'?{...b,sent_at:b.sent_at.replace(/(\.\d{6})\d{1,3}(Z|[+-]\d{2}:\d{2})$/,'$1$2')}:b;
+       data=await measurements.ingest(ctx,envelope);
       try {
         const taskIds = new Set<string>();
         for (const r of (b?.records || [])) {
@@ -119,15 +146,29 @@ class ApiController{
       }
      }
      else if(path==='/api/v1/receipts:query'&&method==='POST')data=await measurements.receipts(actor,b);
+     else if(/^\/api\/v1\/simulator\/scan-target\/[^/]+$/.test(path)&&method==='GET')data=await scanLifecycle.target(actor,path.split('/')[5]);
+     else if(/^\/api\/v1\/devices\/[^/]+\/odm-scan-preview\/[^/]+$/.test(path)&&method==='GET')data=await scanLifecycle.preview(actor,path.split('/')[4],path.split('/')[6],true);
+     else if(/^\/api\/v1\/devices\/[^/]+\/odm-task-(scan|stop)$/.test(path)&&method==='POST')data=await scanLifecycle.command(ctx,path.split('/')[4],path.endsWith('scan')?'scan':'stop',b,true);
+     else if(/^\/api\/v1\/devices\/[^/]+\/scan-preview\/[^/]+$/.test(path)&&method==='GET')data=await scanLifecycle.preview(actor,path.split('/')[4],path.split('/')[6]);
+     else if(/^\/api\/v1\/devices\/[^/]+\/task-(scan|stop)$/.test(path)&&method==='POST'){
+      const expected=process.env.OVALITY_EDGE_TOKEN||'',provided=String(req.headers['x-huiyan-edge-token']||'');
+      requireValue(expected.length>=32&&Buffer.byteLength(provided)===Buffer.byteLength(expected)&&timingSafeEqual(Buffer.from(provided),Buffer.from(expected)),'EDGE_REQUIRED','任务切换须由授权边缘终端发起',403);
+      data=await scanLifecycle.command(ctx,path.split('/')[4],path.endsWith('task-scan')?'scan':'stop',b);
+     }
+     else if(/^\/api\/v1\/task-labels\/[^/]+$/.test(path)&&method==='GET')data=await taskLabels.resolveForCredential(actor,path.split('/')[4]);
+     else if(/^\/api\/v1\/devices\/[^/]+\/task-labels\/[^/]+$/.test(path)&&method==='GET')data=await taskLabels.resolve(actor,path.split('/')[4],path.split('/')[6]);
      else if(/^\/api\/v1\/devices\/[^/]+\/assignment$/.test(path)&&method==='GET')data=await tasks.assignment(actor,path.split('/')[4]);
      else if(/^\/api\/v1\/devices\/[^/]+\/assignment-acks$/.test(path)&&method==='POST'){const device=path.split('/')[4];deviceScope(actor,device);await measurements.checkConnection(actor,device,b?.connection_id);data=await tasks.ack(ctx,device,b);}
      else{
       allow(actor,'data:read','USER');
-      if(path==='/api/v1/admin/users/options'&&method==='GET'){const options=await adminApi.options(actor);data={...options,factories:await catalog.factories(options.factory_ids)};}
+      if(/^\/api\/v1\/tasks\/[^/]+\/odm-source$/.test(path)&&method==='GET')data=await tasks.odmSource(actor,path.split('/')[4]);
+      else if(path==='/api/v1/admin/users/options'&&method==='GET'){const options=await adminApi.options(actor);data={...options,factories:await catalog.factories(options.factory_ids)};}
       else if(path==='/api/v1/admin/users'&&method==='GET')data=await adminApi.users(actor,req.query as Record<string,string>);
       else if(path==='/api/v1/admin/users'&&method==='POST'){allow(actor,'users:manage');data=await adminApi.saveUser(ctx,null,b,key,version,(await catalog.factories(await adminApi.scope(actor))).map(r=>r.id));}
       else if(/^\/api\/v1\/admin\/users\/[^/:]+$/.test(path)&&method==='POST'){allow(actor,'users:manage');data=await adminApi.saveUser(ctx,path.split('/')[5],b,key,version,(await catalog.factories(await adminApi.scope(actor))).map(r=>r.id));}
       else if(/^\/api\/v1\/admin\/users\/[^/:]+:reset$/.test(path)&&method==='POST')data=await adminApi.reset(ctx,path.split('/')[5].split(':')[0],b,key,version);
+      else if(path==='/api/v1/admin/edge-sync'&&method==='GET')data=await edgeSynchronization.list(actor);
+      else if(/^\/api\/v1\/admin\/edge-sync\/[^/]+$/.test(path)&&method==='POST')data=await edgeSynchronization.save(ctx,decodeURIComponent(path.split('/')[5]),b,key,version);
       else if(path==='/api/v1/admin/settings'&&method==='GET')data=await adminApi.settings(actor);
       else if(/^\/api\/v1\/admin\/settings\/(platform|personal)$/.test(path)&&method==='POST')data=await adminApi.saveSettings(ctx,path.split('/')[5],b,key,version);
       else if(path==='/api/v1/admin/audits'&&method==='GET')data=await adminApi.audits(actor,req.query as Record<string,string>);
@@ -153,6 +194,10 @@ class ApiController{
        else if(/^\/api\/v1\/alarms\/[^/:]+(:handle|\/handle)$/.test(path)&&method==='POST')data=await alarms.handle(actor,path.split('/')[4].split(/[:/]/)[0],b,key);
        else if(/^\/api\/v1\/alarms\/[^/:]+(:close|\/close)$/.test(path)&&method==='POST')data=await alarms.close(actor,path.split('/')[4].split(/[:/]/)[0],b,key,requestId);
        else if(/^\/api\/v1\/alarms\/[^/:]+:review$/.test(path)&&method==='POST')data=await alarms.review(actor,path.split('/')[4].split(':')[0],b,key,requestId);
+       else if(path==='/api/v1/reporting/preview'&&method==='POST')data=await periodicReports.preview(actor,b);
+       else if(path==='/api/v1/reporting/reports:generate'&&method==='POST')data=await periodicReports.generate(actor,b,key);
+       else if(path==='/api/v1/reporting/reports'&&method==='GET')data=await periodicReports.list(actor,req.query);
+       else if(/^\/api\/v1\/reporting\/reports\/[^/]+$/.test(path)&&method==='GET')data=await periodicReports.detail(actor,path.split('/')[5]);
        else if((path==='/api/v1/reports'||path==='/api/v1/quality-reports')&&method==='GET')data=await qualityReports.list(actor,req.query as any);
        else if((path==='/api/v1/reports:generate'||path==='/api/v1/reports/generate'||path==='/api/v1/quality-reports/generate'||path==='/api/v1/quality-reports:generate')&&method==='POST')data=await qualityReports.generateReport(actor,b,key);
        else if(/^\/api\/v1\/(reports|quality-reports)\/[^/:]+$/.test(path)&&method==='GET')data=await qualityReports.detail(actor,path.split('/')[4]);
@@ -209,6 +254,8 @@ class ApiController{
       else if(/^\/api\/v1\/tasks\/[^/]+:reassociate$/.test(path)&&method==='POST')data=await associations.correct(ctx,path.split('/')[4].split(':')[0],b,key,version);
       else if(/^\/api\/v1\/task-associations\/[^/]+$/.test(path)&&method==='GET')data=await associations.history(actor,path.split('/')[4]);
       else if(/^\/api\/v1\/task-details\/[^/]+$/.test(path)&&method==='GET'){const id=path.split('/')[4];data={...await production.taskDetail(actor,id),measurements:await measurements.taskSummary(actor,id)};}
+      else if(/^\/api\/v1\/work-orders\/[^/]+\/specifications$/.test(path)&&method==='POST')data=await workOrders.specifications(ctx,path.split('/')[4],b,key);
+      else if(/^\/api\/v1\/work-orders\/[^/]+\/task-labels$/.test(path)&&method==='GET')data=await taskLabels.list(actor,path.split('/')[4]);
       else if(path==='/api/v1/work-orders'&&method==='POST')data=await tasks.createWorkOrder(ctx,b,key);
       else if(/^\/api\/v1\/work-orders\/[^/:]+:delete$/.test(path)&&method==='POST')data=await workOrders.remove(ctx,path.split('/')[4].split(':')[0],b,key);
       else if(path==='/api/v1/spools'&&method==='POST')data=await tasks.createSpool(ctx,b,key);
@@ -228,15 +275,17 @@ class ApiController{
           } : ctx.actor;
           try {
             const rep = await qualityReports.generateReport(sysActor, { task_id: id });
+            await logEvent('AUTO_REPORT_SUCCEEDED','INFO',{module:'M06',context:{task_id:id,report_id:rep.id}});
             data = { ...data, auto_report: { id: rep.id, report_code: rep.report_code, final_result: rep.final_result } };
           } catch(err) {
-            console.warn('[Auto-Report Generation Skipped]:', (err as any)?.message);
+            await logEvent('AUTO_REPORT_FAILED',err instanceof ApiError&&err.status<500?'WARN':'ERROR',{module:'M06',error:err,context:{task_id:id}});
           }
           try {
             const mesRes = await mes.enqueueAndDeliver(sysActor, id);
+            await logEvent('AUTO_MES_COMPLETED','INFO',{module:'M07',context:{task_id:id,delivery_id:mesRes.delivery_id}});
             data = { ...data, auto_mes: { delivery_id: mesRes.delivery_id, status: mesRes.status, ack_code: mesRes.ack_code } };
           } catch(err) {
-            console.warn('[Auto-MES Outbound Delivery Skipped]:', (err as any)?.message);
+            await logEvent('AUTO_MES_FAILED',err instanceof ApiError&&err.status<500?'WARN':'ERROR',{module:'M07',error:err,context:{task_id:id}});
           }
         }
       }
@@ -256,11 +305,16 @@ class ApiController{
    if(path.startsWith('/api/v1/catalog/')&&data?.version)res.setHeader('ETag',`"${data.version}"`);
    res.status(200).json({code:'OK',message:'成功',request_id:requestId,data});
   }catch(err){
-   let e:ApiError;if(err instanceof ApiError)e=err;else if((err as any)?.code==='23505')e=new ApiError(409,'RESOURCE_CONFLICT','记录已经存在或设备已被占用');else e=new ApiError(503,'DEPENDENCY_UNAVAILABLE','服务暂时不可用，请凭请求号核查',[],'UNKNOWN');status=e.status;code=e.code;
+   failure=err;let e:ApiError;if(err instanceof ApiError)e=err;else if((err as any)?.code==='23505')e=new ApiError(409,'RESOURCE_CONFLICT','记录已经存在或设备已被占用');else e=new ApiError(503,'DEPENDENCY_UNAVAILABLE','服务暂时不可用，请凭请求号核查',[],'UNKNOWN');status=e.status;code=e.code;
    if(status===401)res.setHeader('WWW-Authenticate','Bearer');if(status===429)res.setHeader('Retry-After','60');res.status(status).json({code,message:e.message,request_id:requestId,data:null,write_outcome:e.outcome,retryable:status>=500||status===429,retry_after_ms:status===429?60000:status>=500?1000:null,field_errors:e.fields});
-  }finally{const log={request_id:requestId,method:req.method,route:safeRoute(req.path),status,code,duration_ms:Date.now()-started};console.log(JSON.stringify({time:new Date().toISOString(),level:status>=500?'ERROR':status>=400?'WARN':'INFO',event:'HTTP_REQUEST',...log}));await recordLog(logActor,log);if(logActor&&req.path.startsWith('/api/v1/admin/')&&req.method==='POST'&&status>=400)await identity.audit({actor:logActor,requestId},'ADMIN_COMMAND_REJECTED','ADMIN',null,{code},undefined,'FAILURE').catch(()=>{});}
+  }finally{
+   const duration=Date.now()-started,route=safeRoute(req.path),level=requestLevel(status,req.method,route,duration);
+   const event=requestEvent(status,req.method,route,duration);
+   await logEvent(event,level,{status,code,duration_ms:duration,error:status>=500?failure:undefined});
+   if(logActor&&req.path.startsWith('/api/v1/admin/')&&req.method==='POST'&&status>=400){try{await identity.audit({actor:logActor,requestId},'ADMIN_COMMAND_REJECTED','ADMIN',null,{code},undefined,'FAILURE');}catch(error){await logEvent('AUDIT_WRITE_FAILED','ERROR',{error,code});}}
+  }
  }
 }
 @Module({controllers:[ApiController]})class AppModule{}
-async function main(){requireValue(process.env.DATABASE_URL&&process.env.CURSOR_SECRET,'CONFIG_INVALID','数据库和游标签名配置缺失');await pool.query('CREATE OR REPLACE VIEW m04.measurement_raw AS SELECT * FROM m04.measurement_record;').catch(()=>{});await mes.ensureViews().catch(()=>{});await qualityReports.ensureViews().catch(()=>{});const app=await NestFactory.create(AppModule,{bodyParser:false,logger:['error','warn']});app.enableShutdownHooks();await app.listen(Number(process.env.PORT||4192),process.env.BIND_HOST||'127.0.0.1');console.log(JSON.stringify({event:'API_READY',port:Number(process.env.PORT||4192)}));}
-main().catch(()=>{console.error(JSON.stringify({event:'STARTUP_FAILED'}));process.exitCode=1;});
+async function main(){requireValue(process.env.DATABASE_URL&&process.env.CURSOR_SECRET,'CONFIG_INVALID','数据库和游标签名配置缺失');await assertDatabaseViews(pool);const app=await NestFactory.create(AppModule,{bodyParser:false,logger:['error','warn']});app.enableShutdownHooks();await app.listen(Number(process.env.PORT||4192),process.env.BIND_HOST||'127.0.0.1');edgeSynchronization.start();await logEvent('API_READY','INFO');}
+main().catch(async e=>{await logEvent('STARTUP_FAILED','ERROR',{error:e,code:e instanceof DatabaseReadinessError?e.code:'STARTUP_FAILED'});await pool.end();process.exitCode=1;});

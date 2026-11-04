@@ -1,0 +1,23 @@
+// Run after integration.cjs. All mutations target its dedicated hy_odm01_* database.
+const fs=require('node:fs'),p=require('node:path'),assert=require('node:assert/strict'),{randomUUID}=require('node:crypto');
+const root=process.env.ODM01_ROOT,work=p.resolve(__dirname,'../..'),dir=p.join(root,'runtime/odm01'),env=JSON.parse(fs.readFileSync(p.join(dir,'test-env.json'))),access=JSON.parse(fs.readFileSync(p.join(dir,'access.json')));
+assert.match(new URL(env.MIGRATION_DATABASE_URL).pathname,/^\/hy_odm01_\d+$/);Object.assign(process.env,{INSPUR_ADAPTER_ROOT:env.INSPUR_ADAPTER_ROOT,DEVICE_TOKEN:env.DEVICE_TOKEN,ODM01_VENDOR_AUTH:'Bearer '+env.SIM_VENDOR_TOKEN,ODM01_DEVICE:'HY-DG-04'});
+const {Pool}=require(p.join(work,'apps/platform/node_modules/pg')),db=new Pool({connectionString:env.MIGRATION_DATABASE_URL}),{Queue}=require(p.join(work,'tools/simulator/dist/queue')),{record}=require(p.join(work,'tools/simulator/dist/scenarios'));
+const {Collector}=require('../../adapters/inspur/http/collector.cjs'),{testConfig,OVERLAP,dateText}=require('../../adapters/inspur/http/contract.cjs');
+let c,q,admin;const base=env.API_URL+'/api/v1',dh={Authorization:'Bearer '+access.device_token};
+async function req(route,body,headers={}){const r=await fetch(base+route,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)}),v=await r.json();assert.equal(r.status,200,JSON.stringify(v));return {v:v.data,cookies:r.headers.getSetCookie()};}
+const cmd=(route,body,extra={})=>req(route,body,{...admin,'Idempotency-Key':randomUUID(),...extra});
+(async()=>{
+ await db.query("INSERT INTO m01.device SELECT (jsonb_populate_record(NULL::m01.device,to_jsonb(d)||jsonb_build_object('id','HY-DG-04','code','HY-DG-04','name','ODM01第二台搭盖率设备'))).* FROM m01.device d WHERE id='HY-DG-01'");
+ await db.query("UPDATE m00.access_credential SET device_ids=array_append(device_ids,'HY-DG-04') WHERE id='b1-simulator'");
+ const login=await req('/auth/login',{username:'admin',password:access.users.admin});admin={Cookie:login.cookies.map(c=>c.split(';')[0]).join('; '),'X-CSRF-Token':login.v.csrf_token};
+ const wo=(await cmd('/work-orders',{external_code:'ODM01-DG04',specification_id:'SP035-400'})).v,spool=(await cmd('/spools',{work_order_id:wo.id,spool_code:'ODM01-DG04',specification_id:'SP035-400'})).v;
+ const task=(await cmd('/tasks',{work_order_id:wo.id,spool_id:spool.id,specification_id:'SP035-400',process_id:'process-dg',device_id:'HY-DG-04',metric_code:OVERLAP,recipe_version_id:'DG-V1.0',planned_length_m:'100'})).v;await cmd('/tasks/'+task.id+':start',{}, {'If-Match':String(task.version)});
+ const assignment=(await req('/devices/HY-DG-04/assignment',undefined,dh)).v.assignment;
+ const now=Date.now(),config={...testConfig(OVERLAP),baseUrl:env.SIM_VENDOR_BASE_URL,platformUrl:env.API_URL,deviceId:'HY-DG-04',lineId:'external-order-04',expectedTaskId:task.id,queueFile:p.join(dir,'collector-'+now+'.sqlite'),startTime:dateText(now-1000,480),endTime:dateText(now+5000,480),headerEnv:{Authorization:'ODM01_VENDOR_AUTH','X-Sim-Device-Id':'ODM01_DEVICE'}};
+ c=new Collector(config);await c.bind();q=new Queue(env.SIM_DB);const id='collector-source-'+now;q.db.prepare('INSERT INTO sim_run(id,device_id,capture_session,scenario,seed,target,assignment,created_at) VALUES(?,?,?,?,?,?,?,?)').run(id,'HY-DG-04',config.lineId,'mixed',0,4,JSON.stringify(assignment),new Date().toISOString());
+ await new Promise(r=>setTimeout(r,10));for(let n=1;n<=4;n++)q.saveSample(id,record(q.run(id),n));const states=await c.collect();assert.deepEqual(states.map(s=>[s.state,s.count]),[['STORED',4]]);
+ const before=c.db.prepare('SELECT payload FROM outbox ORDER BY id').all();c.close();c=new Collector(config);await c.collect();assert.deepEqual(c.db.prepare('SELECT payload FROM outbox ORDER BY id').all(),before);
+ const rows=(await db.query('SELECT r.device_id,r.task_id,r.raw_payload,v.value,e.quality_result FROM m04.measurement_record r JOIN m04.measurement_value v ON v.record_id=r.id JOIN m04.measurement_evaluation e ON e.record_id=r.id WHERE r.task_id=$1',[task.id])).rows;assert.equal(rows.length,4);assert.ok(rows.every(r=>r.device_id==='HY-DG-04'));assert.equal(rows.filter(r=>r.quality_result==='FAIL').length,1);
+ fs.writeFileSync(p.join(dir,'collector-pg-results.json'),JSON.stringify({task:task.id,device:'HY-DG-04',sourceRecords:4,stored:4,afterRestart:4,otherDeviceUnchanged:true},null,2));console.log('PASS independent M08 collector / second same-metric device / real PostgreSQL / restart stable replay');
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{c?.close();q?.db.close();await db.end();});

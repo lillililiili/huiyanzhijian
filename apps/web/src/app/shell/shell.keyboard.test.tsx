@@ -145,7 +145,7 @@ test("closed mobile sidebar is inert and absent from the accessibility tree", ()
   expect(labels).toEqual(["工作台", "综合监控", "检测中心", "检测任务", "产品规格档案", "历史与数据追溯", "报警事件", "分析与质量报告", "质量配置", "设备与接口", "系统管理"]);
   expect(document.querySelector(".voltage")?.textContent).toBe("35\u2013220kV 高压电缆");
   expect(document.querySelector(".sidebar-bottom")?.textContent).toContain("慧眼智检 · 质见未来");
-  expect(document.querySelector(".sidebar-bottom")?.textContent).toContain("聚焦三项关键量测指标");
+  expect(document.querySelector(".sidebar-bottom")?.textContent).toContain("聚焦四项关键量测指标");
   expect(document.querySelector(".sidebar-bottom")?.textContent).toContain("山东沉积岩信息科技有限公司");
   expect(document.querySelector(".demo-pill")?.getAttribute("href")).toBe("#settings");
   expect(document.querySelector(".demo-time")?.textContent).toBe("2026-10-09 14:30:00");

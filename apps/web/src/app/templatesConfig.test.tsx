@@ -50,8 +50,8 @@ test('renders default single-metric template preview, header and controlled V1.0
   expect(container.textContent).toContain('高压电缆单项质量检测报告');
   expect(container.textContent).toContain('山东宏亮电缆有限公司');
   expect(container.textContent).toContain('V1.0');
-  expect(container.textContent).toContain('受控必备要素');
-  expect(container.textContent).toContain('符合标准要求');
+  expect(container.textContent).toContain('报告固定展示要素');
+  expect(container.textContent).toContain('不对应实际任务或质量结论');
   expect(container.textContent).toContain('检验员：____________');
 });
 

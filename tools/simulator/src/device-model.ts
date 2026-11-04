@@ -1,6 +1,7 @@
+import {samplingInterval} from './sampling';
 // Detector receives a local observation, never the cable's defect list.
 import {type Geometry,type Metric,metrics,keys,named,fixed,insist} from './cable-model';
-export type Detector={name:string;device_id:string;metric:Metric;step_m:string;speed_m_min:string;lower:string;upper:string};
+export type Detector={name:string;device_id:string;metric:Metric;step_m:string;sampling_interval_ms?:number;speed_m_min:string;lower:string;upper:string;meter_delay_ms?:string;b_x_mm?:string;b_y_mm?:string};
 
 /**
  * 标准 Modbus-RTU CRC16 校验计算（多项式 0xA001，初值 0xFFFF，低字节在前、高字节在后）
@@ -272,7 +273,14 @@ export function buildOpmac170A2DObservation(params: Opmac170A2DObservationParams
   };
 }
 
-export function validateDetector(d:Detector){keys(d,['name','device_id','metric','step_m','speed_m_min','lower','upper']);named(d.name);insist(typeof d.device_id==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,89}$/.test(d.device_id),'设备标识无效');insist(metrics.includes(d.metric),'不支持的检测项');insist(fixed(d.step_m)>0n&&fixed(d.speed_m_min,600)>0n,'采样步长和线速必须大于0');insist(d.lower!==''||d.upper!=='','至少设置一个测试检测界限');if(d.lower!=='')fixed(d.lower);if(d.upper!=='')fixed(d.upper);if(d.lower!==''&&d.upper!=='')insist(fixed(d.lower)<=fixed(d.upper),'下限不能大于上限');return d;}
+export function validateDetector(d:Detector){keys(d,['name','device_id','metric','step_m','speed_m_min','lower','upper',...('sampling_interval_ms' in d?['sampling_interval_ms']:[]),...(['meter_delay_ms','b_x_mm','b_y_mm'] as const).filter(k=>k in d)]);
+ for(const v of [d.meter_delay_ms,d.b_x_mm,d.b_y_mm])insist(v===undefined||typeof v==='string'&&v.length<=40,'模拟参数须为数值文本或留空');
+ const extra=[d.meter_delay_ms,d.b_x_mm,d.b_y_mm].some(v=>v!==undefined&&v!=='');
+ insist(!extra||d.metric==='OVALITY','计米器和B参数仅用于不圆度设备');
+ if(d.meter_delay_ms!==undefined&&d.meter_delay_ms!=='')insist(/^\d{1,7}$/.test(d.meter_delay_ms)&&Number(d.meter_delay_ms)<=3600000,'计米器时间须为0～3600000的整数毫秒');
+ if(d.b_x_mm)insist(fixed(d.b_x_mm,1000)>0n&&fixed(d.b_x_mm,1000)<=655350000n&&d.meter_delay_ms!==undefined&&d.meter_delay_ms!=='','B模拟需要有效X直径和计米器时间（直径≤655.35mm）');
+ if(d.b_y_mm)insist(fixed(d.b_y_mm,1000)>0n&&fixed(d.b_y_mm,1000)<=655350000n&&!!d.b_x_mm,'B双轴需要有效X/Y直径（直径≤655.35mm）');
+ named(d.name);insist(typeof d.device_id==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,89}$/.test(d.device_id),'设备标识无效');insist(metrics.includes(d.metric),'不支持的检测项');if(d.sampling_interval_ms!==undefined)samplingInterval(d.sampling_interval_ms);insist((d.sampling_interval_ms!==undefined||fixed(d.step_m)>0n)&&fixed(d.speed_m_min,600)>0n,'采样步长和线速必须大于0');insist(d.lower!==''||d.upper!=='','至少设置一个测试检测界限');if(d.lower!=='')fixed(d.lower);if(d.upper!=='')fixed(d.upper);if(d.lower!==''&&d.upper!=='')insist(fixed(d.lower)<=fixed(d.upper),'下限不能大于上限');return d;}
 export function detect(d:Detector,g:Geometry,method='legacy-percent'){
  const ratio=d.metric==='OVALITY'&&method==='roundness-min-max.v1';
  insist(Number(g.diameter_x_mm)>0&&Number(g.diameter_y_mm)>0,'双轴直径必须大于0');

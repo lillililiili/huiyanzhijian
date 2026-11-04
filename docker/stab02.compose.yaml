@@ -1,0 +1,47 @@
+name: huiyan-stab02
+services:
+  edge:
+    image: huiyan-edge:stab02-1.9.1
+    pull_policy: never
+    profiles: [release]
+    network_mode: none
+    cpus: 1
+    mem_limit: 1g
+    volumes:
+      - edge-data:/var/lib/huiyan-edge
+    healthcheck:
+      test: [CMD-SHELL, "curl -fsS http://127.0.0.1:4198/api/state >/dev/null && curl -fsS http://127.0.0.1:8086/health >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "2"
+  lab:
+    image: influxdb:2.9.1
+    pull_policy: never
+    entrypoint: ["/bin/sh", "-c", "sleep infinity"]
+    network_mode: none
+    cpus: 1.5
+    mem_limit: 2g
+    environment:
+      STAB02_FAULT_LAB: isolated-tmpfs
+    tmpfs:
+      - /fault:size=32m
+      - /tsdisk:size=256m
+    volumes:
+      - ../runtime/stab02/bin:/test:ro
+      - ../runtime/stab02/evidence:/evidence
+      - ../边缘设备/edge-app/packaging:/packaging:ro
+    labels:
+      purpose: STAB02-isolated-fault-validation
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "2"
+volumes:
+  edge-data:

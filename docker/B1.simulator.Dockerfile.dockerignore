@@ -6,6 +6,10 @@
 !contracts/devices/
 !contracts/devices/v1/
 !contracts/devices/v1/**
+!adapters/
+!adapters/inspur/
+!adapters/inspur/http/
+!adapters/inspur/http/**
 tools/simulator/node_modules
 tools/simulator/dist
 tools/simulator/.env*

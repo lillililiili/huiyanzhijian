@@ -1,0 +1,20 @@
+{
+  "name": "huiyanzhijian",
+  "version": "1.0.0",
+  "description": "> 2026-10-26 AD02：业务4181与管理4182已独立构建、实际容器部署、自测通过，待用户验收。设备资料等业务配置仍留4181，账号/默认参数/审计日志迁4182，旧管理地址兼容跳转。部署命令见docker/AD02-DEPLOYMENT.md，证据见临时文件夹/AD02_独立管理前端/验收记录.md。",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "docx": "^9.15.0"
+  }
+}

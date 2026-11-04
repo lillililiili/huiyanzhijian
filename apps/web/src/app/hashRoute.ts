@@ -22,15 +22,16 @@ export const routeTitles: Record<string, string> = {
   analytics: "质量统计分析",
   reports: "质量报告管理",
   report: "报告预览与导出",
-  metrics: "三项检测指标",
+  metrics: "四项检测指标",
   recipes: "配方与判定规则",
   templates: "报告模板配置",
   devices: "设备档案",
-  connections: "数据接入配置",
+  connections: "数据导入配置",
   mes: "MES接口配置",
   sync: "同步监控",
   users: "用户角色与权限",
   audit: "操作审计",
+  initialization: "初始化配置",
   settings: "系统设置与运行状态"
 };
 
@@ -83,6 +84,7 @@ export function breadcrumbTitle(route: string, params: URLSearchParams) {
   if(route==="tasks"&&params.get("view")==="auto")return "自动发现配置";
   if (route === "detection") {
     const key = params.get("metric") || "dg";
+    if(key === "ht") return "护套厚度检测";
     const name = isMetricId(key) ? METRICS[key].name : undefined;
     return `${name}检测`;
   }
@@ -90,6 +92,7 @@ export function breadcrumbTitle(route: string, params: URLSearchParams) {
 }
 
 export function detectionHeading(metric: string | null) {
+  if (metric === "ht") return "护套厚度检测";
   if (metric === "jx") return "铜丝屏蔽相邻铜丝间隙检测";
   if (metric === "by") return "电缆不圆度检测";
   return "金属屏蔽搭盖率检测";

@@ -13,7 +13,8 @@ export const navGroups: NavGroup[] = [
     items: [
       ["detection?metric=dg", "金属屏蔽搭盖率检测"],
       ["detection?metric=jx", "铜丝屏蔽相邻铜丝间隙检测"],
-      ["detection?metric=by", "电缆不圆度检测"]
+      ["detection?metric=by", "电缆不圆度检测"],
+      ["detection?metric=ht", "护套厚度检测"]
     ]
   },
   {
@@ -39,9 +40,8 @@ export const navGroups: NavGroup[] = [
     label: "质量配置",
     icon: "shield",
     items: [
-      ["metrics", "三项检测指标"],
-      ["recipes", "配方与判定规则"],
-      ["templates", "报告模板配置"]
+      ["metrics", "四项检测指标"],
+      ["recipes", "配方与判定规则"]
     ]
   },
   {
@@ -50,7 +50,7 @@ export const navGroups: NavGroup[] = [
     icon: "connect",
     items: [
       ["devices", "设备档案"],
-      ["connections", "数据接入配置"],
+      ["connections", "数据导入配置"],
       ["mes", "MES接口配置"],
       ["sync", "同步监控"]
     ]
@@ -88,10 +88,12 @@ export const navEntries: NavEntry[] = [
 
 // Business navigation keeps daily work visible; prototype navigation remains unchanged.
 export const businessNavEntries: NavEntry[] = navEntries.flatMap(entry =>
-  entry.type === 'link' && entry.route === 'workorders'
+  entry.type === 'group' && entry.key === 'data'
+    ? [{type:'link' as const,route:'history',label:'历史数据',icon:'history'}]
+    : entry.type === 'link' && entry.route === 'workorders'
     ? [entry, {type:'link' as const,route:'trace',label:'线缆管理',icon:'box'}] : [entry]);
 export const pendingBusinessRoutes = new Set<string>();
-export const reservedBusinessRoutes = new Set(['connections','mes','sync']);
+export const reservedBusinessRoutes = new Set(['mes','sync']);
 
 export function groupByKey(key: string) {
   const group = navGroups.find(item => item.key === key);

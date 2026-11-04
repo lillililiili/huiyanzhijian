@@ -161,5 +161,5 @@ test('report detail preview renders paper layout, header, and metadata', async (
   expect(container.textContent).toContain('RP-20261028-001');
   expect(container.textContent).toContain('高压电缆出厂质量检测报告');
   expect(container.textContent).toContain('山东宏亮电缆有限公司');
-  expect(container.textContent).toContain('打印 / 保存 PDF');
+  expect(container.textContent).toContain('打印样张 / 保存 PDF');
 });

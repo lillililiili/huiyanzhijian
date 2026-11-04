@@ -124,6 +124,20 @@ test('B1 real PostgreSQL + HTTP + independent simulator acceptance', {timeout:18
  await b3r2Cases(t,{req,command,device,login,db,owner,sim});results.push('B3R2-single-task-association');
  await b3r3Cases(t,{req,command,device,login,db,owner,sim});results.push('B3R3-paging/filters/summaries');
  await b3r4Cases(t,{req,command,device,login,db,owner});results.push('B3R4-workorders/activity/scope');
+ await t.test('TIME01 time-only ingest persists original payload, queries exact timestamps and deduplicates',async()=>{
+  // Keep the acknowledged capture session: changing it would test quarantine, not normal ingest.
+  const r=structuredClone(sample);r.record_id='time01-'+randomUUID();r.capture_sequence='900000';
+  delete r.position_m;delete r.position_quality;delete r.position_segment_id;
+  const reply=await device('/measurements:ingest',batch([r]));
+  assert.equal(reply.status,200);assert.equal(reply.body.data.items[0].receipt_status,'STORED',JSON.stringify(reply.body));
+  const stored=await db.query('SELECT raw_payload,position_m,position_quality,position_segment_id FROM m04.measurement_record WHERE source_record_key=$1',[r.record_id]);
+  assert.equal(stored.rowCount,1);assert.deepEqual(stored.rows[0].raw_payload,r);assert.equal(stored.rows[0].position_m,null);assert.equal(stored.rows[0].position_quality,'UNKNOWN');assert.equal(stored.rows[0].position_segment_id,null);
+  assert.equal((await device('/measurements:ingest',batch([r]))).body.data.items[0].receipt_status,'DUPLICATE');
+  const query=await req('/measurements?order=desc&limit=1','GET',undefined,admin);
+  assert.equal(query.status,200,JSON.stringify(query.body));
+  assert.equal(query.body.data.items[0].raw_payload.record_id,r.record_id);assert.equal(query.body.data.items[0].raw_payload.sample_time,r.sample_time);assert.ok(query.body.data.items[0].received_at);
+  results.push('TIME01-time-only/PG/original/timestamps/duplicate');
+ });
  await stop(api);await startApi();await ad01Cases(t,{req,command,login,db,owner});results.push('AD01-management');
  await cat01Cases(t,{req,command,login,db,owner,sim});results.push('CAT01-catalog');
  await rule01Cases(t,{req,command,login,db,owner,sim,device});results.push('RULE01-versioned-simulation-rules');

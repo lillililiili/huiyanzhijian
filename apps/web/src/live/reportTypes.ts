@@ -4,7 +4,7 @@
  */
 
 export type ReportState = 'DRAFT' | 'GENERATED' | 'PUBLISHED' | 'FAILED';
-export type QualityVerdict = 'PASS' | 'FAIL' | 'CONDITIONAL';
+export type QualityVerdict = 'PASS' | 'FAIL' | 'CONDITIONAL' | 'NOT_EVALUATED';
 export type ReportKind = 'STAGE' | 'TASK_FINAL' | 'SPOOL_SUMMARY';
 
 export interface MetricSummaryItem {
@@ -17,8 +17,8 @@ export interface MetricSummaryItem {
   min_value: string | null;
   max_value: string | null;
   avg_value: string | null;
-  compliance_rate: number; // 0.00 ~ 100.00 (%)
-  verdict: 'PASS' | 'FAIL';
+  compliance_rate: number | null; // 0.00 ~ 100.00 (%)
+  verdict: 'PASS' | 'FAIL' | 'NOT_EVALUATED';
 }
 
 export interface CoverageSnapshot {
@@ -147,6 +147,7 @@ export const reportStateMeta: Record<ReportState, { label: string; tone: 'green'
 };
 
 export const qualityVerdictMeta: Record<QualityVerdict, { label: string; tone: 'green' | 'red' | 'amber' }> = {
+  NOT_EVALUATED: { label: '缺少判定依据', tone: 'amber' },
   PASS: { label: '合格放行', tone: 'green' },
   FAIL: { label: '超限不合格', tone: 'red' },
   CONDITIONAL: { label: '条件放行', tone: 'amber' }

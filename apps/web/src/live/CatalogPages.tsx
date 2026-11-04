@@ -53,10 +53,10 @@ function SpecEditor({props,initial,onClose,onSaved}:{props:Props;initial:Spec|nu
  <Field label="产品类型"><TextInput aria-label="产品类型" name="product_type" maxLength={128} value={initial?.product_type||''}/></Field>
  <Field label="状态"><select name="enabled" defaultValue={String(initial?.enabled??true)}><option value="true">启用</option><option value="false">停用</option></select></Field>
  </div>
- <fieldset className="b2-group"><legend>适用工序与检测项（至少一项）</legend><div className="row"><Button onClick={selectAll}>全选检测项</Button><Button onClick={clearAll}>清空选择</Button></div><div className="spec-applicability-choices">{choices.map(c=>{const k=c.process_id+'|'+c.metric_code;return <label key={k}><input type="checkbox" checked={checked.has(k)} onChange={e=>setChecked(old=>{const next=new Set(old);if(e.target.checked)next.add(k);else next.delete(k);return next;})}/><span>{names[c.metric_code]}<small>{props.data.catalog.inspection_process.find(p=>p.id===c.process_id)?.name||c.process_id}</small></span></label>;})}</div></fieldset>
+ <fieldset className="b2-group"><legend>适用工序与检测项（至少一项）</legend><div className="row"><Button onClick={selectAll}>全选检测项</Button><Button onClick={clearAll}>清空选择</Button></div><div className="spec-applicability-choices">{choices.map(c=>{const k=c.process_id+'|'+c.metric_code;return <label key={k}><input type="checkbox" checked={checked.has(k)} onChange={e=>setChecked(old=>{const next=new Set(old);if(e.target.checked)next.add(k);else next.delete(k);return next;})}/><span>{names[c.metric_code]}{c.metric_code==='OVALITY'?' ＋ 护套厚度（同步）':''}<small>{props.data.catalog.inspection_process.find(p=>p.id===c.process_id)?.name||c.process_id}</small></span></label>;})}</div></fieldset>
  <Field label="规格说明"><textarea name="description" maxLength={2000} defaultValue={initial?.description||''}/></Field>
  <Field label="修改原因"><TextInput aria-label="修改原因" name="reason" required maxLength={500}/></Field>
- <Note>测试模式允许选择当前设备接入的三项指标，不按屏蔽结构隐藏。此处和“三项检测指标”页共用适用关系；修改生成新版本，历史任务保持创建快照。测试选择不代表生产适用性已批准。</Note>
+ <Note>可选择当前接入设备支持的指标；选择不圆度同时适用于护套厚度，两项同步采集。此处和“检测指标”页共用适用关系；修改生成新版本，历史任务保持创建快照。生产适用性需批准。</Note>
  </Modal>;
 }
 

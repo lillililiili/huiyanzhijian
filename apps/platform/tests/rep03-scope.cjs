@@ -1,0 +1,7 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const {reportScope,reportPresentation}=require('../dist/modules/m06-quality/report-scope.js');
+const cases=[['DAILY','2024-02-29','2024-02-28T16:00:00.000Z','2024-02-29T16:00:00.000Z'],['WEEKLY','2025-01-01','2024-12-29T16:00:00.000Z','2025-01-05T16:00:00.000Z'],['MONTHLY','2024-02-29','2024-01-31T16:00:00.000Z','2024-02-29T16:00:00.000Z'],['QUARTERLY','2026-11-03','2026-09-30T16:00:00.000Z','2026-12-31T16:00:00.000Z'],['YEARLY','2026-11-03','2025-12-31T16:00:00.000Z','2026-12-31T16:00:00.000Z']];
+for(const [kind,anchor,from,to] of cases)test(kind+' Beijing calendar golden interval',()=>{const s=reportScope({kind,anchor});assert.equal(s.from,from);assert.equal(s.to,to);});
+test('Invalid calendar dates and unscoped order are rejected',()=>{for(const input of [{kind:'DAILY',anchor:'2026-02-30'},{kind:'WEEKLY',anchor:'bad'},{kind:'WORK_ORDER'},{kind:'OTHER',anchor:'2026-11-03'}])assert.throws(()=>reportScope(input));});
+test('Work order has no period cutoff and preserves source filter',()=>{const s=reportScope({kind:'WORK_ORDER',order_id:'order-123',environment:'REAL'});assert.equal(s.from,null);assert.equal(s.to,null);assert.equal(s.environment,'REAL');assert.equal(s.bucket,'interval');});
+test('Presentation labels have bounded printable lengths',()=>{assert.throws(()=>reportPresentation({title:'字'.repeat(41)}));assert.equal(reportPresentation({title:' 合同质量报告 ',details:false}).title,'合同质量报告');assert.equal(reportPresentation({details:false}).details,false);});

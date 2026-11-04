@@ -1,0 +1,40 @@
+name: ${SIM_PROJECT_NAME:-huiyan-simulator}
+services:
+  simulator:
+    image: huiyan-simulator:web
+    pull_policy: never
+    build:
+      context: ../..
+      dockerfile: docker/B1.simulator.Dockerfile
+      pull: false
+    environment:
+      SIM_PLATFORM_URL: ${SIM_PLATFORM_URL:-}
+      API_URL: ${SIM_API_URL:-http://host.docker.internal:4192}
+      DEVICE_TOKEN: ${SIM_DEVICE_TOKEN:?Configure simulator device credential}
+      SIM_WEB_PASSWORD: ${SIM_WEB_PASSWORD:?Configure independent web password}
+      SIM_LOCAL_SIMPLE_PASSWORD: ${SIM_LOCAL_SIMPLE_PASSWORD:-false}
+      SIM_WEB_PORT: "4196"
+      SIM_WEB_BIND: 0.0.0.0
+      SIM_ALLOWED_HOSTS: ${SIM_ALLOWED_HOSTS:-127.0.0.1,localhost}
+      SIM_COOKIE_SECURE: ${SIM_COOKIE_SECURE:-false}
+      SIM_DB: /data/simulator.sqlite
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - "${SIM_BIND_ADDRESS:-127.0.0.1}:${SIM_WEB_PORT:-4196}:4196"
+    volumes:
+      - simulator-data:/data
+    command: [node, dist/web-server.js]
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 15s
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4196/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "5"}
+volumes:
+  simulator-data:

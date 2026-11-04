@@ -14,7 +14,7 @@ export function allow(actor:Actor,permission:string,kind?:Actor['kind']){if((kin
 export function deviceScope(actor:Actor,deviceId:string,environment?:string){allow(actor,'device:ingest','DEVICE');if(!actor.devices.includes(deviceId)||(environment!==undefined&&actor.environment!==environment))throw new ApiError(403,'SOURCE_NOT_ALLOWED','设备或来源环境超出凭据范围');}
 export class IdentityApi{
  async audit(ctx:Context,action:string,resourceType:string,resourceId:string|null,details:unknown={},db=pool as PoolClient|typeof pool,result='SUCCESS'){
-  await db.query('INSERT INTO m00.audit_event(id,factory_id,actor_type,actor_id,action,resource_type,resource_id,request_id,result,details) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[randomUUID(),ctx.actor.factory,ctx.actor.kind,ctx.actor.id,action,resourceType,resourceId,ctx.requestId,result,JSON.stringify(details)]);
+  await db.query('INSERT INTO m00.audit_event(id,factory_id,actor_type,actor_id,action,resource_type,resource_id,request_id,result,details) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[randomUUID(),ctx.actor.factory,ctx.actor.kind,ctx.actor.id,action,resourceType,resourceId,ctx.requestId,result,JSON.stringify(redact(details))]);
  }
  async login(username:string,password:string,requestId:string){
   const r=await pool.query('SELECT * FROM m00.app_user WHERE login_name=$1',[username]);const user=r.rows[0];

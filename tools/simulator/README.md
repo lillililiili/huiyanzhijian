@@ -46,7 +46,7 @@ docker compose --env-file runtime/simulator/simulator.env -f tools/simulator/com
 
 `init` 使用本机已有Node 22镜像，不自动拉取；首次从B1本机配置读取SIMULATED设备凭据，之后运行仅依赖独立配置。也可参照 `.env.example` 手工配置 `runtime/simulator/simulator.env`，设置 `SIM_API_URL`、`SIM_DEVICE_TOKEN`、`SIM_WEB_PASSWORD`。当前通过 `host.docker.internal:4192` 连接后端；换机器时改为可达的API地址，不配置数据库连接。默认只监听本机；远程开放、HTTPS及组织账号接入另行部署设计。
 
-Web支持三项指标的场景、数量、间隔、种子配置，以及开始、暂停、继续、停止、补传、原键重放、真实样本/回执/趋势/日志查询。绑定模式由平台人员准备并开始任务；自动模式发送设备ENTER/EXIT，由平台按已启用的自动发现配置建立任务，模拟器不调用人员建单接口。详见[本轮验收指南](../../docs/workpackages/SIMWEB01_独立模拟器Web系统.md)。
+Web支持三项指标的场景、数量、间隔、种子配置，以及开始、暂停、继续、停止、补传、原键重放、真实样本/回执/趋势/日志查询。绑定模式由平台人员准备并开始任务；自动模式发送设备ENTER/EXIT，由平台按已启用的自动发现配置建立任务，模拟器不调用人员建单接口。详见[本轮验收指南](../../临时文件夹/SIMWEB01/验收操作指南.md)。
 
 Web重启后需重新登录，不自动恢复采样；历史和待传保留，可人工继续或补传。同一设备仅允许一个采集进程。Web队列为自己的命名卷，不自动迁移原B1 CLI队列，也不要同时对同一设备从两个独立队列采样。单实例部署；历史列表显示最近100次，单次样本每页50条，执行日志显示最近50项。启动健康检查只说明Web可用，上游状态以页面为准。
 
@@ -54,7 +54,7 @@ Web重启后需重新登录，不自动恢复采样；历史和待传保留，�
 
 B1设备契约1.0，三项指标，SIMULATED来源。只调用设备HTTP API，不直接访问PostgreSQL，不创建工单/盘号/任务。平台人员先开始任务，模拟器取得/确认绑定后才生成输入。
 
-根目录运行`node tools/b1.mjs sim status`查询持久队列；`node tools/b1.mjs sim run --device HY-DG-01 --run demo-001 --count 100 --interval-ms 50 --scenario mixed`模拟搭盖率。详细三指标、重放、停止与恢复步骤见[验收指南](../../docs/workpackages/B1_后端数据库与设备模拟器.md)。
+根目录运行`node tools/b1.mjs sim status`查询持久队列；`node tools/b1.mjs sim run --device HY-DG-01 --run demo-001 --count 100 --interval-ms 50 --scenario mixed`模拟搭盖率。详细三指标、重放、停止与恢复步骤见[验收指南](../../临时文件夹/第一阶段_B1后端模拟器/验收操作指南.md)。
 
 支持run/status/pause/resume/stop/drain/replay；正常、边界、超限、无效与mixed；同run持久化capture_session、样本ID、完整载荷和收据。HTTP未知结果保留原键，退避重试；永久错误停止并保留。新的数据流使用新run名，不能复用旧run改变任务或场景。
 
@@ -70,7 +70,7 @@ SQLite使用WAL与FULL同步，命名卷持久化，与服务端业务库职责�
 
 自动模式要求平台已启用并配置自动发现；绑定模式要求已有运行任务。短缺陷可能因采样间隔漏检，不伪造检出。模型和过料快照保存在SQLite的model_revision/model_pass，业务采样在PostgreSQL。重启不自动采样，待传/历史保留；强停后现有租约可能需要等待30秒。
 
-本功能是数值/几何模拟，不含图像/AI或真机精度。OVALITY沿用1.0百分比测试公式并保存mm原值，不能视作生产标准。详见[契约](../../contracts/simulator/SIM02-cable-device.md)和[验收记录](../../docs/workpackages/SIM02_线缆与设备双模块模拟.md)。
+本功能是数值/几何模拟，不含图像/AI或真机精度。OVALITY沿用1.0百分比测试公式并保存mm原值，不能视作生产标准。详见[契约](../../contracts/simulator/SIM02-cable-device.md)和[验收记录](../../临时文件夹/SIM02_双模块模拟/验收记录.md)。
 
 ## SIM03 实时送料与历史
 
@@ -78,7 +78,7 @@ SQLite使用WAL与FULL同步，命名卷持久化，与服务端业务库职责�
 
 采集进程在间隔等待中响应控制；暂停/停止提交后禁止生成新样本，已发送请求仍可返回回执。停止保留进度，不能代替业务任务完工。进程确认关闭后只释放其自身租约，继续从原序号恢复。刷新频率0.5/1/2/5秒，仅保存当前标签会话偏好；断服显示状态未同步。
 
-[实时控制契约](../../contracts/simulator/SIM03-live-feed.md)；[验收记录](../../docs/workpackages/SIM03_实时送料控制与布局优化.md)。
+[实时控制契约](../../contracts/simulator/SIM03-live-feed.md)；[验收记录](../../临时文件夹/SIM03_实时送料控制/验收记录.md)。
 
 # SIM07 线缆参数与缺陷自定义
 

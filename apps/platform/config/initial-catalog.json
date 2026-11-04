@@ -14,7 +14,7 @@
       "enabled": true,
       "productType": "交联聚乙烯绝缘电缆",
       "customerCode": "HV-035-400",
-      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+      "description": "35–220 kV 高压电缆规格，适用范围应结合设备量程与工艺确认"
     },
     {
       "id": "SP035-300",
@@ -29,7 +29,7 @@
       "enabled": true,
       "productType": "交联聚乙烯绝缘电缆",
       "customerCode": "HV-035-300",
-      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+      "description": "35–220 kV 高压电缆规格，适用范围应结合设备量程与工艺确认"
     },
     {
       "id": "SP066-630",
@@ -44,7 +44,7 @@
       "enabled": true,
       "productType": "交联聚乙烯绝缘电缆",
       "customerCode": "HV-066-630",
-      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+      "description": "35–220 kV 高压电缆规格，适用范围应结合设备量程与工艺确认"
     },
     {
       "id": "SP110-800",
@@ -59,7 +59,7 @@
       "enabled": true,
       "productType": "交联聚乙烯绝缘电缆",
       "customerCode": "HV-110-800",
-      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+      "description": "35–220 kV 高压电缆规格，适用范围应结合设备量程与工艺确认"
     },
     {
       "id": "SP110-1000",
@@ -74,7 +74,7 @@
       "enabled": true,
       "productType": "交联聚乙烯绝缘电缆",
       "customerCode": "HV-110-1000",
-      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+      "description": "35–220 kV 高压电缆规格，适用范围应结合设备量程与工艺确认"
     },
     {
       "id": "SP220-1200",
@@ -89,7 +89,7 @@
       "enabled": true,
       "productType": "交联聚乙烯绝缘电缆",
       "customerCode": "HV-220-1200",
-      "description": "35–220 kV 高压电缆演示规格，适用范围应结合设备量程与工艺确认"
+      "description": "35–220 kV 高压电缆规格，适用范围应结合设备量程与工艺确认"
     }
   ],
   "devices": [
@@ -140,10 +140,10 @@
       "version": "V1.0",
       "threshold": 10,
       "operator": ">=",
-      "name": "搭盖率默认演示配方",
+      "name": "搭盖率默认配方",
       "enabled": true,
       "createdAt": "2026-10-09 08:00:00",
-      "description": "依据原型设定的演示阈值"
+      "description": "初始配置阈值，批准状态以规则为准"
     },
     {
       "id": "JX-V1.0",
@@ -151,10 +151,10 @@
       "version": "V1.0",
       "threshold": 3,
       "operator": "<=",
-      "name": "铜丝间隙默认演示配方",
+      "name": "铜丝间隙默认配方",
       "enabled": true,
       "createdAt": "2026-10-09 08:00:00",
-      "description": "依据原型设定的演示阈值"
+      "description": "初始配置阈值，批准状态以规则为准"
     },
     {
       "id": "BY-V1.0",
@@ -162,10 +162,10 @@
       "version": "V1.0",
       "threshold": 8,
       "operator": "<=",
-      "name": "不圆度默认演示配方",
+      "name": "不圆度默认配方",
       "enabled": true,
       "createdAt": "2026-10-09 08:00:00",
-      "description": "依据原型设定的演示阈值"
+      "description": "初始配置阈值，批准状态以规则为准"
     }
   ],
   "users": [
@@ -202,7 +202,7 @@
       "username": "viewer",
       "role": "viewer",
       "enabled": true,
-      "department": "演示用户",
+      "department": "访客",
       "lastLogin": null
     }
   ]

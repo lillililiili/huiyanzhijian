@@ -1,0 +1,25 @@
+name: huiyan-edge
+
+services:
+  ubuntu-desktop:
+    image: linuxserver/webtop:ubuntu-mate
+    pull_policy: never
+    container_name: huiyan-edge-ubuntu-desktop-1
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: "Asia/Shanghai"
+      TITLE: "慧眼智检 · 边缘设备桌面终端 (Ubuntu MATE)"
+      EDGE_API_UPSTREAM: ${EDGE_API_UPSTREAM:-http://host.docker.internal:4192}
+    ports:
+      - "3000:3000"
+    shm_size: "1gb"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ubuntu-desktop-data:/config
+    restart: unless-stopped
+
+volumes:
+  ubuntu-desktop-data:
+    name: huiyan-edge-desktop-data

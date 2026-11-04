@@ -31,8 +31,9 @@ export function recordGraphic(record:Measurement,task?:Task){
  return {name:matched.name,direction:matched.direction,value,boundary,delta:exactDistance(value,boundary),unit:record.unit,geometry,geometryReason};
 }
 
-export function DefectRecordGraphic({record,task}:{record:Measurement;task?:Task}){
+export function DefectRecordGraphic({record,task,timeOnly=false}:{record:Measurement;task?:Task;timeOnly?:boolean}){
  const data=recordGraphic(record,task),uid=useId().replace(/:/g,'');
+ if(record.metric_code==='OVALITY'||task?.metric_code==='OVALITY')return null;
  if(!data.value)return <p role="status">{data.reason}</p>;
  const {value,boundary,unit,geometry:g}=data,v=Number(value),b=Number(boundary),lo=Math.min(0,v,b),hi=Math.max(0,v,b),span=Math.max(hi-lo,0.0000000001),px=(n:number)=>65+(n-lo)/span*570;
  const color='#e8ad66',red='#ff6666',grey='#c5cbd3',yellow='#ffe27a';
@@ -75,6 +76,6 @@ export function DefectRecordGraphic({record,task}:{record:Measurement;task?:Task
     </g>;})()}
    </>}
   </svg>
-  <figcaption><strong>{data.geometryReason}</strong><span>单点测量 · 缺陷长度未提供</span></figcaption>
+  <figcaption><strong>{data.geometryReason}</strong><span>{timeOnly?'单点测量 · 按采样时间追溯':'单点测量 · 缺陷长度未提供'}</span></figcaption>
  </figure>;
 }

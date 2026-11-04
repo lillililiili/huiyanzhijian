@@ -1,8 +1,10 @@
 # 慧眼智检 · 逐步实施计划
 
-> 日期：2026-10-16\
-> 范围：`E:\Chenjiyan\Projects\huiyanzhijian\web`\
-> 依据：`前端实现设计.md`（落地路线）、`FRONTEND-DESIGN-PLAN.md`（页面、视觉、§11.3 门禁）、`慧眼智检-原生原型/`（视觉与交互基准）、`web/` 现有工程\
+> 路径更新（2026-10-21）：本历史计划中的根 `web/` 现为 `apps/web/`，其内部源码结构保持。当前目录、预留后台及基础设施以 [第13份目录说明](huiyanzhijian/docs/13_工程目录与预留服务布局.md) 为准；历史正文不代表全部工作已完成。
+
+> 日期：2026-10-16  
+> 范围：`E:\Chenjiyan\Projects\huiyanzhijian\web`  
+> 依据：`前端实现设计.md`（落地路线）、`FRONTEND-DESIGN-PLAN.md`（页面、视觉、§11.3 门禁）、`慧眼智检-原生原型/`（视觉与交互基准）、`web/` 现有工程  
 > 本文件只排实施顺序。未收到「开始执行」之前不改应用代码。
 
 ## 0. 已核对的现状
@@ -208,7 +210,7 @@ npm run build
 
 目标：替换 `#tasks`、`#task`、`#specs`。store 新增 `saveSpec`。
 
-新建：`src/pages/tasks/TasksPage.tsx`、`TaskPage.tsx`、`src/pages/specs/SpecsPage.tsx` 与测试。\
+新建：`src/pages/tasks/TasksPage.tsx`、`TaskPage.tsx`、`src/pages/specs/SpecsPage.tsx` 与测试。  
 修改：`store.ts`、`store.test.ts`、`registry.tsx`。
 
 完成标准：
@@ -224,7 +226,7 @@ npm run build
 
 目标：替换 `#history`、`#trace`、`#import`。本阶段不依赖任务页的内部结构。
 
-新建：`src/domain/csv.ts`、`csv.test.ts`、`src/pages/history/HistoryPage.tsx`、`src/pages/trace/TracePage.tsx`、`src/pages/import/ImportPage.tsx` 与页面测试。\
+新建：`src/domain/csv.ts`、`csv.test.ts`、`src/pages/history/HistoryPage.tsx`、`src/pages/trace/TracePage.tsx`、`src/pages/import/ImportPage.tsx` 与页面测试。  
 修改：`registry.tsx`。
 
 完成标准：
@@ -239,7 +241,7 @@ npm run build
 
 目标：替换 `#alarms`、`#alarm`、`#analytics`、`#reports`、`#report`。打印沿用 `styles.css` 已有的 `@media print`。缺报告页专用规则时再补，不另写一套壳隐藏逻辑。
 
-新建：五个页面与测试。\
+新建：五个页面与测试。  
 修改：`registry.tsx`。必要时补 `styles.css` 或 `core.css` 的报告排版。
 
 完成标准：
@@ -254,7 +256,7 @@ npm run build
 
 目标：替换 `#metrics`、`#recipes`、`#templates`。store 新增 `saveMetricDisplay`、`saveTemplate`。`reviseRecipe` 已在 PR 2。
 
-新建：三个页面与测试。\
+新建：三个页面与测试。  
 修改：`store.ts`、`store.test.ts`、`registry.tsx`。
 
 完成标准：
@@ -268,7 +270,7 @@ npm run build
 
 目标：替换 `#devices`、`#connections`、`#mes`、`#sync`。store 新增 `saveDevice`、`saveConnections`、`saveMes`。
 
-新建：四个页面与测试。\
+新建：四个页面与测试。  
 修改：`store.ts`、`store.test.ts`、`registry.tsx`。
 
 完成标准：
@@ -283,7 +285,7 @@ npm run build
 
 目标：替换 `#users`、`#audit`、`#settings`。store 新增 `saveUser`、`saveSettings`。`setScenario` 与 `reset` 已在 PR 2。
 
-新建：三个页面与测试。\
+新建：三个页面与测试。  
 修改：`store.ts`、`store.test.ts`、`registry.tsx`。完成后删除 `placeholders.tsx`。
 
 完成标准：

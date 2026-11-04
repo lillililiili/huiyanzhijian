@@ -1,0 +1,30 @@
+# Merge with b1.compose.yaml. Existing PostgreSQL and its data volume are unchanged.
+services:
+  ovality-timeseries:
+    image: influxdb:2.9.1@sha256:a450f6faf9573e6c2e96a0f575885ae8b7387cc87e4de94599e247ebfa3ac417
+    restart: unless-stopped
+    env_file: ../runtime/ts01/influx-init.env
+    ports: ["127.0.0.1:4206:8086"]
+    volumes:
+      - ovality-timeseries-data:/var/lib/influxdb2
+      - ovality-timeseries-config:/etc/influxdb2
+    healthcheck:
+      test: [CMD, influx, ping, --host, "http://127.0.0.1:8086"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "5"}
+  backend:
+    environment:
+      OVALITY_INFLUX_URL: http://ovality-timeseries:8086
+      OVALITY_INFLUX_ORG: huiyan-center
+      OVALITY_INFLUX_BUCKET: ovality-samples
+      OVALITY_INFLUX_TOKEN_FILE: /run/huiyan-timeseries/runtime.token
+    volumes:
+      - ../runtime/ts01/secrets:/run/huiyan-timeseries:ro
+# No depends_on gating: the other two metrics remain usable during a TS outage.
+volumes:
+  ovality-timeseries-data:
+  ovality-timeseries-config:

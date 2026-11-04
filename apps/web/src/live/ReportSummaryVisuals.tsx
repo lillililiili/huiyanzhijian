@@ -63,7 +63,7 @@ export function ReportSummaryVisuals({ metrics, sample = false }: ReportSummaryV
             <div className="report-visual-legend">
               <div><i className="pass" />符合 <strong>{passed}</strong></div>
               <div><i className="fail" />超限 <strong>{failed}</strong></div>
-              <small>按检测项汇总；未判定点不计入分母</small>
+              <small>按检测项汇总；缺少判定依据点不计入分母</small>
             </div>
           </div>
         </figure>
@@ -75,7 +75,7 @@ export function ReportSummaryVisuals({ metrics, sample = false }: ReportSummaryV
           </figcaption>
           <div className="report-rate-list">
             {metrics.map(metric => {
-              const rate = Number(metric.compliance_rate);
+              const rate = metric.compliance_rate===null?NaN:Number(metric.compliance_rate);
               const safeRate = Number.isFinite(rate) ? Math.min(100, Math.max(0, rate)) : 0;
               return (
                 <div className="report-rate-row" key={metric.metric_code}>

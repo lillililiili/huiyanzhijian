@@ -28,5 +28,5 @@ test('discovery never silently falls back from a disabled pinned rule to collect
  const p=props();const catalog={...emptyWorkspace.catalog,device:[device],recipes:[{...recipe,enabled:false}],product_specification:[{id:'s',name:'spec',voltage_kv:'35',conductor_area_mm2:'300',core_count:1,shield_structure:'tape',enabled:true}],specification_applicability:[{specification_id:'s',process_id:'p',metric_code:'OVALITY'}]};vi.spyOn(p.api,'request').mockResolvedValue(catalog);
  await render(<DiscoveryRecipeForm api={p.api} commands={p.commands} device={device} current={{enabled:true,specification_id:'s',recipe_version_id:'r',version:'1'}} close={()=>{}} saved={()=>{}}/>);
  expect(document.querySelector('button[type=submit]')).toHaveProperty('disabled',true);expect(document.body.textContent).toContain('当前版本已停用或不适用');
- expect([...document.querySelectorAll('select')].at(-1)!.value).toBe('r');
+ expect([...document.querySelectorAll('select')].find(s=>s.textContent?.includes('当前版本已停用'))!.value).toBe('r');
 });

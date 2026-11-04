@@ -8,7 +8,7 @@ import {IdentityApi,allow,type Actor,type Context} from '../m00-identity/api';
 import {CatalogApi} from '../m01-catalog/api';
 import {RuleApi,units} from './api';
 
-const methods:Record<string,string>={SHIELD_OVERLAP_RATE:'test-dg',WIRE_GAP:'test-jx',OVALITY:'roundness-min-max.v1'};
+const methods:Record<string,string>={SHIELD_OVERLAP_RATE:'test-dg',WIRE_GAP:'test-jx',OVALITY:'test-by',SHEATH_THICKNESS:'sheath-a-mean-minus-b-mean.meter-time.v3'};
 export class RuleManagement {
  constructor(private identity:IdentityApi,private catalog:CatalogApi,private rules:RuleApi){}
  async versions(actor:Actor,id:string){
@@ -36,16 +36,22 @@ export class RuleManagement {
  async setStatus(ctx:Context,id:string,b:any,key:string,version:string){
   allow(ctx.actor,'rules:write','USER');idField(id);object(b,['enabled','reason']);requireValue(typeof b.enabled==='boolean');textField(b.reason,500);
   return this.command(ctx,key,['status',id,version,b],async db=>{const before=await this.rules.get(ctx.actor.factory,id,db);this.checkVersion(before.version,version);
-   requireValue(before.approval_state==='TEST_ONLY','RULE_NOT_APPROVED','本功能仅维护模拟测试版本',422);
+   requireValue(before.approval_state==='TEST_ONLY','RULE_NOT_APPROVED','本功能仅维护未批准版本',422);
    await this.recordState(db,ctx,id,b.enabled,b.reason.trim());const after=await this.rules.get(ctx.actor.factory,id,db);
    await this.identity.audit(ctx,'RECIPE_STATUS_CHANGED','RECIPE',id,{before,after,reason:b.reason},db);return after;
   });
  }
  async save(ctx:Context,id:string|null,b:any,key:string,version:string){
-  allow(ctx.actor,'rules:write','USER');object(b,['code','name','metric_code','unit','comparison','specification_ids','standard_reference','reason']);
+  allow(ctx.actor,'rules:write','USER');object(b,['code','name','metric_code','unit','comparison','specification_ids','standard_reference','reason'],['nominal_thickness_mm']);
   textField(b.code,64);textField(b.name,128);textField(b.standard_reference,1000);textField(b.reason,500);
-  requireValue(b.code===b.code.trim()&&Object.hasOwn(methods,b.metric_code));requireValue(b.unit===(b.metric_code==='OVALITY'?'1':units[b.metric_code]),'RULE_UNIT_INVALID','单位必须与当前接入指标一致',422);
-  if(b.metric_code==='OVALITY')requireValue(b.comparison?.operator==='GE','RULE_VALUE_INVALID','圆整度使用下限判定',422);
+  requireValue(b.code===b.code.trim()&&Object.hasOwn(methods,b.metric_code));requireValue(b.unit===units[b.metric_code],'RULE_UNIT_INVALID','单位必须与当前接入指标一致',422);
+  if(b.metric_code==='OVALITY')requireValue(b.comparison?.operator==='LE','RULE_VALUE_INVALID','百分比不圆度使用上限判定',422);
+  if(b.metric_code==='SHEATH_THICKNESS'){
+   requireValue(typeof b.nominal_thickness_mm==='string'&&/^\d{1,12}(\.\d{1,8})?$/.test(b.nominal_thickness_mm)&&new Decimal(b.nominal_thickness_mm).gt(0),'RULE_VALUE_INVALID','请填写该规格设定的正数护套厚度，最多8位小数',422);
+   requireValue(Array.isArray(b.specification_ids)&&b.specification_ids.length===1,'RECIPE_NOT_APPLICABLE','护套配方必须明确绑定一个规格；不同规格分别配置标准值',422);
+   const lower=new Decimal(b.nominal_thickness_mm).times('0.95').toFixed(10);
+   requireValue(b.comparison?.operator==='GE'&&typeof b.comparison.lower==='string'&&/^\d{1,14}(\.\d{1,10})?$/.test(b.comparison.lower)&&new Decimal(b.comparison.lower).eq(lower)&&b.comparison.upper===null,'RULE_VALUE_INVALID','护套厚度下限必须为设定标准值的95%',422);
+  }else requireValue(b.nominal_thickness_mm===undefined,'REQUEST_INVALID','只有护套配方可以设置标准厚度');
   object(b.comparison,['operator','lower','upper']);const c=b.comparison;requireValue(['GE','LE','BETWEEN'].includes(c.operator));
   for(const k of ['lower','upper']){const needed=k==='lower'?c.operator!=='LE':c.operator!=='GE';
    if(!needed){requireValue(c[k]===null);continue;}
@@ -67,7 +73,7 @@ export class RuleManagement {
    }
    const target=randomUUID(),group=before?.group_id||target;
    const number=before?Number((await db.query('SELECT max(version_number) AS n FROM m03.recipe_metadata WHERE factory_id=$1 AND group_id=$2',[ctx.actor.factory,group])).rows[0].n)+1:1;
-   const rule={schema_version:'rule-snapshot.v1',method_id:methods[b.metric_code],method_version:'1',approval_state:'TEST_ONLY',comparison:c,parameters:{test_only:true,method:'provided_scalar_no_instrument_formula',unit:b.unit,recipe_code:b.code,recipe_name:b.name.trim(),recipe_revision:`V${number}.0`,standard_reference:b.standard_reference.trim(),specification_ids:b.specification_ids}};
+   const rule={schema_version:'rule-snapshot.v1',method_id:methods[b.metric_code],method_version:b.metric_code==='SHEATH_THICKNESS'?'3':'1',approval_state:'TEST_ONLY',comparison:c,parameters:{test_only:true,method:'provided_scalar_no_instrument_formula',unit:b.unit,recipe_code:b.code,recipe_name:b.name.trim(),recipe_revision:`V${number}.0`,standard_reference:b.standard_reference.trim(),specification_ids:b.specification_ids,...(b.metric_code==='SHEATH_THICKNESS'?{nominal_thickness_mm:b.nominal_thickness_mm,minimum_ratio:'0.95',standard_confirmed_at:'2026-11-03'}:{})}};
    await db.query("INSERT INTO m03.recipe_version(id,factory_id,metric_code,revision,approval_state,rule_snapshot,source_metadata,snapshot_hash) VALUES($1,$2,$3,$4,'TEST_ONLY',$5,$6,$7)",[target,ctx.actor.factory,b.metric_code,`V${number}.0`,JSON.stringify(rule),JSON.stringify({standard_reference:b.standard_reference.trim(),reason:b.reason.trim(),actor_id:ctx.actor.id}),digest(rule)]);
    await db.query('INSERT INTO m03.recipe_metadata(recipe_version_id,factory_id,group_id,code,name,version_number,unit,specification_ids,standard_reference,reason,actor_id,request_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[target,ctx.actor.factory,group,b.code,b.name.trim(),number,b.unit,b.specification_ids,b.standard_reference.trim(),b.reason.trim(),ctx.actor.id,ctx.requestId]);
    await db.query('INSERT INTO m03.recipe_state(recipe_version_id) VALUES($1)',[target]);

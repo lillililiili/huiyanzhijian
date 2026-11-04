@@ -1,3 +1,4 @@
+/** @deprecated ODM01: legacy experimental registers only. Current DG/JX source uses ./http; this is not a verified hardware protocol. */
 /**
  * 浪潮检测设备原始 Modbus RTU/TCP 报文与寄存器到平台标准化测点（Device Ingestion v1.0）转换器
  * 遵循 SPEC_浪潮设备协议与寄存器映射.md 规范

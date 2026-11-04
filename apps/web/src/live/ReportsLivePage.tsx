@@ -23,147 +23,6 @@ import { ReportSummaryVisuals } from './ReportSummaryVisuals';
 import './reports.css';
 import './templates.css';
 
-const STORAGE_KEY_REPORTS = 'huiyan_quality_reports_v2';
-
-function loadFallbackSeeds(data: Workspace): QualityReportItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_REPORTS);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {
-    // 降级为初始化种子数据
-  }
-
-  const seeds: QualityReportItem[] = [];
-  const tasks = data.tasks;
-
-  const finishedTask = tasks.find(t => t.state === 'ENDED') || tasks[0];
-  if (finishedTask) {
-    const m = finishedTask.measurements;
-    seeds.push({
-      id: 'RP-20261028-001',
-      factory_id: 'factory-local',
-      report_code: 'RP-20261028-001',
-      revision: 1,
-      report_kind: 'TASK_FINAL',
-      data_environment: (finishedTask.data_environment as 'SIMULATED' | 'REAL') || 'REAL',
-      spool_id: finishedTask.spool_id,
-      work_order_id: finishedTask.work_order_id,
-      task_ids: [finishedTask.id],
-      state: 'PUBLISHED',
-      final_result: (m?.failed ?? 0) === 0 && (m?.valid ?? 0) > 0 ? 'PASS' : 'FAIL',
-      snapshot_hash: '536f878f91a09452727e10439f8877892ea302322999f3c553f48545c284a35f',
-      coverage_snapshot: {
-        start_position_m: '0.000',
-        end_position_m: '2500.000',
-        total_covered_meters: '2500.000',
-        total_records: m?.total ?? 1820,
-        quarantined_records: 0,
-        valid_records: m?.valid ?? 1820,
-        coverage_completeness: 'COMPLETE'
-      },
-      statistics: {
-        [finishedTask.metric_code]: {
-          metric_code: finishedTask.metric_code,
-          unit: m?.unit ?? '%',
-          total_samples: m?.total ?? 1820,
-          valid_samples: m?.valid ?? 1820,
-          passed_samples: (m?.valid ?? 1820) - (m?.failed ?? 0),
-          failed_samples: m?.failed ?? 0,
-          min_value: m?.minimum ?? '16.2',
-          max_value: m?.maximum ?? '19.8',
-          avg_value: m?.mean ?? '18.4',
-          compliance_rate: (m?.failed ?? 0) === 0 ? 100 : 92.5,
-          verdict: (m?.failed ?? 0) === 0 ? 'PASS' : 'FAIL'
-        }
-      },
-      template_snapshot: {
-        title: '高压电缆出厂质量检测报告',
-        subtitle: '全工序金属屏蔽联锁铠装质量检测与几何轮廓核验',
-        signatory_label: '检验员：张工____________    复核人：李总工____________    质量管理部：王部长____________',
-        footer: '山东宏亮电缆有限公司 · 慧眼智检 质见未来 · 生产质检合格专用章',
-        disclaimer: '本报告汇总该电缆盘全长测量点位之实际数据，未检测或不适用工序不作质量推断。',
-        includeLogo: true,
-        includeTrend: true,
-        includeAlarms: true,
-        includeDetails: true,
-        includeDeviceSnapshot: true,
-        includeSourceDeclaration: true
-      },
-      query_cutoff: '2026-10-28T09:30:15Z',
-      generated_by: '质量工程师',
-      published_by: '技术总工',
-      published_at: '2026-10-28T09:40:00Z',
-      created_at: '2026-10-28 09:30:15'
-    });
-  }
-
-  const runningTask = tasks.find(t => t.state === 'RUNNING');
-  if (runningTask) {
-    const m = runningTask.measurements;
-    seeds.push({
-      id: 'RP-20261028-002',
-      factory_id: 'factory-local',
-      report_code: 'RP-20261028-002',
-      revision: 1,
-      report_kind: 'STAGE',
-      data_environment: (runningTask.data_environment as 'SIMULATED' | 'REAL') || 'SIMULATED',
-      spool_id: runningTask.spool_id,
-      work_order_id: runningTask.work_order_id,
-      task_ids: [runningTask.id],
-      state: 'GENERATED',
-      final_result: 'CONDITIONAL',
-      snapshot_hash: 'a98f12c304d9e710293847561029384756102938475610293847561029384756',
-      coverage_snapshot: {
-        start_position_m: '0.000',
-        end_position_m: '640.000',
-        total_covered_meters: '640.000',
-        total_records: m?.total ?? 640,
-        quarantined_records: 0,
-        valid_records: m?.valid ?? 640,
-        coverage_completeness: 'PARTIAL'
-      },
-      statistics: {
-        [runningTask.metric_code]: {
-          metric_code: runningTask.metric_code,
-          unit: m?.unit ?? 'mm',
-          total_samples: m?.total ?? 640,
-          valid_samples: m?.valid ?? 640,
-          passed_samples: m?.valid ?? 640,
-          failed_samples: 0,
-          min_value: '1.20',
-          max_value: '2.10',
-          avg_value: m?.mean ?? '1.75',
-          compliance_rate: 100,
-          verdict: 'PASS'
-        }
-      },
-      template_snapshot: {
-        title: '高压电缆阶段过程检测记录报告',
-        subtitle: '生产运行过程阶段检测抽查报告 · 任务未结束',
-        signatory_label: '采样员：李明____________    车间复核：赵强____________',
-        footer: '山东宏亮电缆有限公司 · 过程检测记录备查',
-        disclaimer: '阶段报告仅反映当前已完成长度之量测数据，不作为产品最终出厂合格证明。',
-        includeLogo: true,
-        includeTrend: true,
-        includeAlarms: false,
-        includeDetails: true,
-        includeDeviceSnapshot: true,
-        includeSourceDeclaration: true
-      },
-      query_cutoff: '2026-10-28T10:15:00Z',
-      generated_by: '产线质检员',
-      published_by: null,
-      published_at: null,
-      created_at: '2026-10-28 10:15:00'
-    });
-  }
-
-  return seeds;
-}
-
 export interface PageProps {
   api?: ApiClient;
   data: Workspace;
@@ -173,7 +32,7 @@ export interface PageProps {
 }
 
 export function ReportsLivePage({ api, data, user, refresh }: PageProps) {
-  const [reports, setReports] = useState<QualityReportItem[]>(() => loadFallbackSeeds(data));
+  const [reports, setReports] = useState<QualityReportItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -187,7 +46,7 @@ export function ReportsLivePage({ api, data, user, refresh }: PageProps) {
 
   // 从服务端 M06 API 加载质量报告列表
   const loadReports = useCallback(async () => {
-    if (!api) return;
+    if (!api) { setError("平台接口未连接"); setReports([]); return; }
     setLoading(true);
     setError(null);
     try {
@@ -202,7 +61,7 @@ export function ReportsLivePage({ api, data, user, refresh }: PageProps) {
         setReports(res.items);
       }
     } catch (e) {
-      // 容错降级
+      setReports([]);
       setError(e instanceof Error ? e.message : '从平台读取报告失败');
     } finally {
       setLoading(false);
@@ -212,15 +71,6 @@ export function ReportsLivePage({ api, data, user, refresh }: PageProps) {
   useEffect(() => {
     void loadReports();
   }, [loadReports]);
-
-  function saveFallback(next: QualityReportItem[]) {
-    setReports(next);
-    try {
-      localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(next));
-    } catch {
-      // 容错
-    }
-  }
 
   // 综合本地筛选过滤
   const filtered = useMemo(() => {
@@ -258,56 +108,7 @@ export function ReportsLivePage({ api, data, user, refresh }: PageProps) {
       }
     }
 
-    // 单元测试 / 离线模式降级
-    const selectedTask = data.tasks.find(t => t.id === dto.task_ids?.[0]) || data.tasks[0];
-    const reportCode = `RP-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 900 + 100)}`;
-    const newReport: QualityReportItem = {
-      id: reportCode,
-      factory_id: 'factory-local',
-      report_code: reportCode,
-      revision: 1,
-      report_kind: dto.report_kind || 'TASK_FINAL',
-      data_environment: (selectedTask?.data_environment as 'SIMULATED' | 'REAL') || 'REAL',
-      spool_id: dto.spool_id || selectedTask?.spool_id || 'spool-01',
-      work_order_id: dto.work_order_id || selectedTask?.work_order_id || 'wo-01',
-      task_ids: dto.task_ids || [selectedTask?.id || 'task-01'],
-      state: 'GENERATED',
-      final_result: selectedTask?.measurements?.failed ? 'FAIL' : 'PASS',
-      snapshot_hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-      coverage_snapshot: {
-        start_position_m: '0.000',
-        end_position_m: selectedTask?.planned_length_m || '1000.000',
-        total_covered_meters: selectedTask?.planned_length_m || '1000.000',
-        total_records: selectedTask?.measurements?.total || 1000,
-        quarantined_records: 0,
-        valid_records: selectedTask?.measurements?.valid || 990,
-        coverage_completeness: 'COMPLETE'
-      },
-      statistics: {
-        [selectedTask?.metric_code || 'SHIELD_OVERLAP_RATE']: {
-          metric_code: selectedTask?.metric_code || 'SHIELD_OVERLAP_RATE',
-          unit: selectedTask?.measurements?.unit || '%',
-          total_samples: selectedTask?.measurements?.total || 1000,
-          valid_samples: selectedTask?.measurements?.valid || 990,
-          passed_samples: selectedTask?.measurements?.passed || 990,
-          failed_samples: selectedTask?.measurements?.failed || 0,
-          min_value: selectedTask?.measurements?.minimum || '16.0',
-          max_value: selectedTask?.measurements?.maximum || '19.5',
-          avg_value: selectedTask?.measurements?.mean || '17.8',
-          compliance_rate: 100,
-          verdict: 'PASS'
-        }
-      },
-      query_cutoff: new Date().toISOString(),
-      generated_by: user.name || user.username || '当前用户',
-      published_by: null,
-      published_at: null,
-      created_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
-    };
-
-    saveFallback([newReport, ...reports]);
-    setCreateModalOpen(false);
-    toast(`报告 ${newReport.report_code} 出具成功，已深度冻结数据与模板快照。`);
+    toast("平台接口未连接，无法出具报告");
   }
 
   // 主管签发发布
@@ -468,7 +269,7 @@ export function ReportsLivePage({ api, data, user, refresh }: PageProps) {
               <option value="">全部质量结论</option>
               <option value="PASS">合格放行 (PASS)</option>
               <option value="FAIL">超限不合格 (FAIL)</option>
-              <option value="CONDITIONAL">条件放行</option>
+              <option value="NOT_EVALUATED">缺少判定依据</option><option value="CONDITIONAL">条件放行</option>
             </select>
           </Field>
         </div>
@@ -676,7 +477,7 @@ function CreateReportModal({ data, currentUser, onClose, onSubmit }: CreateModal
         <Note>
           {hasRunning ? (
             <span style={{ color: '#d97706' }}>
-              当前关联任务处于<strong>「检测中 (RUNNING)」</strong>状态，系统将按规程出具<strong>「阶段过程报告 (STAGE)」</strong>，不形成最终出厂放行结论。
+              当前关联任务处于<strong>「任务运行中 (RUNNING)」</strong>状态，系统将按规程出具<strong>「阶段过程报告 (STAGE)」</strong>，不形成最终出厂放行结论。
             </span>
           ) : (
             <span style={{ color: '#0d824d' }}>
@@ -779,38 +580,20 @@ export function ReportLiveView({ api, data, params }: PageProps) {
   const reportId = params.get('id');
   const [report, setReport] = useState<QualityReportItem | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isLocalPreview, setIsLocalPreview] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
+    setReport(null); setError('');
     if (api && reportId) {
       setLoading(true);
-      setIsLocalPreview(false);
       api.request<QualityReportItem>(`/reports/${encodeURIComponent(reportId)}`)
-        .then(res => {
-          if (active && res) {
-            setReport(res);
-            setIsLocalPreview(false);
-          }
-        })
-        .catch(() => {
-          // 本地预览种子不是服务端报告；页面和PDF都必须明确标识。
-          if (active) {
-            const fallback = loadFallbackSeeds(data).find(r => r.id === reportId) || null;
-            setReport(fallback);
-            setIsLocalPreview(Boolean(fallback));
-          }
-        })
-        .finally(() => {
-          if (active) setLoading(false);
-        });
-    } else {
-      const fallback = reportId ? loadFallbackSeeds(data).find(r => r.id === reportId) || null : null;
-      setReport(fallback);
-      setIsLocalPreview(Boolean(fallback));
-    }
+        .then(res => { if (active) setReport(res); })
+        .catch(e => { if (active) setError(e instanceof Error ? e.message : '报告读取失败'); })
+        .finally(() => { if (active) setLoading(false); });
+    } else { setLoading(false); setError(reportId ? '平台接口未连接' : '缺少报告编号'); }
     return () => { active = false; };
-  }, [api, reportId, data]);
+  }, [api, reportId]);
 
   if (loading) {
     return (
@@ -824,8 +607,8 @@ export function ReportLiveView({ api, data, params }: PageProps) {
   if (!report) {
     return (
       <div className="reports-page">
-        <PageTitle title="报告详情" subtitle="未找到指定报告" actions={<HashLink route="reports">返回报告列表</HashLink>} />
-        <Note>报告不存在或已归档移除。</Note>
+        <PageTitle title="报告详情" subtitle={error ? "报告读取失败" : "未找到指定报告"} actions={<HashLink route="reports">返回报告列表</HashLink>} />
+        <Note>{error || "报告不存在或已归档移除。"}</Note>
       </div>
     );
   }
@@ -838,7 +621,7 @@ export function ReportLiveView({ api, data, params }: PageProps) {
   const orderCode = order?.external_code || report.work_order_id || '—';
 
   async function handlePublish() {
-    if (!api || !report || isLocalPreview) return;
+    if (!api || !report) return;
     try {
       await api.request(`/reports/${encodeURIComponent(report.id)}:publish`, {});
       toast('主管签发成功，报告已发布！');
@@ -850,7 +633,7 @@ export function ReportLiveView({ api, data, params }: PageProps) {
   }
 
   async function handleExportJson() {
-    if (!api || !report || isLocalPreview) return;
+    if (!api || !report) return;
     try {
       const cert = await api.request<QualityCertificateExport>(`/reports/${encodeURIComponent(report.id)}/export`);
       const blob = new Blob([JSON.stringify(cert, null, 2)], { type: 'application/json' });
@@ -874,14 +657,14 @@ export function ReportLiveView({ api, data, params }: PageProps) {
         actions={
           <>
             <HashLink route="reports">返回报告管理</HashLink>
-            {!isLocalPreview && report.state === 'GENERATED' && (
+            {report.state === 'GENERATED' && (
               <Button primary onClick={() => void handlePublish()}>主管签发发布</Button>
             )}
-            {api && !isLocalPreview && (
+            {api && (
               <Button onClick={() => void handleExportJson()}>导出防伪证书</Button>
             )}
             <Button primary icon="printer" onClick={() => window.print()}>
-              {isLocalPreview ? '打印样张 / 保存 PDF' : '打印 / 保存 PDF'}
+              打印 / 保存 PDF
             </Button>
           </>
         }
@@ -889,12 +672,7 @@ export function ReportLiveView({ api, data, params }: PageProps) {
 
       {/* 高保真 A4 报告纸质排版 */}
       <article className="report-paper report-print-target">
-        {isLocalPreview && (
-          <div className="report-sample-banner" role="note">
-            <strong>本地预览样张 · 非服务端归档报告</strong>
-            <span>此内容用于界面演示，不能作为正式质量结论；发布与防伪证书导出已禁用。</span>
-          </div>
-        )}
+
         {/* 防伪验真印章印条 */}
         <div className="tamper-proof-seal">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -924,7 +702,7 @@ export function ReportLiveView({ api, data, params }: PageProps) {
         {/* 标题 */}
         <div className="report-title-section">
           <h2 className="report-main-title">{tpl.title || '高压电缆出厂质量检测报告'}</h2>
-          <p className="report-subtitle">{tpl.subtitle || '全工序金属屏蔽联锁铠装质量检测与几何轮廓核验'}</p>
+          <p className="report-subtitle">{tpl.subtitle || statsList.map(s=>names[s.metric_code]||s.metric_code).join('、')+'检测结果与采样追溯'}</p>
         </div>
 
         {/* 事实元数据表格 */}
@@ -938,9 +716,9 @@ export function ReportLiveView({ api, data, params }: PageProps) {
             </tr>
             <tr>
               <th>检测工序</th>
-              <td>金属屏蔽联锁铠装</td>
+              <td>{statsList.map(s=>names[s.metric_code]||s.metric_code).join('、')}</td>
               <th>数据环境</th>
-              <td>{report.data_environment === 'REAL' ? '生产现场采集 (REAL)' : '仿真模拟数据 (SIMULATED)'}</td>
+              <td>{report.data_environment === 'REAL' ? '设备采集' : '外部输入'}</td>
             </tr>
             <tr>
               <th>覆盖全长</th>
@@ -1004,10 +782,10 @@ export function ReportLiveView({ api, data, params }: PageProps) {
                     </td>
                     <td>{s.avg_value ?? '—'} {s.avg_value !== null ? s.unit : ''}</td>
                     <td>{s.min_value ?? '—'} ～ {s.max_value ?? '—'} {s.min_value !== null || s.max_value !== null ? s.unit : ''}</td>
-                    <td>{typeof s.compliance_rate === 'number' ? `${s.compliance_rate}%` : s.compliance_rate}</td>
+                    <td>{s.compliance_rate===null?'—':typeof s.compliance_rate === 'number' ? `${s.compliance_rate}%` : s.compliance_rate}</td>
                     <td>
-                      <Badge tone={s.verdict === 'PASS' ? 'green' : 'red'}>
-                        {s.verdict === 'PASS' ? '符合' : '超限'}
+                      <Badge tone={s.verdict==='NOT_EVALUATED'?'amber':s.verdict === 'PASS' ? 'green' : 'red'}>
+                        {s.verdict==='NOT_EVALUATED'?'缺少判定依据':s.verdict === 'PASS' ? '符合' : '超限'}
                       </Badge>
                     </td>
                   </tr>

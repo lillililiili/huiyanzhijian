@@ -4,9 +4,10 @@ export const analyticsMetrics = [
   { code:'SHIELD_OVERLAP_RATE', name:'金属屏蔽搭盖率', short:'搭盖率', unit:'%', color:'#2468cc' },
   { code:'WIRE_GAP', name:'铜丝屏蔽间隙', short:'铜丝间隙', unit:'mm', color:'#149b94' },
   { code:'OVALITY', name:'电缆不圆度', short:'不圆度', unit:'%', color:'#8270d8' },
+  { code:'SHEATH_THICKNESS', name:'护套厚度', short:'护套厚度', unit:'mm', color:'#d29438' },
 ];
 export const resultColors=['#25a18c','#ed6974','#aab7cc'];
-export const resultNames=['符合规则','超限','未判定'];
+export const resultNames=['符合规则','超限'];
 export const numberText=(n:number)=>n.toLocaleString('zh-CN');
 export const valueText=(n:number|null)=>n===null?'—':n.toLocaleString('zh-CN',{maximumFractionDigits:4});
 
@@ -28,7 +29,7 @@ export async function loadAnalyticsTasks(api:ApiClient,signal:AbortSignal){
 export function summarizeTasks(tasks:Task[]){
   const sum=(key:'total'|'valid'|'invalid'|'passed'|'failed'|'unevaluated'|'quarantined')=>tasks.reduce((n,t)=>n+(t.measurements?.[key]??0),0);
   const passed=sum('passed'),failed=sum('failed'),pending=sum('unevaluated');
-  const unitSet=new Set(tasks.filter(t=>t.measurements?.total).map(t=>t.measurements?.unit||(t.metric_code==='WIRE_GAP'?'mm':'%')));
+  const unitSet=new Set(tasks.filter(t=>t.measurements?.total).map(t=>t.measurements?.unit||(['WIRE_GAP','SHEATH_THICKNESS'].includes(t.metric_code)?'mm':'%')));
   const unitsMixed=unitSet.size>1;
   const minimums=tasks.flatMap(t=>t.measurements?.minimum!=null?[Number(t.measurements.minimum)]:[]).filter(Number.isFinite);
   const maximums=tasks.flatMap(t=>t.measurements?.maximum!=null?[Number(t.measurements.maximum)]:[]).filter(Number.isFinite);

@@ -11,6 +11,8 @@ services:
       SIM_PLATFORM_URL: ${SIM_PLATFORM_URL:-}
       API_URL: ${SIM_API_URL:-http://host.docker.internal:4192}
       DEVICE_TOKEN: ${SIM_DEVICE_TOKEN:?Configure simulator device credential}
+      OVALITY_EDGE_URL: ${OVALITY_EDGE_URL:-http://huiyan-edge-ubuntu-desktop-1:4198}
+      OVALITY_EDGE_INBOUND_TOKEN: ${OVALITY_EDGE_INBOUND_TOKEN:-}
       SIM_WEB_PASSWORD: ${SIM_WEB_PASSWORD:?Configure independent web password}
       SIM_LOCAL_SIMPLE_PASSWORD: ${SIM_LOCAL_SIMPLE_PASSWORD:-false}
       SIM_WEB_PORT: "4196"
@@ -20,6 +22,7 @@ services:
       SIM_DB: /data/simulator.sqlite
     extra_hosts:
       - host.docker.internal:host-gateway
+    networks: [default, edge]
     ports:
       - "${SIM_BIND_ADDRESS:-127.0.0.1}:${SIM_WEB_PORT:-4196}:4196"
     volumes:
@@ -38,3 +41,7 @@ services:
       options: {max-size: "10m", max-file: "5"}
 volumes:
   simulator-data:
+networks:
+  edge:
+    external: true
+    name: huiyan-edge_default

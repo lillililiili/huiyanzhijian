@@ -3,7 +3,7 @@ export const metrics=['SHIELD_OVERLAP_RATE','WIRE_GAP','OVALITY'] as const;
 export type Metric=typeof metrics[number];
 export type Geometry={tape_width_mm:string;overlap_width_mm:string;wire_gap_mm:string;diameter_x_mm:string;diameter_y_mm:string};
 export type Defect={name:string;metric:Metric;start_m:string;length_m:string;value_mm:string;profile?:{kind:"SMOOTH";seed:string;ripple_pct:string}};
-export type Cable={name:string;material_ref:string;length_m:string;baseline:Geometry;defects:Defect[]};
+export type Cable={name:string;material_ref:string;length_m:string;baseline:Geometry;defects:Defect[];simulation_specs?:Partial<Record<Metric,{id:string;version:number}>>};
 export class ModelError extends Error{constructor(public status:number,public code:string,message:string){super(message);}}
 export function insist(ok:unknown,message:string,status=400,code='MODEL_INVALID'):asserts ok{if(!ok)throw new ModelError(status,code,message);}
 export function fixed(v:unknown,max=1000000):bigint{insist(typeof v==='string'&&/^\d{1,7}(\.\d{1,6})?$/.test(v),'请输入非负十进制字符串，最多6位小数');const [a,b='']=v.split('.');const n=BigInt(a)*1000000n+BigInt(b.padEnd(6,'0'));insist(n<=BigInt(max)*1000000n,'数值超出测试范围');return n;}
@@ -11,7 +11,7 @@ export function decimal(v:bigint){return (v/1000000n)+'.'+String(v%1000000n).pad
 export function keys(v:any,allowed:string[]){insist(v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===allowed.length&&Object.keys(v).every(k=>allowed.includes(k)),'字段缺失或存在未知字段');}
 export function named(v:unknown,max=128){insist(typeof v==='string'&&v.trim().length>0&&v.length<=max,'名称/原因必填且不能超长');}
 export function validateCable(c:Cable){
- keys(c,['name','material_ref','length_m','baseline','defects']);named(c.name);named(c.material_ref);const length=fixed(c.length_m);insist(length>0n,'线缆长度必须大于0');
+ keys(c,['name','material_ref','length_m','baseline','defects',...('simulation_specs' in c?['simulation_specs']:[])]);if(c.simulation_specs){insist(typeof c.simulation_specs==='object'&&!Array.isArray(c.simulation_specs),'规格引用无效');for(const [k,v] of Object.entries(c.simulation_specs)){insist(metrics.includes(k as Metric)&&v&&/^[a-f0-9-]{36}$/.test(v.id)&&Number.isInteger(v.version)&&v.version>0,'规格引用无效');}}named(c.name);named(c.material_ref);const length=fixed(c.length_m);insist(length>0n,'线缆长度必须大于0');
  const baseKeys=['tape_width_mm','overlap_width_mm','wire_gap_mm','diameter_x_mm','diameter_y_mm'];
  insist(c.baseline&&typeof c.baseline==='object'&&!Array.isArray(c.baseline)&&baseKeys.every(k=>k in c.baseline)&&Object.keys(c.baseline).length===baseKeys.length,'线缆基准量字段缺失或存在未知字段');
  for(const [k,v] of Object.entries(c.baseline)){const n=fixed(v,1000);insist(n>0n||k==='wire_gap_mm'||k==='overlap_width_mm','宽度和直径必须大于0');}

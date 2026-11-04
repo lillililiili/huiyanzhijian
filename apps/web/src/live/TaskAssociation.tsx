@@ -16,14 +16,14 @@ export function TaskAssociation({api,commands,task,data,user,refresh}:{api:ApiCl
  const [editing,setEditing]=useState<{task:Task;targets:Spool[]}|null>(null),[target,setTarget]=useState('');
  useEffect(()=>{let active=true;setHistory(null);setError('');api.request<History>(`/task-associations/${task.id}`).then(r=>{if(active)setHistory(r);}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[api,task.id,task.version,reload]);
  const current=history?.task||task;
- const eligible=data.spools.filter(s=>s.id!==current.spool_id&&!s.canonical_spool_id&&data.orders.find(o=>o.id===s.work_order_id)?.specification_id===current.specification_id);
+ const eligible=data.spools.filter(s=>s.id!==current.spool_id&&!s.canonical_spool_id&&s.specification_id===current.specification_id);
  const selected=editing?.targets.find(s=>s.id===target);
  const display=(c:ChangeContext)=><><HashLink route={`trace?spool=${c.spool_id}`}>{c.spool_code}</HashLink><div>{c.external_code}</div><small>{c.spool_id}</small></>;
  return <Panel core title="盘号关联更正" tools={<>{user.permissions.includes('task:write')&&['CREATED','ENDED'].includes(current.state)&&<Button disabled={!history||!eligible.length} onClick={()=>{setEditing({task:current,targets:eligible.map(s=>({...s}))});setTarget('');}}>更正关联盘号</Button>}<Button onClick={()=>setReload(n=>n+1)}>刷新更正履历</Button></>}>
-  <Note>仅更正本任务的当前归属；其他任务、创建快照、采样原文和设备绑定保留。检测中、已取消或尚未完成出料的任务不能更正。</Note>
+  <Note>更正本任务的当前归属；不圆度与护套厚度同次采集的两个任务会同步更正并分别留痕。其他采集任务、创建快照、采样原文和设备绑定保留。检测中、已取消或尚未完成出料的任务不能更正。</Note>
   {error?<Note><span role="alert">{error}</span></Note>:!history?<p>正在读取更正履历…</p>:<><p>关联版本：{current.association_version||'1'} · 创建时盘号：{current.context_snapshot.spool_code} · 创建时工单：{current.context_snapshot.external_code}</p>
    {history.changes.length?<DataTable headers={['关联 / 任务版本','更正前盘号 / 工单','更正后盘号 / 工单','原因','操作人 / 时间（北京时间）','请求ID']} rows={history.changes.map(c=>[`${c.association_version} / ${c.task_version}`,display(c.before_context),display(c.after_context),c.reason,<>{c.actor_id}<div>{labelTime(c.occurred_at)}</div></>,c.request_id])}/>:<p className="muted">尚无关联更正记录。</p>}</>}
-  {editing&&<Modal title="更正单个任务关联盘号" open onClose={()=>setEditing(null)} submitLabel="确认更正" onSubmit={async values=>{
+  {editing&&<Modal title="更正任务关联盘号" open onClose={()=>setEditing(null)} submitLabel="确认更正" onSubmit={async values=>{
    const to=editing.targets.find(s=>s.id===String(values.get('target_spool_id')));if(!to)throw Error('请选择目标盘');
    const reason=String(values.get('reason')||'').trim();if(!reason)throw Error('请填写更正原因');
    await commands.run(`/tasks/${editing.task.id}:reassociate`,{target_spool_id:to.id,target_spool_version:String(to.version),reason},String(editing.task.version));

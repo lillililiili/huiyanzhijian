@@ -1,3 +1,4 @@
+import {hydrateMeasurementRows} from '../m04-measurements/storage-api';
 import type { PoolClient } from 'pg';
 import { randomUUID, createHash } from 'node:crypto';
 import { pool, transaction } from '../../infrastructure/db';
@@ -496,7 +497,7 @@ export class AlarmService {
 
     return transaction(async (tx) => {
       const sql = `
-        SELECT r.id, r.factory_id, r.device_id, r.task_id, r.position_m, r.sample_time,
+        SELECT r.id, r.factory_id, r.device_id, r.task_id, r.position_m, r.sample_time, r.raw_payload,
                v.metric_code, v.value, v.unit, t.spool_id, t.work_order_id
         FROM m04.measurement_record r
         JOIN m04.measurement_value v ON v.record_id = r.id
@@ -510,6 +511,7 @@ export class AlarmService {
 
       const values = taskId ? [actor.factory, taskId] : [actor.factory];
       const failPoints = (await tx.query(sql, values)).rows;
+      await hydrateMeasurementRows(actor.factory,failPoints);
 
       let createdCount = 0;
       let updatedCount = 0;

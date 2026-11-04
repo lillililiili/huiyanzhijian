@@ -56,7 +56,3 @@ VALUES(
   'TOKEN-MES-20261028',
   'SECRET-MES-KEY-001'
 ) ON CONFLICT DO NOTHING;
-
--- 兼容 measurement_outbox 出站表视图
-CREATE OR REPLACE VIEW m07.measurement_outbox AS SELECT * FROM m07.mes_delivery;
-GRANT SELECT, INSERT, UPDATE, DELETE ON m07.measurement_outbox TO hy_runtime;

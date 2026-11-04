@@ -1,3 +1,5 @@
+import {assertDatabaseViews} from '../../infrastructure/database-readiness';
+import {hydrateMeasurementRows} from '../m04-measurements/storage-api';
 import type { PoolClient } from 'pg';
 import { randomUUID } from 'node:crypto';
 import { pool, transaction } from '../../infrastructure/db';
@@ -7,7 +9,7 @@ import { allow } from '../m00-identity/api';
 import { canonical, sha } from '../../infrastructure/canonical';
 
 export type ReportState = 'DRAFT' | 'GENERATED' | 'PUBLISHED' | 'FAILED';
-export type QualityVerdict = 'PASS' | 'FAIL' | 'CONDITIONAL';
+export type QualityVerdict = 'PASS' | 'FAIL' | 'CONDITIONAL' | 'NOT_EVALUATED';
 
 export interface GenerateReportDto {
   spool_id?: string;
@@ -44,8 +46,8 @@ export interface MetricSummaryItem {
   avg_value: string | null;
   std_dev: string | null;
   defective_meters: number;
-  compliance_rate: number;
-  verdict: 'PASS' | 'FAIL';
+  compliance_rate: number | null;
+  verdict: 'PASS' | 'FAIL' | 'NOT_EVALUATED';
 }
 
 export class QualityReportService {
@@ -53,20 +55,8 @@ export class QualityReportService {
    * 确保兼容视图 m06.quality_report_snapshot 与 m06.report_approval 存在
    */
   async ensureViews(db: Pick<PoolClient, 'query'> = pool) {
-    try {
-      await db.query(`
-        CREATE OR REPLACE VIEW m06.quality_report_snapshot AS
-        SELECT * FROM m06.quality_report;
-
-        CREATE OR REPLACE VIEW m06.report_approval AS
-        SELECT id, id AS report_id, factory_id, state AS approval_state,
-               generated_by, published_by AS approved_by, published_at AS approved_at,
-               created_at, updated_at
-        FROM m06.quality_report;
-      `);
-    } catch {
-      // 容错已存在的只读或隔离连接
-    }
+    // Compatibility method: check only; DDL belongs to the migration role.
+    await assertDatabaseViews(db,['m06.quality_report_snapshot','m06.report_approval']);
   }
 
   /**
@@ -150,7 +140,7 @@ export class QualityReportService {
       // 4. 读取该批任务的所有测点数据与判定结果
       const queryCutoff = new Date();
       const recordsRes = await tx.query(
-        `SELECT r.id AS record_id, r.task_id, r.device_id, r.position_m, r.receipt_status, r.sample_time,
+        `SELECT r.id AS record_id, r.task_id, r.device_id, r.position_m, r.receipt_status, r.sample_time, r.raw_payload,
                 v.metric_code, v.value, v.unit, v.data_status, e.quality_result
          FROM m04.measurement_record r
          JOIN m04.measurement_value v ON v.record_id = r.id
@@ -161,6 +151,7 @@ export class QualityReportService {
       );
 
       const rows = recordsRes.rows;
+      await hydrateMeasurementRows(actor.factory,rows,tx);
       requireValue(rows.length > 0, 'RESOURCE_NOT_FOUND', `指定的任务范围内暂无有效测量数据`);
 
       // 5. 统计与整盘判定计算（最大值、最小值、均值、标准差、不合格区段总长）
@@ -205,14 +196,14 @@ export class QualityReportService {
             ? '铜丝屏蔽相邻间隙'
             : mCode === 'OVALITY'
             ? '电缆不圆度'
-            : mCode;
+            : mCode === 'SHEATH_THICKNESS' ? '护套厚度' : mCode;
 
           const ruleExpr = '各任务冻结规则（不同任务阈值可能不同）';
 
           metricMap[metricKey] = {
             metric_code: mCode,
             metric_name: mName,
-            unit: row.unit || (mCode === 'WIRE_GAP' ? 'mm' : '%'),
+            unit: row.unit || (['WIRE_GAP','SHEATH_THICKNESS'].includes(mCode) ? 'mm' : '%'),
             rule_expression: ruleExpr,
             total: 0,
             valid: 0,
@@ -228,7 +219,7 @@ export class QualityReportService {
         if (row.data_status === 'VALID') {
           mStat.valid++;
           const val = Number(row.value);
-          if (!isNaN(val)) {
+          if (row.value!==null && !isNaN(val)) {
             mStat.values.push(val);
           }
           if (row.quality_result === 'PASS') {
@@ -300,7 +291,7 @@ export class QualityReportService {
         defectiveMeters = Number(defectiveMeters.toFixed(3));
         totalDefectiveMetersAcrossMetrics += defectiveMeters;
 
-        const complianceRate = stat.valid > 0 ? Number(((stat.passed / stat.valid) * 100).toFixed(2)) : 0;
+        const complianceRate = stat.passed+stat.failed > 0 ? Number(((stat.passed / (stat.passed+stat.failed)) * 100).toFixed(2)) : null;
         totalFailedAcrossMetrics += stat.failed;
         totalPassedAcrossMetrics += stat.passed;
 
@@ -319,7 +310,7 @@ export class QualityReportService {
           std_dev: stdDevVal !== null ? stdDevVal.toFixed(3) : '0.000',
           defective_meters: defectiveMeters,
           compliance_rate: complianceRate,
-          verdict: stat.failed === 0 ? 'PASS' : 'FAIL',
+          verdict: stat.failed>0?'FAIL':stat.total>0&&stat.passed===stat.total?'PASS':'NOT_EVALUATED',
         };
       }
 
@@ -334,15 +325,16 @@ export class QualityReportService {
         total_covered_meters: totalCoveredMeters.toFixed(3),
         total_records: distinctRecords.size,
         quarantined_records: quarantinedCount,
-        valid_records: distinctRecords.size - quarantinedCount,
+        valid_records: new Set(rows.filter(r=>r.data_status==='VALID'&&r.receipt_status==='STORED').map(r=>r.record_id)).size,
         defective_meters_total: Number(totalDefectiveMetersAcrossMetrics.toFixed(3)),
         coverage_completeness: totalCoveredMeters > 0 ? 'COMPLETE' : 'PARTIAL',
       };
 
       // 最终判定结论：整盘判定（PASSED / FAILED）
       const isPassed = totalFailedAcrossMetrics === 0 && totalPassedAcrossMetrics > 0;
-      const finalResult: QualityVerdict = isPassed ? 'PASS' : 'FAIL';
-      const overallVerdict: 'PASSED' | 'FAILED' = isPassed ? 'PASSED' : 'FAILED';
+      const pendingSheath=Object.values(metricsSummary).some(s=>s.verdict==='NOT_EVALUATED');
+      const finalResult: QualityVerdict = pendingSheath&&totalFailedAcrossMetrics===0?'NOT_EVALUATED':isPassed?'PASS':'FAIL';
+      const overallVerdict = finalResult==='NOT_EVALUATED'?'NOT_EVALUATED':isPassed?'PASSED':'FAILED';
 
       // 编号与防伪快照哈希
       const reportId = randomUUID();
@@ -492,7 +484,7 @@ export class QualityReportService {
     const more = rows.length > limit;
     const items = rows.slice(0, limit).map((r) => ({
       ...r,
-      overall_verdict: r.final_result === 'PASS' ? 'PASSED' : 'FAILED',
+      overall_verdict: r.final_result==='NOT_EVALUATED'?'NOT_EVALUATED':r.final_result === 'PASS' ? 'PASSED' : 'FAILED',
     }));
 
     return {
@@ -527,7 +519,7 @@ export class QualityReportService {
     }
 
     const row = res.rows[0];
-    const overallVerdict = row.final_result === 'PASS' ? 'PASSED' : 'FAILED';
+    const overallVerdict = row.final_result==='NOT_EVALUATED'?'NOT_EVALUATED':row.final_result === 'PASS' ? 'PASSED' : 'FAILED';
 
     return {
       ...row,
@@ -632,7 +624,7 @@ export class QualityReportService {
         avg: m.avg_value,
         std_dev: m.std_dev,
         defective_meters: m.defective_meters,
-        compliance_rate: `${m.compliance_rate}%`,
+        compliance_rate: m.compliance_rate===null?'缺少判定依据':`${m.compliance_rate}%`,
         status: m.verdict,
       })),
       signatories: {

@@ -130,8 +130,8 @@ const ESSENTIAL_ITEMS = [
   { label: '报告编号与生成时间', note: '系统唯一单据号，生成时冻结时间戳，不可缺省' },
   { label: '任务、盘号与设备标识', note: '生产实体追溯事实，严禁隐藏或假定' },
   { label: '冻结判定规则与标准快照', note: '包含执行标准、阈值及比较方向，不可被后续修改改变' },
-  { label: '阶段 / 最终报告标记与判定', note: '未判定或缺测明确标出，禁止将未测视作合格' },
-  { label: '数据来源真实性声明', note: '明确标注 REAL 或 SIMULATED 来源环境，严守合规红线' }
+  { label: '阶段 / 最终报告标记与判定', note: '缺少判定依据或缺测明确标出，禁止将未测视作合格' },
+  { label: '数据来源真实性声明', note: '保留数据来源和采集身份，支持原始记录追溯' }
 ];
 
 const SAMPLE_REPORT_METRICS: MetricSummaryItem[] = [
@@ -370,7 +370,7 @@ export function TemplatesConfigPage({ user }: Props) {
           <article className="report-paper report-print-target tpl-print-sample">
             <div className="report-sample-banner" role="note">
               <strong>模板样张 · 示例内容</strong>
-              <span>图表数值均为模拟示例，不对应真实任务、线缆、设备或质量结论。</span>
+              <span>图表为样张，不对应实际任务或质量结论。</span>
             </div>
 
             <div className="report-header-row">
@@ -409,7 +409,7 @@ export function TemplatesConfigPage({ user }: Props) {
                 </tr>
                 <tr>
                   <th>规则依据</th><td>按生成时冻结的规则快照展示</td>
-                  <th>数据来源</th><td>明确标注 REAL 或 SIMULATED</td>
+                  <th>数据来源</th><td>保留来源标识与采集身份</td>
                 </tr>
               </tbody>
             </table>
@@ -432,7 +432,7 @@ export function TemplatesConfigPage({ user }: Props) {
             {currentTemplate.includeSourceDeclaration && (
               <div className="report-source-callout">
                 <strong>数据来源声明样式</strong>
-                <span>样张示例内容（SIMULATED），正式报告将按冻结报告记录标注来源。</span>
+                <span>样张内容；报告按冻结记录标注来源。</span>
               </div>
             )}
 

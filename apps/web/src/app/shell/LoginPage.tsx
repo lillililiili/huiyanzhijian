@@ -51,7 +51,7 @@ export function LoginPage({ store, users = [], authenticate, applicationName = "
     if (!store) return;
     const user = users.find(item => item.username === username);
     if (!user || user.enabled === false) {
-      setError("账号不存在或已停用，请选择演示身份。");
+      setError("账号不存在或已停用，请选择登录身份。");
       return;
     }
     const next = { id: user.id, name: user.name, username: user.username, role: user.role };
@@ -66,7 +66,7 @@ export function LoginPage({ store, users = [], authenticate, applicationName = "
     <div className="login-page">
       <header className="login-top">
         <img src="assets/images/logo.png" alt="慧眼智检 AI线缆智能检测装备" />
-        <span>35–220kV 高压电缆　 |　 三项关键指标量测</span>
+        <span>35–220kV 高压电缆　 |　 四项关键指标量测</span>
       </header>
       <div className="login-stage">
         <section className="login-brand">
@@ -102,7 +102,7 @@ export function LoginPage({ store, users = [], authenticate, applicationName = "
           <label className="login-label" htmlFor="login-password">密码</label>
           <div className="login-input">
             <Icon name="lock" size={19} />
-            <input id="login-password" name="password" type="password" autoComplete="current-password" required minLength={4} placeholder={authenticate ? "请输入平台密码" : "请输入密码（演示：任意4位以上）"} value={password} onChange={event => setPassword(event.target.value)} />
+            <input id="login-password" name="password" type="password" autoComplete="current-password" required minLength={4} placeholder={authenticate ? "请输入平台密码" : "请输入密码（至少4位）"} value={password} onChange={event => setPassword(event.target.value)} />
           </div>
           <div className="login-options">
             <label>
@@ -121,7 +121,7 @@ export function LoginPage({ store, users = [], authenticate, applicationName = "
             <span><Icon name="cloud" size={17} />{authenticate ? "数据导出" : "MES推送"}</span>
             <span><Icon name="history" size={17} />数据追溯</span>
           </div>
-          <div className="login-demo">{authenticate ? "请使用平台账号登录；模拟数据单独标识" : "原型演示 · 不连接生产设备或MES · 选择演示身份"}</div>
+          <div className="login-demo">{authenticate ? "请使用平台账号登录" : "离线预览 · 选择身份"}</div>
           {!authenticate && <div className="role-tabs">
             {roleTabs.map(([role, label, username]) => (
               <button key={role} type="button" className={loginRole === role ? "active" : undefined} onClick={() => applyRole(role, username)}>
@@ -138,9 +138,9 @@ export function LoginPage({ store, users = [], authenticate, applicationName = "
         <span>localhost 与 127.0.0.1 是不同的存储来源</span>
       </footer>
       <Modal title="联系管理员" open={contactOpen} submitLabel="知道了" onClose={() => setContactOpen(false)} onSubmit={() => undefined}>
-        <Note>{authenticate ? "请联系平台管理员获取账号或重置密码。" : "本地原型无需开通真实账号。可选择下方演示身份后登录。"}</Note>
+        <Note>{authenticate ? "请联系平台管理员获取账号或重置密码。" : "离线预览可选择下方身份后登录。"}</Note>
         <p>所属机构：山东沉积岩信息科技有限公司</p>
-        {!authenticate && <p className="muted">管理员账号：admin；检测操作员：operator；只读账号：viewer。演示密码填写任意 4 位以上字符。</p>}
+        {!authenticate && <p className="muted">管理员账号：admin；检测操作员：operator；只读账号：viewer。离线预览密码至少4位。</p>}
       </Modal>
     </div>
   );

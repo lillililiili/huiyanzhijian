@@ -1,0 +1,3 @@
+const {deviceRateBucket:b}=require('../../apps/platform/dist/infrastructure/device-rate');const t=require('node:test'),a=require('node:assert/strict');
+t('separate quotas for authorized devices sharing one credential',()=>{a.notEqual(b('c',['A','B'],'/api/v1/measurements:ingest',{records:[{device_id:'A'}]}),b('c',['A','B'],'/api/v1/measurements:ingest',{records:[{device_id:'B'}]}));a.equal(b('c',['A'],'/api/v1/devices/A/assignment',{}),'device:c:A');});
+t('unknown or mixed devices cannot create unlimited quota buckets',()=>{for(const input of [{device_id:'X'},{device_id:'Y'},{records:[{device_id:'A'},{device_id:'B'}]},{}])a.equal(b('c',['A','B'],'/api/v1/measurements:ingest',input),'device:c:control');});

@@ -1,7 +1,7 @@
-import {useEffect,useState} from 'react';
+import {observedActivity,collectionState} from './collectionState';
+import {useActivityRead} from './useActivityRead';
+import {useEffect,useState,useRef} from 'react';
 import {Badge} from '../ui/Badge';
-import {Note} from '../ui/Note';
-import {useRead} from './ServerLists';
 import {labelTime,quality,type ApiClient,type Task,type TaskActivity} from './api';
 
 export const communicationNames:Record<string,string>={ONLINE:'通信在线',OFFLINE:'通信离线',UNKNOWN:'未建立通信'};
@@ -20,18 +20,29 @@ function FormattedReceivedTime({iso}:{iso:string}){
   );
 }
 
-export function ActivityStatus({activity:a}:{activity?:TaskActivity}){
+export function useObservedActivity(activity?:TaskActivity){
+ const seen=useRef({activity,at:Date.now()});const [now,setNow]=useState(Date.now());
+ if(seen.current.activity!==activity)seen.current={activity,at:Date.now()};
+ useEffect(()=>{if(activity?.task_state!=='RUNNING')return;const timer=setInterval(()=>setNow(Date.now()),5000);return()=>clearInterval(timer);},[activity?.task_state]);
+ return observedActivity(activity,Math.max(0,now-seen.current.at)/1000);
+}
+export function TaskExecutionStatus({state,activity,error='',detail=true}:{state:string;activity?:TaskActivity;error?:string;detail?:boolean}){
+ const a=useObservedActivity(activity),status=collectionState(state,a,error);
+ return <div className="collection-status" title={status.detail}><Badge tone={status.tone}>{status.label}</Badge>{detail&&state==='RUNNING'&&(!a?.task_state||a.task_state==='RUNNING')&&<div className="muted small">任务仍在运行</div>}</div>;
+}
+export function ActivityStatus({activity,error=''}:{activity?:TaskActivity;error?:string}){
+ const a=useObservedActivity(activity);
  if(!a)return <span className="muted">采集状态待查询</span>;
  const dataStatus=a.latest?(a.latest.data_status==='VALID'?'有效':a.latest.data_status==='MISSING'?'缺测':'无效'):'';
  const isQuarantined=a.latest?.receipt_status==='QUARANTINED';
- const qualityText=a.latest?(isQuarantined?'隔离':quality[a.latest.quality_result]||'未判定'):'';
+ const qualityText=a.latest?(isQuarantined?'隔离':a.latest.data_status!=='VALID'?'无法用于质量比较':quality[a.latest.quality_result]||'请查看采样详情'):'';
 
  const dataTone=a.latest?(a.latest.data_status==='VALID'?'valid':a.latest.data_status==='MISSING'?'missing':'invalid'):'';
  const qualityTone=a.latest?(isQuarantined?'quarantined':a.latest.quality_result==='PASS'?'pass':a.latest.quality_result==='FAIL'?'fail':'unevaluated'):'';
  const samplingTone=a.sampling==='RECENT_DATA'?'recent':a.sampling==='NO_RECENT_DATA'?'stale':a.sampling==='DELAYED_DATA'?'delayed':a.sampling==='CLOCK_UNVERIFIED'?'clock':'none';
 
  return (
-  <div className="b3r4-activity">
+  <div className="b3r4-activity">{error&&<div className="text-red" role="alert">状态更新失败 · 以下为上次记录</div>}
     <div className="b3r4-status-row">
       <Badge tone={a.communication==='ONLINE'?'blue':'amber'}>
         {communicationNames[a.communication]||'通信未知'}
@@ -41,7 +52,7 @@ export function ActivityStatus({activity:a}:{activity?:TaskActivity}){
       </span>
     </div>
     {a.latest ? (
-      <div className="b3r4-latest-row">
+      <div className="b3r4-latest-row"><span className="muted small">末次记录</span>
         <span className={`b3r4-eval-pill tone-${qualityTone}`} title={`末次判定：${dataStatus} · ${qualityText}`}>
           <span className={`eval-data tone-${dataTone}`}>{dataStatus}</span>
           <span className="eval-dot">·</span>
@@ -57,8 +68,6 @@ export function ActivityStatus({activity:a}:{activity?:TaskActivity}){
 }
 
 export function TaskActivityPanel({api,task,compact=false}:{api:ApiClient;task:Task;compact?:boolean}){
- const [tick,setTick]=useState(0);useEffect(()=>{if(task.state!=='RUNNING')return;const timer=setInterval(()=>setTick(n=>n+1),5000);return()=>clearInterval(timer);},[task.state]);
- const {value,error}=useRead<TaskActivity>(api,'/task-activity/'+task.id,task.version+':'+tick);
- if(compact)return <div>{error?<span role="alert">采集状态读取失败：{error}</span>:<ActivityStatus activity={value||undefined}/>}</div>;
- return <Note>{error?<span role="alert">采集状态读取失败：{error}</span>:<ActivityStatus activity={value||undefined}/>}任务状态、设备通信与采样有效性分别记录；30秒仅为显示观察窗，不是停线或断流报警标准。</Note>;
+ const {value,error}=useActivityRead<TaskActivity>(api,'/task-activity/'+task.id,task.state==='RUNNING'||task.state==='CREATED',task.version);
+ return <div className={compact?'':'note'}><TaskExecutionStatus state={task.state} activity={value||undefined} error={error}/>{error&&<span role="alert">采集状态读取失败：{error}</span>}<ActivityStatus activity={value||undefined} error={error}/>{!compact&&<div className="muted small">任务是否结束与当前采样分开显示；超过30秒未收到更新显示暂无新数据，不能据此推断无料或自动结束任务。</div>}</div>;
 }

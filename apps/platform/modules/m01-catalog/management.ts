@@ -8,7 +8,7 @@ import {object,requireValue,textField,idField} from '../../infrastructure/errors
 import {IdentityApi,allow,type Actor,type Context} from '../m00-identity/api';
 import {CatalogApi} from './api';
 
-const metrics=['SHIELD_OVERLAP_RATE','WIRE_GAP','OVALITY'];
+const metrics=['SHIELD_OVERLAP_RATE','WIRE_GAP','OVALITY','SHEATH_THICKNESS'];
 const structures=['tape','wire','combined','none'];
 const specFields=['code','name','voltage_kv','conductor_area_mm2','core_count','shield_structure','enabled','cable_model','customer_code','product_type','description'];
 const deviceFields=['name','model','manufacturer','serial_number','firmware','notes'];

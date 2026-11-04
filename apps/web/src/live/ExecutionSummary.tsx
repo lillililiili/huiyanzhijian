@@ -1,8 +1,8 @@
 import {Badge} from '../ui/Badge';
 import {HashLink} from '../ui/HashLink';
 import {Icon} from '../ui/Icon';
-import {communicationNames,samplingNames} from './ActivityStatus';
-import {names,shortCode,taskState,labelTime,type Task,type Workspace} from './api';
+import {communicationNames,samplingNames,TaskExecutionStatus} from './ActivityStatus';
+import {names,shortCode,labelTime,type Task,type Workspace} from './api';
 
 // Legacy records may use their UUID as task_code. Keep the original identity accessible.
 export function taskDisplayLabel(task:Task){
@@ -24,7 +24,7 @@ export function ExecutionSummary({tasks,data,asOf}:{tasks:Task[];data:Workspace;
       const order=task.current_order_code||data.orders.find(o=>o.id===task.work_order_id)?.external_code||'工单待确认';
       const activity=task.activity;
       return <li className="execution-item" key={task.id}>
-        <div className="execution-identity"><div className="execution-title"><HashLink title={spool} route={'task?id='+task.id+'&back=dashboard'}>{spool}</HashLink><Badge tone="blue">{taskState[task.state]||task.state}</Badge></div><span className="muted execution-order" title={order}>工单 {order}</span><details className="execution-id"><summary>{taskDisplayLabel(current)}</summary><span>盘号：{spool}</span><span>工单：{order}</span><span>任务编号：{current.task_code||'未分配'}</span><span>内部ID：{task.id}</span></details></div>
+        <div className="execution-identity"><div className="execution-title"><HashLink title={spool} route={'task?id='+task.id+'&back=dashboard'}>{spool}</HashLink><TaskExecutionStatus state={task.state} activity={task.activity} detail={false}/></div><span className="muted execution-order" title={order}>工单 {order}</span><details className="execution-id"><summary>{taskDisplayLabel(current)}</summary><span>盘号：{spool}</span><span>工单：{order}</span><span>任务编号：{current.task_code||'未分配'}</span><span>内部ID：{task.id}</span></details></div>
         <div className="execution-device"><span className="muted small">检测项 / 设备</span><strong>{names[task.metric_code]||task.metric_code}</strong><span>{task.device_id}</span></div>
         <div className="execution-activity"><span className="muted small">通信与采样</span><div><Badge tone={activity?.communication==='ONLINE'?'green':'amber'}>{activity?communicationNames[activity.communication]||'通信未知':'通信待查询'}</Badge></div><span>{activity?samplingNames[activity.sampling]||'采样未知':'采样待查询'}</span></div>
         <div className="execution-actions"><HashLink className="btn primary" route={`detection?metric=${shortCode(task.metric_code)}&task=${task.id}&back=dashboard`}>查看检测<Icon name="chevron-right" size={14}/></HashLink><HashLink route={'task?id='+task.id+'&back=dashboard'}>任务详情</HashLink></div>

@@ -312,10 +312,19 @@ test('ReportLiveView renders high-fidelity A4 paper layout with SHA-256 seal and
 
   expect(container.textContent).toContain('报告预览与导出');
   expect(container.textContent).toContain('QR-TEST-001');
-  expect(container.textContent).toContain('VERIFIED_IMMUTABLE');
+  expect(container.textContent).toContain('已冻结快照');
   expect(container.textContent).toContain('9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b');
   expect(container.textContent).toContain('金属屏蔽搭盖率');
   expect(container.textContent).toContain('铜丝屏蔽间隙');
   expect(container.textContent).toContain('2000.000 m');
   expect(container.textContent).toContain('打印 / 保存 PDF');
+});
+
+
+test('HT03 sheath report displays pending quality, not pass or zero-percent compliance', async()=>{
+ const api=new ApiClient(),report=structuredClone(mockReport);report.final_result='NOT_EVALUATED';
+ report.statistics={SHEATH_THICKNESS:{metric_code:'SHEATH_THICKNESS',unit:'mm',total_samples:4,valid_samples:2,passed_samples:0,failed_samples:0,min_value:'3',max_value:'3',avg_value:'3',compliance_rate:null,verdict:'NOT_EVALUATED'}};
+ vi.spyOn(api,'request').mockResolvedValue(report);
+ await render(<ReportLiveView api={api} data={setupWorkspace()} user={mockUser} params={new URLSearchParams('id=rep-001')} refresh={vi.fn(async()=>{})}/>);
+ expect(container.textContent).toContain('缺少判定依据');expect(container.textContent).toContain('护套厚度');expect(container.textContent).not.toContain('null%');expect(container.textContent).not.toContain('合格放行');
 });

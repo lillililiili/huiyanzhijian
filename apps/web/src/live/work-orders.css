@@ -29,3 +29,35 @@
   box-shadow: 0 4px 12px #18345124;
   pointer-events: none;
 }
+
+/* UI03: one aligned action area; destructive action separated from daily work. */
+.work-order-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line, #dce6f5);
+}
+.work-order-toolbar-main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1 1 460px;
+}
+.work-order-toolbar .btn { min-height: 40px; margin: 0; white-space: nowrap; }
+.work-order-toolbar-danger {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  padding-left: 20px;
+  border-left: 1px solid var(--line, #dce6f5);
+}
+@media (max-width: 700px) {
+  .work-order-toolbar { gap: 12px; }
+  .work-order-toolbar-main { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); flex-basis: 100%; }
+  .work-order-toolbar-main .btn { width: 100%; justify-content: center; padding-inline: 8px; }
+  .work-order-toolbar-danger { border-left: 0; padding-left: 0; }
+}

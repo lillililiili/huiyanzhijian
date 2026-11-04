@@ -1,6 +1,7 @@
+import {logEvent} from './structured-log';
 import { Pool, type PoolClient } from 'pg';
 export const pool = new Pool({connectionString:process.env.DATABASE_URL,max:10,connectionTimeoutMillis:5000,idleTimeoutMillis:30000,statement_timeout:10000,application_name:'huiyan-api-b1'});
-pool.on('error',()=>console.error(JSON.stringify({event:'DATABASE_IDLE_CONNECTION_ERROR',time:new Date().toISOString()})));
+pool.on('error',error=>{void logEvent('DATABASE_IDLE_CONNECTION_ERROR','ERROR',{error});});
 export async function transaction<T>(fn:(db:PoolClient)=>Promise<T>):Promise<T>{
  const db=await pool.connect();
  try{await db.query('BEGIN');const result=await fn(db);await db.query('COMMIT');return result;}

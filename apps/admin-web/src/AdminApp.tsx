@@ -8,6 +8,8 @@ import {AdminPreferences} from '../../web/src/shared/preferences';
 import {useSessionWatch} from '../../web/src/shared/useSessionWatch';
 import {Note} from '../../web/src/ui/Note';
 import {ToastViewport} from '../../web/src/ui/Toast';
+import {EdgeSyncSettings} from './EdgeSyncSettings';
+import {PageTitle} from '../../web/src/ui/PageTitle';
 import {AdminUsers,AdminSettings,AdminEvents} from './AdminPages';
 
 export function AdminApp(){
@@ -24,11 +26,11 @@ export function AdminApp(){
   useEffect(()=>{document.title='慧眼智检 · 管理后台';},[]);
   if(checking)return <div className="shell-proof">正在验证管理后台会话…</div>;
   if(!user)return <><LoginPage applicationName="管理后台" authenticate={async(username,password)=>{const r=await api.request<{user:Person;csrf_token:string}>('/auth/login',{username,password});setUser(r.user);setError('');if(parsed.route==='login')navigate('settings');}}/>{error&&<Note>{error}</Note>}<ToastViewport/></>;
-  const route=['users','audit','settings'].includes(parsed.route)?parsed.route:'settings';
+  const route=['users','audit','settings','initialization'].includes(parsed.route)?parsed.route:'settings';
   const session={...user,role:user.permissions.includes('users:manage')?'admin' as const:user.permissions.includes('task:write')?'quality' as const:'viewer' as const};
   const props={api,commands,user,params:parsed.params};
   return <><AppShell application="admin" session={session} parsed={{...parsed,route}} state={{alarms:[],settings:{platformName:'管理后台',demoTime:new Date().toLocaleString('zh-CN',{hour12:false}),organization:settings.value?.platform?.organization_name}}} connectionLabel="独立管理后台 · 共用平台API" alarmsAvailable={false} onLogout={async()=>{try{await api.request('/auth/logout',{});api.onExpired();navigate('login');}catch(e){setError((e as Error).message);}}}>
     {error&&<Note><span role="alert">{error}</span></Note>}
-    <AdminPreferences.Provider value={{pageSize:settings.value?.personal?.page_size||settings.value?.platform?.default_page_size||20,density:settings.value?.personal?.density||'comfortable'}}><div className={settings.value?.personal?.density==='compact'?'live-page-content admin-compact':'live-page-content'} key={parsed.raw}>{route==='users'?<AdminUsers {...props}/>:route==='audit'?<AdminEvents {...props}/>:<AdminSettings {...props}/>}</div></AdminPreferences.Provider>
+    <AdminPreferences.Provider value={{pageSize:settings.value?.personal?.page_size||settings.value?.platform?.default_page_size||20,density:settings.value?.personal?.density||'comfortable'}}><div className={settings.value?.personal?.density==='compact'?'live-page-content admin-compact':'live-page-content'} key={parsed.raw}>{route==='users'?<AdminUsers {...props}/>:route==='audit'?<AdminEvents {...props}/>:route==='initialization'?<><PageTitle title="初始化配置" subtitle="设置现场安装参数，保存后自动推送至对应边缘设备"/><EdgeSyncSettings {...props}/></>:<AdminSettings {...props}/>}</div></AdminPreferences.Provider>
   </AppShell><ToastViewport/></>;
 }

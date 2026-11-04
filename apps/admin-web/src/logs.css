@@ -1,0 +1,10 @@
+.log-modal{width:min(960px,calc(100vw - 32px));max-width:960px}
+.log-modal .detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 28px}
+.log-modal .row{flex-wrap:wrap;margin:20px 0;gap:12px 22px}
+.log-modal .admin-json{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:320px;overflow:auto}
+.log-modal h3{margin:20px 0 12px}
+.log-advanced[open]{flex-basis:100%;order:2}
+.log-advanced summary{cursor:pointer;color:#185db6}
+.log-advanced .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:16px}
+.log-advanced .field{min-width:0}
+@media(max-width:600px){.log-modal .detail-grid{grid-template-columns:1fr}.log-advanced .row{grid-template-columns:1fr 1fr}}

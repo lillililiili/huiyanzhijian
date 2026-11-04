@@ -2,8 +2,10 @@ import { createRoot, type Root } from 'react-dom/client';
 import { act, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { AnalyticsLivePage } from '../live/AnalyticsLivePage';
-import { emptyWorkspace, type Person, type Task } from '../live/api';
+import { ApiClient, emptyWorkspace, type Person, type Task } from '../live/api';
 
+vi.mock('echarts',()=>({init:()=>({setOption:vi.fn(),resize:vi.fn(),dispose:vi.fn()})}));
+vi.mock('../ui/download',()=>({csvCell:(v:unknown)=>String(v??''),downloadFile:vi.fn()}));
 let root: Root, container: HTMLDivElement;
 
 async function render(node: ReactNode) {
@@ -83,53 +85,58 @@ const mockTask: Task = {
   }
 };
 
-test('renders analytics KPIs, metric cards, and tasks list', async () => {
-  const data = structuredClone(emptyWorkspace);
-  data.tasks = [mockTask];
-  const user: Person = {
-    id: 'u1',
-    username: 'admin',
-    name: '质量工程师',
-    factory_id: 'f1',
-    permissions: ['data:read', 'quality:write']
-  };
+const user={id:'u1',permissions:['data:read']} as Person;
+const response=(tasks:Task[])=>({items:tasks,total:tasks.length,as_of:'2026-10-30T01:00:00Z'});
+async function click(text:string){const b=[...container.querySelectorAll('button')].find(b=>b.textContent===text)!;await act(async()=>b.click());}
+async function setup(tasks:Task[]){const api=new ApiClient();vi.spyOn(api,'request').mockResolvedValue(response(tasks));await render(<AnalyticsLivePage api={api} data={emptyWorkspace} user={user}/>);return api;}
 
-  await render(<AnalyticsLivePage data={data} user={user} refresh={vi.fn(async () => {})} />);
-
-  expect(container.textContent).toContain('质量统计分析');
-  expect(container.textContent).toContain('TASK-20261028-01');
-  expect(container.textContent).toContain('金属屏蔽搭盖率检测统计');
-  expect(container.textContent).toContain('99.0 %'); // (980 / 990) -> 99.0%
-  expect(container.textContent).toContain('10 超限');
+test('loads real summaries, separates pending judgments and preserves counts in charts',async()=>{
+  const pending={...mockTask,id:'pending',task_code:'PENDING',measurements:{...mockTask.measurements!,total:200,valid:200,passed:0,failed:0,unevaluated:200}};
+  const api=await setup([mockTask,pending]);
+  expect(api.request).toHaveBeenCalledWith('/production/tasks?page=1&limit=100',undefined,{},expect.any(AbortSignal));
+  expect(container.textContent).toContain('99.0 %');
+  expect(container.textContent).not.toContain('未判定记录');
+  expect(container.querySelector('[aria-label="检测结果分布：符合980、超限10条"]')).toBeTruthy();
+  expect(container.textContent).not.toContain('符合标准');
+  expect(container.textContent).not.toContain('受控基准');
+  expect(container.querySelectorAll('.metric-mini-bar')).toHaveLength(0);
 });
 
-test('filtering by metric alters visible cards and task list', async () => {
-  const data = structuredClone(emptyWorkspace);
-  const gapTask: Task = {
-    ...mockTask,
-    id: 'task-02',
-    task_code: 'TASK-20261028-02',
-    metric_code: 'WIRE_GAP'
-  };
-  data.tasks = [mockTask, gapTask];
-  const user: Person = {
-    id: 'u1',
-    username: 'admin',
-    name: '质量工程师',
-    factory_id: 'f1',
-    permissions: ['data:read']
-  };
+test('metric filter changes chart scope and rows; CSV uses the same filtered detail',async()=>{
+  const gap={...mockTask,id:'gap',task_code:'GAP-02',metric_code:'WIRE_GAP'};
+  await setup([mockTask,gap]);
+  const select=container.querySelector<HTMLSelectElement>('.analytics-filter-grid select')!;
+  await act(async()=>{select.value='WIRE_GAP';select.dispatchEvent(new Event('change',{bubbles:true}));});
+  expect(container.querySelector('tbody')?.textContent).toContain('GAP-02');
+  expect(container.querySelector('tbody')?.textContent).not.toContain(mockTask.task_code);
+  expect(container.querySelectorAll('.ana-metric')).toHaveLength(1);
+  await click('导出统计 CSV');
+  const {downloadFile}=await import('../ui/download');
+  const csv=String(vi.mocked(downloadFile).mock.calls[0][1]);
+  expect(csv).toContain('GAP-02');expect(csv).not.toContain(mockTask.task_code);
+  await click('重置');expect(container.querySelectorAll('.ana-metric')).toHaveLength(4);expect(container.querySelector('a[href="#detection?metric=ht"]')).not.toBeNull();
+});
 
-  await render(<AnalyticsLivePage data={data} user={user} refresh={vi.fn(async () => {})} />);
+test('legacy tasks remain visible in all tasks and have no invented passing percentage',async()=>{
+  const t={...mockTask,measurements:{...mockTask.measurements!,passed:0,failed:0,unevaluated:1000}};
+  await setup([t]);
+  await click('含超限');expect(container.textContent).toContain('当前筛选范围没有任务');
+  await click('全部任务');expect(container.querySelector('tbody')?.textContent).toContain(t.task_code);
+  expect(container.querySelectorAll('.ana-kpi')[1].textContent).toContain('—');
+});
 
-  const metricSelect = container.querySelector<HTMLSelectElement>('.analytics-filter-grid select')!;
-  await act(async () => {
-    metricSelect.value = 'WIRE_GAP';
-    metricSelect.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+test('initial failures never become zero statistics; retry works; refresh failure marks stale data',async()=>{
+  const api=new ApiClient(),request=vi.spyOn(api,'request').mockRejectedValue(new Error('连接中断'));
+  await render(<AnalyticsLivePage api={api} data={emptyWorkspace} user={user}/>);
+  expect(container.textContent).toContain('未生成统计结果');expect(container.querySelector('.ana-kpis')).toBeNull();
+  request.mockResolvedValue(response([mockTask]));await click('重新读取');
+  expect(container.querySelector('tbody')?.textContent).toContain(mockTask.task_code);
+  request.mockRejectedValue(new Error('查询失败'));await click('刷新统计');
+  expect(container.textContent).toContain('当前保留上次成功结果');
+  expect(container.querySelector('tbody')?.textContent).toContain(mockTask.task_code);
+  expect([...container.querySelectorAll('button')].find(b=>b.textContent==='导出统计 CSV')?.disabled).toBe(true);
+});
 
-  expect(container.textContent).toContain('铜丝屏蔽相邻间隙统计');
-  expect(container.textContent).not.toContain('金属屏蔽搭盖率检测统计');
-  expect(container.textContent).toContain('TASK-20261028-02');
-  expect(container.textContent).not.toContain('TASK-20261028-01');
+test('empty successful response shows empty charts instead of decorative data',async()=>{
+  await setup([]);expect(container.textContent).toContain('当前范围暂无检测记录');expect(container.textContent).toContain('当前检测项目暂无可用均值');
 });

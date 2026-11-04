@@ -63,4 +63,4 @@ API_UPSTREAM=http://platform-api:4192
 
 修改前源码归档runtime/ad02/source-before.zip；业务原镜像已标记huiyan-web:before-ad02。回退需审核恢复对应文件，避免覆盖后续修改；将旧镜像重新标记huiyan-web:local后仅重建web容器即可回退前端。本次无数据库迁移。
 
-验证证据：[AD02验收记录](../docs/workpackages/AD02_管理前端独立部署.md)。
+验证证据：[AD02验收记录](../临时文件夹/AD02_独立管理前端/验收记录.md)。

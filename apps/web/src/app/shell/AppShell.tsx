@@ -192,7 +192,7 @@ export function AppShell({ store, session, state, parsed, children, onLogout, co
     if (onLogout) { await onLogout(); return; }
     if (!store) return;
     store.setSession(session);
-    store.log("退出登录", "退出本地演示会话");
+    store.log("退出登录", "退出本地预览会话");
     store.setSession(null);
     setSessionUser(null);
     setAccountOpen(false);
@@ -217,7 +217,7 @@ export function AppShell({ store, session, state, parsed, children, onLogout, co
         <div className="sidebar-platform">{state.settings.platformName || "线缆质量管控平台"}</div>
         <nav className="nav-scroll">
           {application === "admin" && <>
-            {[["users","用户角色与权限","user"],["audit","操作审计","clipboard"],["audit?view=logs","运行日志","history"],["audit?view=diagnostics","采集诊断","connect"],["settings","系统设置","settings"]].map(([route,label,icon])=><HashLink key={route} route={route} className={parsed.route+(parsed.params.get('view')?'?view='+parsed.params.get('view'):'')===route?'nav-item active':'nav-item'}><Icon name={icon}/><span>{label}</span></HashLink>)}
+            {[["users","用户角色与权限","user"],["audit","操作审计","clipboard"],["audit?view=logs","运行日志","history"],["audit?view=diagnostics","采集诊断","connect"],["initialization","初始化配置","adjustments"],["settings","系统设置","settings"]].map(([route,label,icon])=><HashLink key={route} route={route} className={parsed.route+(parsed.params.get('view')?'?view='+parsed.params.get('view'):'')===route?'nav-item active':'nav-item'}><Icon name={icon}/><span>{label}</span></HashLink>)}
             <a className="nav-item" href={applicationUrl('business','dashboard')}><Icon name="home"/><span>返回业务平台</span></a>
           </>}
           {(application === "admin" ? [] : application === "business" ? businessNavEntries : navEntries).map(entry => {
@@ -256,7 +256,7 @@ export function AppShell({ store, session, state, parsed, children, onLogout, co
         <div className="sidebar-bottom">
           <strong>慧眼智检 · 质见未来</strong>
           <div className="voltage">35–220kV 高压电缆</div>
-          <div>聚焦三项关键量测指标</div>
+          <div>聚焦四项关键量测指标</div>
           <div>{organization}</div>
         </div>
       </aside>
@@ -272,7 +272,7 @@ export function AppShell({ store, session, state, parsed, children, onLogout, co
             <strong>{breadcrumbTitle(parsed.route, parsed.params)}</strong>
           </div>
           <div className="top-tools">
-            <HashLink route={application === "business" ? "monitor" : "settings"} className="demo-pill">{connectionLabel || (onLogout ? "平台连接待确认" : "演示数据 · 非现场实测")}</HashLink>
+            <HashLink route={application === "business" ? "monitor" : "settings"} className="demo-pill">{connectionLabel || (onLogout ? "平台连接待确认" : "平台未连接")}</HashLink>
             <span className="demo-time">{state.settings.demoTime || "2026-10-09 14:30:00"}</span>
             {application !== "admin" && <button className="bellbox" type="button" aria-label={alarmsAvailable?"查看待复核报警":"查看检测超限记录"} title={alarmsAvailable?"查看待复核报警":"查看检测超限记录"} onClick={() => navigate("alarms")}>
               <Icon name="bell" />
@@ -296,11 +296,11 @@ export function AppShell({ store, session, state, parsed, children, onLogout, co
           <span className="kpi-icon"><Icon name="user" size={27} /></span>
           <div>
             <h2>{session.name}</h2>
-            <p className="muted">{session.username || "演示账号"}</p>
+            <p className="muted">{session.username || "预览账号"}</p>
           </div>
         </div>
         <span className={`badge ${roleTone}`}>{roleLabel}</span>
-        <Note>{onLogout ? "会话与操作权限由平台服务端验证。" : "当前会话仅用于本地原型的操作权限演示。"}</Note>
+        <Note>{onLogout ? "会话与操作权限由平台服务端验证。" : "当前为本地预览会话。"}</Note>
         <Button icon="logout" onClick={logout}>退出登录</Button>
       </Drawer>
     </div>

@@ -29,15 +29,33 @@ export class FeedControl{
       {run_id:id,version:0,speed_m_min:snapshot.detector.data.speed_m_min,interval_ms:snapshot.interval_ms,first_sequence:1,created_at:null};
   }
 
+  position(id:string,snapshot:Snapshot,sequence:number){
+    if(snapshot.detector.data.sampling_interval_ms===undefined)return BigInt(sequence-1)*fixed(snapshot.detector.data.step_m);
+    const rows=this.q.db.prepare('SELECT * FROM feed_speed_revision WHERE run_id=? ORDER BY version').all(id) as any[];
+    let start=2,speed=snapshot.detector.data.speed_m_min,total=0n;
+    for(const row of rows){const next=Math.max(2,Number(row.first_sequence));if(next>sequence)break;
+      total+=BigInt(Math.max(0,next-start))*fixed(speed,600)*BigInt(snapshot.interval_ms);start=next;speed=row.speed_m_min;
+    }
+    total+=BigInt(Math.max(0,sequence-start+1))*fixed(speed,600)*BigInt(snapshot.interval_ms);
+    return total/60000n;
+  }
+
   change(id:string,snapshot:Snapshot,b:any){
     keys(b,['speed_m_min','version']);insist(Number.isInteger(b.version)&&b.version>=0,'速度版本无效');
-    const interval=feedInterval(snapshot.detector.data.step_m,b.speed_m_min);
+    const timed=snapshot.detector.data.sampling_interval_ms!==undefined;insist(fixed(b.speed_m_min,600)>0n,'送料速度必须大于0');const interval=timed?snapshot.interval_ms:feedInterval(snapshot.detector.data.step_m,b.speed_m_min);
     return this.q.transaction(()=>{
       const next=this.q.db.prepare('SELECT * FROM feed_speed_revision WHERE run_id=? AND version=?').get(id,b.version+1) as any;
       if(next?.speed_m_min===b.speed_m_min)return next;
       const prior=this.current(id,snapshot);insist(prior.version===b.version,'送料速度已变化，请刷新后重试',412,'FEED_VERSION_CONFLICT');
       const run=this.q.run(id);insist(run&&run.generated<run.target&&run.control!=='STOPPED','本次送料已停止或完成，不能调速',409,'FEED_NOT_ACTIVE');
       this.q.db.prepare('INSERT INTO feed_speed_revision VALUES(?,?,?,?,?,?)').run(id,b.version+1,b.speed_m_min,interval,run.generated+1,new Date().toISOString());
+      if(timed){
+        const position=this.position(id,snapshot,Math.max(1,run.generated));
+        const remaining=(fixed(snapshot.cable.data.length_m)-position)*60000n,delta=fixed(b.speed_m_min,600)*BigInt(interval);
+        const target=Math.max(run.generated,run.generated+Number((remaining+delta-1n)/delta)-(run.generated?1:0));
+        insist(target>=1&&target<=100000,'该速度将超过100000个采样点，请提高速度');
+        this.q.db.prepare('UPDATE sim_run SET target=? WHERE id=?').run(target,id);
+      }
       return this.current(id,snapshot);
     });
   }
@@ -105,9 +123,13 @@ export class FeedControl{
       detector_name:snapshot.detector.data.name,
       length_m:snapshot.cable.data.length_m,
       step_m:snapshot.detector.data.step_m,
+      sampling_interval_ms:snapshot.detector.data.sampling_interval_ms??null,
       speed:this.current(id,snapshot),
+        meter_delay_ms:snapshot.detector.data.meter_delay_ms??null,
+        distance_mm:snapshot.edge_sync?.distanceMm??null,
+        b_axes:snapshot.detector.data.b_x_mm?(snapshot.detector.data.b_y_mm?2:1):0,
       cut_spool:this.getCutSpoolEvent(id),
-      last_sample:last?{position_m:last.position_m,time:last.sample_time,value:last.values[0].value,unit:last.values[0].unit,result:last.values[0].source_quality_result,receipt_state:row.state,observation:last.raw?.data?.observation||null}:null,
+      last_sample:last?{position_m:last.position_m,time:last.sample_time,value:last.values[0].value,unit:last.values[0].unit,result:last.values[0].source_quality_result,receipt_state:row.state,observation:last.raw?.data?.observation||null,meter:last.raw?.data?.edge_simulation?.meter||null}:null,
     };
   }
 }

@@ -1,3 +1,7 @@
+import {readSheathCompanion} from '../m02-tasks/paired';
+import {storeSheathResult} from './paired';
+import {storeProjection} from './projection';
+import {ovalityTimeseries} from './timeseries';
 import type { PoolClient } from 'pg';
 import { randomUUID, createHash } from 'node:crypto';
 import Decimal from 'decimal.js';
@@ -61,6 +65,7 @@ export class MeasurementImportService {
     }
 
     const task = taskRes.rows[0];
+    requireValue(task.metric_code!=='SHEATH_THICKNESS','SHEATH_SHARED_ACQUISITION','护套厚度由同步采集原始数据计算，不能独立补录',422);
     const metricCode = task.metric_code as 'SHIELD_OVERLAP_RATE' | 'WIRE_GAP' | 'OVALITY';
     const defaultUnit = metricCode === 'WIRE_GAP' ? 'mm' : '%';
 
@@ -190,6 +195,7 @@ export class MeasurementImportService {
         [ctx.actor.factory, dto.task_id]
       );
       const task = taskRes.rows[0];
+    requireValue(task.metric_code!=='SHEATH_THICKNESS','SHEATH_SHARED_ACQUISITION','护套厚度由同步采集原始数据计算，不能独立补录',422);
 
       // 读取配方比较规则快照
       let ruleSnapshot: any = { approval_state: 'APPROVED', method_id: 'auto' };
@@ -216,6 +222,7 @@ export class MeasurementImportService {
       const validRows = parseResult.rows;
       let insertedCount = 0;
       let failCount = 0;
+      const companion=metricCode==='OVALITY'?await readSheathCompanion(tx,ctx.actor.factory,task.id):null;
 
       for (const row of validRows) {
         currentSeq++;
@@ -249,6 +256,8 @@ export class MeasurementImportService {
         };
         const payloadHash = createHash('sha256').update(JSON.stringify(rawPayload)).digest('hex');
 
+        const external=metricCode==='OVALITY';
+        const storedRaw=external?await ovalityTimeseries.write(ctx.actor.factory,task.device_id,sourceKey,payloadHash,rawPayload,row.value):rawPayload;
         // 插入 m04.measurement_record
         await tx.query(
           `INSERT INTO m04.measurement_record(
@@ -270,7 +279,7 @@ export class MeasurementImportService {
             row.sample_time,
             row.position_m,
             task.data_environment || 'SIMULATED',
-            JSON.stringify(rawPayload),
+            JSON.stringify(storedRaw),
             payloadHash,
           ]
         );
@@ -278,9 +287,9 @@ export class MeasurementImportService {
         // 插入 m04.measurement_value
         await tx.query(
           `INSERT INTO m04.measurement_value(
-            record_id, metric_code, value, unit, data_status, source_quality_result, window_definition
-          ) VALUES($1, $2, $3, $4, 'VALID', $5, '{"kind":"POINT"}')`,
-          [recordId, metricCode, row.value, row.unit, qualityResult]
+            record_id, metric_code, value, unit, data_status, source_quality_result, window_definition, sample_storage
+          ) VALUES($1, $2, $3, $4, 'VALID', $5, '{"kind":"POINT"}', $6)`,
+          [recordId, metricCode, external?null:row.value, row.unit, qualityResult, external?'INFLUXDB':'POSTGRESQL']
         );
 
         // 插入 m04.measurement_evaluation
@@ -297,6 +306,8 @@ export class MeasurementImportService {
           [recordId]
         );
 
+        await storeProjection(tx,recordId,metricCode,rawPayload,row.value);
+        if(companion)await storeSheathResult(tx,recordId,companion);
         insertedCount++;
       }
 

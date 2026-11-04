@@ -6,6 +6,8 @@ COPY tools/simulator/tsconfig.json ./
 COPY tools/simulator/src ./src
 COPY tools/simulator/web ./web
 COPY contracts/devices/v1 /app/contracts/devices/v1
+COPY adapters/inspur/http /app/adapters/inspur/http
+ENV INSPUR_ADAPTER_ROOT=/app/adapters/inspur/http
 ENV CONTRACT_ROOT=/app/contracts
 RUN npm run build && mkdir /data && chown node:node /data
 USER node

@@ -11,7 +11,7 @@
  */
 
 export type ReportState = 'DRAFT' | 'GENERATED' | 'PUBLISHED' | 'FAILED';
-export type QualityVerdict = 'PASS' | 'FAIL' | 'CONDITIONAL';
+export type QualityVerdict = 'PASS' | 'FAIL' | 'CONDITIONAL' | 'NOT_EVALUATED';
 export type ReportKind = 'STAGE' | 'TASK_FINAL' | 'SPOOL_SUMMARY';
 
 export interface MetricSummaryItem {
@@ -24,8 +24,8 @@ export interface MetricSummaryItem {
   min_value: string | null;
   max_value: string | null;
   avg_value: string | null;
-  compliance_rate: number; // 0.00 ~ 100.00 (%)
-  verdict: 'PASS' | 'FAIL';
+  compliance_rate: number | null; // 0.00 ~ 100.00 (%)
+  verdict: 'PASS' | 'FAIL' | 'NOT_EVALUATED';
 }
 
 export interface CoverageSnapshot {

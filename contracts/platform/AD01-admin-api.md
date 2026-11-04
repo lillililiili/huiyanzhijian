@@ -45,3 +45,7 @@ API/DB不可达返回503，页面状态未知/读取失败；worker有记录但�
 401会话无效；403权限/工厂/CSRF；404资源或日志源不存在；409账号唯一、版本、幂等或LAST_ADMIN；400字段/时间/密码非法；503真实依赖失败。列表失败不返回成功空集合。审计runtime仅SELECT/INSERT，无UPDATE/DELETE权限。
 
 自动验证：tests/backend/ad01-cases.ts；前端组件tests：apps/web/src/app/adminPages.test.tsx。真实浏览器/DB证据：临时文件夹/AD01_管理后台真实贯通。密码输入及授权扩大网页最终提交待用户人工验收，不计作浏览器通过。
+
+
+## LOG01 兼容增量（2026-11-02，已部署待验收）
+GET /admin/logs新增可选trace_id/event/module/code/actor_id/task_id/device_id，level包含DEBUG。返回event/message/module/instance/trace_id/span_id/parent_span_id/actor_id/actor_kind/context/error。默认INFO：成功读/心跳DEBUG，失败/慢请求不因成功读降级；错误只含安全类型/码和文件行列，不返回SQL、绝对路径或异常原文。任务/设备匹配请求白名单摘要（多身份最多8个并注明截断），不保证整批身份配对；不改变工厂与USER权限。旧行新增字段为默认值/null，不能作为已记录上下文。匿名日志仅stdout；查询无权仍403。运行日志写入独立2连接池、1秒超时、64挂起上限，写失败以stdout保底；无持久补写承诺。具体字段与验证见LOG01工作包。
