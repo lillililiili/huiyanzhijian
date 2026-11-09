@@ -4,7 +4,7 @@ import {afterEach,expect,test,vi} from 'vitest';
 import {TaskLabels} from '../live/TaskLabels';
 import {ApiClient,emptyWorkspace} from '../live/api';
 import {crc32,labelFilename} from '../live/taskLabelFiles';
-const mocks=vi.hoisted(()=>({save:vi.fn(),png:vi.fn(async()=>({arrayBuffer:async()=>new Uint8Array([1,2,3]).buffer})),zip:vi.fn((_files:unknown[])=>new Blob())}));
+const mocks=vi.hoisted(()=>({save:vi.fn(),png:vi.fn(async(..._args:unknown[])=>({arrayBuffer:async()=>new Uint8Array([1,2,3]).buffer})),zip:vi.fn((_files:unknown[])=>new Blob())}));
 vi.mock('../live/taskLabelFiles',async original=>({...await original<object>(),labelPng:mocks.png,saveLabelFile:mocks.save,zipLabels:mocks.zip}));
 let root:Root;let div:HTMLDivElement;
 afterEach(async()=>{if(root)await act(async()=>root.unmount());div?.remove();vi.clearAllMocks();});
@@ -17,3 +17,5 @@ test('single row selects its task and refreshes before PNG export',async()=>{con
 test('failed fetch and empty work order do not generate files',async()=>{await render(vi.fn().mockRejectedValue(Error('接口失败')));expect(document.body.textContent).toContain('接口失败');expect(button('批量下载').disabled).toBe(true);expect(mocks.save).not.toHaveBeenCalled();});
 test('task moved to another work order blocks export rather than using stale data',async()=>{const req=vi.fn().mockResolvedValueOnce(set).mockResolvedValue({...set,items:[]});await render(req);await act(async()=>button('批量下载').click());expect(document.body.textContent).toContain('任务已移出');expect(mocks.save).not.toHaveBeenCalled();});
 test('UTF-8 filenames sanitized and ZIP CRC is standard',()=>{expect(labelFilename(item('a') as any)).not.toContain('/');expect(crc32(new TextEncoder().encode('123456789'))).toBe(0xcbf43926);});
+
+test('paired sheath row selects source label, batch emits one PNG with both task IDs',async()=>{const paired={...item('a'),related_tasks:[{task_id:'a',task_code:'A',metric_code:'OVALITY'},{task_id:'s',task_code:'S',metric_code:'SHEATH_THICKNESS'}]};await render(vi.fn().mockResolvedValue({...set,items:[paired]}),'s');expect(document.querySelectorAll('input:checked')).toHaveLength(1);expect(document.body.textContent).toContain('护套任务：S');expect(document.body.textContent).toContain('共用本张条码');await act(async()=>{button('批量下载').click();await vi.waitFor(()=>expect(mocks.save).toHaveBeenCalled(),{timeout:2000});});expect(mocks.png).toHaveBeenCalledOnce();expect(mocks.png.mock.calls[0][0]).toEqual(paired);expect(mocks.zip.mock.calls[0][0]).toHaveLength(2);expect(labelFilename(paired as any)).toContain('护套厚度');});

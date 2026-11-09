@@ -1,0 +1,378 @@
+{
+  "name": "huiyan-center",
+  "services": {
+    "web": {
+      "image": "huiyan-web:bc02-20261104",
+      "pull_policy": "never",
+      "container_name": "huiyan-center-web-1",
+      "env_file": [
+        {
+          "path": "../runtime/center-group-20261104/web.env",
+          "format": "raw"
+        }
+      ],
+      "entrypoint": [
+        "/docker-entrypoint.sh"
+      ],
+      "command": [
+        "nginx",
+        "-g",
+        "daemon off;"
+      ],
+      "restart": "unless-stopped",
+      "shm_size": 67108864,
+      "networks": {
+        "huiyan-local_default": {
+          "aliases": [
+            "huiyan-local-web-1",
+            "web"
+          ]
+        }
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {}
+      },
+      "working_dir": "/",
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1/healthz"
+        ],
+        "interval": "15000000000ns",
+        "timeout": "3000000000ns",
+        "start_period": "10000000000ns",
+        "retries": 3
+      },
+      "ports": [
+        {
+          "target": 80,
+          "published": "4181",
+          "host_ip": "127.0.0.1",
+          "protocol": "tcp"
+        }
+      ],
+      "volumes": [],
+      "depends_on": {
+        "backend": {
+          "condition": "service_healthy"
+        }
+      }
+    },
+    "admin-web": {
+      "image": "huiyan-admin-web:ui01-20261103",
+      "pull_policy": "never",
+      "container_name": "huiyan-center-admin-web-1",
+      "env_file": [
+        {
+          "path": "../runtime/center-group-20261104/admin-web.env",
+          "format": "raw"
+        }
+      ],
+      "entrypoint": [
+        "/docker-entrypoint.sh"
+      ],
+      "command": [
+        "nginx",
+        "-g",
+        "daemon off;"
+      ],
+      "restart": "unless-stopped",
+      "shm_size": 67108864,
+      "networks": {
+        "huiyan-admin_default": {
+          "aliases": [
+            "huiyan-admin-admin-web-1",
+            "admin-web"
+          ]
+        }
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {}
+      },
+      "working_dir": "/",
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1/healthz"
+        ],
+        "interval": "15000000000ns",
+        "timeout": "3000000000ns",
+        "start_period": "10000000000ns",
+        "retries": 3
+      },
+      "ports": [
+        {
+          "target": 80,
+          "published": "4182",
+          "host_ip": "127.0.0.1",
+          "protocol": "tcp"
+        }
+      ],
+      "volumes": [],
+      "depends_on": {
+        "backend": {
+          "condition": "service_healthy"
+        }
+      }
+    },
+    "backend": {
+      "image": "huiyan-backend:perf03-20261109",
+      "pull_policy": "never",
+      "container_name": "huiyan-center-backend-1",
+      "env_file": [
+        {
+          "path": "../runtime/center-group-20261104/backend.env",
+          "format": "raw"
+        }
+      ],
+      "entrypoint": [
+        "docker-entrypoint.sh"
+      ],
+      "command": [
+        "node",
+        "dist/composition/supervisor.js"
+      ],
+      "restart": "unless-stopped",
+      "shm_size": 67108864,
+      "networks": {
+        "huiyan-b1_default": {
+          "aliases": [
+            "huiyan-b1-backend-1",
+            "backend"
+          ]
+        }
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-file": "5",
+          "max-size": "10m"
+        }
+      },
+      "user": "node",
+      "working_dir": "/app/platform",
+      "init": true,
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4192/api/v1/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10000000000ns",
+        "timeout": "5000000000ns",
+        "retries": 3
+      },
+      "ports": [
+        {
+          "target": 4192,
+          "published": "4192",
+          "host_ip": "127.0.0.1",
+          "protocol": "tcp"
+        }
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "target": "/run/huiyan-edge-sync",
+          "read_only": true,
+          "source": "C:\\Users\\qiyue\\Desktop\\kaifa\\huiyanzhijian\\runtime\\edge-sync",
+          "bind": {
+            "create_host_path": false
+          }
+        },
+        {
+          "type": "bind",
+          "target": "/run/huiyan-timeseries",
+          "read_only": true,
+          "source": "C:\\Users\\qiyue\\Desktop\\kaifa\\huiyanzhijian\\runtime\\ts01\\secrets",
+          "bind": {
+            "create_host_path": false
+          }
+        }
+      ],
+      "depends_on": {
+        "database": {
+          "condition": "service_healthy"
+        }
+      },
+      "environment": {
+        "SPLIT_WORKLOADS": "true"
+      }
+    },
+    "database": {
+      "image": "postgis/postgis:16-3.5",
+      "pull_policy": "never",
+      "container_name": "huiyan-center-database-1",
+      "env_file": [
+        {
+          "path": "../runtime/center-group-20261104/database.env",
+          "format": "raw"
+        }
+      ],
+      "entrypoint": [
+        "docker-entrypoint.sh"
+      ],
+      "command": [
+        "postgres"
+      ],
+      "restart": "unless-stopped",
+      "shm_size": 67108864,
+      "networks": {
+        "huiyan-b1_default": {
+          "aliases": [
+            "huiyan-b1-database-1",
+            "database"
+          ]
+        }
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-file": "5",
+          "max-size": "10m"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "pg_isready -U hy_migrator -d huiyan_b1"
+        ],
+        "interval": "5000000000ns",
+        "timeout": "3000000000ns",
+        "retries": 20
+      },
+      "ports": [
+        {
+          "target": 5432,
+          "published": "4193",
+          "host_ip": "127.0.0.1",
+          "protocol": "tcp"
+        }
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "target": "/docker-entrypoint-initdb.d/10-b1.sh",
+          "read_only": true,
+          "source": "C:/Users/qiyue/Desktop/kaifa/huiyanzhijian/infra/databases/postgresql/init/b1-init.sh",
+          "bind": {
+            "create_host_path": false
+          }
+        },
+        {
+          "type": "volume",
+          "target": "/var/lib/postgresql/data",
+          "read_only": false,
+          "source": "huiyan-b1_b1-database"
+        }
+      ]
+    },
+    "ovality-timeseries": {
+      "image": "influxdb:2.9.1@sha256:a450f6faf9573e6c2e96a0f575885ae8b7387cc87e4de94599e247ebfa3ac417",
+      "pull_policy": "never",
+      "container_name": "huiyan-center-ovality-timeseries-1",
+      "env_file": [
+        {
+          "path": "../runtime/center-group-20261104/ovality-timeseries.env",
+          "format": "raw"
+        }
+      ],
+      "entrypoint": [
+        "/entrypoint.sh"
+      ],
+      "command": [
+        "influxd"
+      ],
+      "restart": "unless-stopped",
+      "shm_size": 67108864,
+      "networks": {
+        "huiyan-b1_default": {
+          "aliases": [
+            "huiyan-b1-ovality-timeseries-1",
+            "ovality-timeseries"
+          ]
+        }
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-file": "5",
+          "max-size": "10m"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "influx",
+          "ping",
+          "--host",
+          "http://127.0.0.1:8086"
+        ],
+        "interval": "10000000000ns",
+        "timeout": "5000000000ns",
+        "retries": 12
+      },
+      "ports": [
+        {
+          "target": 8086,
+          "published": "4206",
+          "host_ip": "127.0.0.1",
+          "protocol": "tcp"
+        }
+      ],
+      "volumes": [
+        {
+          "type": "volume",
+          "target": "/etc/influxdb2",
+          "read_only": false,
+          "source": "huiyan-b1_ovality-timeseries-config"
+        },
+        {
+          "type": "volume",
+          "target": "/var/lib/influxdb2",
+          "read_only": false,
+          "source": "huiyan-b1_ovality-timeseries-data"
+        }
+      ]
+    }
+  },
+  "networks": {
+    "huiyan-local_default": {
+      "external": true,
+      "name": "huiyan-local_default"
+    },
+    "huiyan-admin_default": {
+      "external": true,
+      "name": "huiyan-admin_default"
+    },
+    "huiyan-b1_default": {
+      "external": true,
+      "name": "huiyan-b1_default"
+    }
+  },
+  "volumes": {
+    "huiyan-b1_b1-database": {
+      "external": true,
+      "name": "huiyan-b1_b1-database"
+    },
+    "huiyan-b1_ovality-timeseries-config": {
+      "external": true,
+      "name": "huiyan-b1_ovality-timeseries-config"
+    },
+    "huiyan-b1_ovality-timeseries-data": {
+      "external": true,
+      "name": "huiyan-b1_ovality-timeseries-data"
+    }
+  }
+}

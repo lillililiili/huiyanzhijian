@@ -7,13 +7,14 @@ import type {ApiClient,Person,Workspace} from '../api';
 import {type Snapshot,type ScopeInput,type Kind,kinds,metrics,num,rate,matrix,time,conclusion,unit} from './model';
 import {planPages,renderPage,loadReportAssets,exportReport} from './render';
 import './reporting.css';
+import {PeriodSelector} from './PeriodSelector';
 type Props={api:ApiClient;user:Person;data:Workspace;params?:URLSearchParams;refresh?:()=>Promise<void>};
 const today=()=>new Date(Date.now()+28800000).toISOString().slice(0,10);
 function initial(params?:URLSearchParams):ScopeInput{const kind=params?.get('kind') as Kind;return {kind:kind in kinds?kind:'DAILY',anchor:params?.get('anchor')||today(),order_id:params?.get('order_id')||'',environment:params?.get('environment')||'',presentation:{supplier:'',recipient:'',title:'',trends:true,details:true}};}
 function Controls({value,onChange,orders,busy}:{value:ScopeInput;onChange:(s:ScopeInput)=>void;orders:any[];busy:boolean}){
  const set=(patch:Partial<ScopeInput>)=>onChange({...value,...patch});return <div className="rp-controls">
   <div className="rp-tabs" role="group" aria-label="报告类型">{Object.entries(kinds).map(([key,label])=><button key={key} disabled={busy} className={value.kind===key?'active':''} onClick={()=>set({kind:key as Kind})}>{label}</button>)}</div>
-  <div className="rp-fields">{value.kind!=='WORK_ORDER'&&<label>统计日期<input type="date" aria-label="统计日期" value={value.anchor} disabled={busy} onChange={e=>set({anchor:e.target.value})}/><small>{value.kind==='WEEKLY'?'按所在周，周一至周日':value.kind==='MONTHLY'?'按所在自然月':value.kind==='QUARTERLY'?'按所在自然季度':value.kind==='YEARLY'?'按所在自然年':'按北京时间 00:00—24:00'}</small></label>}
+  <div className="rp-fields"><PeriodSelector kind={value.kind} anchor={value.anchor} disabled={busy} onChange={anchor=>set({anchor})}/>
   <label>{value.kind==='WORK_ORDER'?'选择工单':'工单范围'}<select aria-label="工单范围" value={value.order_id} disabled={busy} onChange={e=>set({order_id:e.target.value})}><option value="">{value.kind==='WORK_ORDER'?'请选择工单':'全部工单'}</option>{orders.map(o=><option key={o.id} value={o.id}>{o.external_code}</option>)}</select></label>
   <label>数据来源<select aria-label="数据来源" value={value.environment} disabled={busy} onChange={e=>set({environment:e.target.value})}><option value="">全部来源</option><option value="REAL">设备采集</option><option value="SIMULATED">外部输入</option></select></label>
   </div></div>;

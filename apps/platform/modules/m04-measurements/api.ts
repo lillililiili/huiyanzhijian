@@ -169,6 +169,7 @@ export class MeasurementApi{
   for(const record of b.records)if(record&&typeof record==='object'){if(typeof record.device_id==='string')deviceScope(ctx.actor,record.device_id);if(record.data_environment!==undefined&&record.data_environment!==ctx.actor.environment)throw new ApiError(403,'SOURCE_NOT_ALLOWED','来源环境超出凭据范围');}
   const batch=randomUUID();await pool.query("INSERT INTO m04.ingestion_batch(id,request_id,source_batch_id,factory_id,credential_id,total,state) VALUES($1,$2,$3,$4,$5,$6,'PROCESSING')",[batch,ctx.requestId,b.batch_id,ctx.actor.factory,ctx.actor.id,b.records.length]);
   const items=[];
+  const prepared:Array<{index:number;r:any;hash:string|null;execute?:()=>Promise<any>;item?:any;sample?:any}>=[];
   for(let index=0;index<b.records.length;index++){
    const r=b.records[index];let item:any;let hash:string|null=null;
    try{
@@ -183,12 +184,14 @@ export class MeasurementApi{
     const assignment=await this.tasks.verifyRecord(ctx.actor.factory,r);
     let reason=assignment?null:'TASK_BINDING_UNVERIFIED';if(Date.parse(r.sample_time)>Date.now()+5000)reason='SAMPLE_TIME_UNVERIFIED';
     const rule=assignment?.rule_snapshot||unapproved;
-    item=await transaction(async db=>{
+    const entry:any={index,r,hash};
+    if(r.values[0].metric_code==='OVALITY')entry.sample=ovalityTimeseries.prepare(ctx.actor.factory,r.device_id,r.record_id,hash!,r,r.values[0].value);
+    entry.execute=()=>transaction(async db=>{
      await lock(db,`measurement:${ctx.actor.factory}:${r.device_id}`);
      const old=await db.query(`SELECT *,${timestamp('received_at')} AS received FROM m04.measurement_record WHERE factory_id=$1 AND device_id=$2 AND source_record_key=$3`,[ctx.actor.factory,r.device_id,r.record_id]);
      if(old.rowCount){if(old.rows[0].payload_hash===hash)return this.receipt(old.rows[0],index,true);await db.query('INSERT INTO m04.ingestion_conflict(id,factory_id,device_id,source_id,original_record_id,conflicting_hash,request_id,reason_code) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[randomUUID(),ctx.actor.factory,r.device_id,r.record_id,old.rows[0].id,hash,ctx.requestId,'RECORD_PAYLOAD_CONFLICT']);return this.reject(index,r.record_id,'RECORD_PAYLOAD_CONFLICT');}
      const seq=await db.query('SELECT id FROM m04.measurement_record WHERE factory_id=$1 AND device_id=$2 AND capture_session_id=$3 AND capture_sequence=$4 AND derived_from_record_id IS NULL',[ctx.actor.factory,r.device_id,r.capture_session_id,r.capture_sequence]);if(seq.rowCount)return this.reject(index,r.record_id,'CAPTURE_SEQUENCE_CONFLICT');
-     const id=randomUUID();const sampleRaw=r.values[0].metric_code==='OVALITY'?await ovalityTimeseries.write(ctx.actor.factory,r.device_id,r.record_id,hash!,r,r.values[0].value):r;const external=r.values[0].metric_code==='OVALITY';const evaluation=reason?{quality_result:'NOT_EVALUATED',reason_code:reason}:this.rules.evaluate(r.values[0],rule,r.data_environment);const fields=['id','factory_id','device_id','source_record_key','capture_session_id','capture_sequence','source_record_id','source_session_id','source_sequence','task_id','binding_id','binding_version','recipe_version_id','sample_kind','sample_time','time_source','position_m','position_quality','position_segment_id','source_type','data_environment','data_status','receipt_status','isolation_reason','raw_payload','payload_hash','schema_version'];
+     const id=randomUUID();const sampleRaw=entry.sample?entry.sample.reference:r;const external=r.values[0].metric_code==='OVALITY';const evaluation=reason?{quality_result:'NOT_EVALUATED',reason_code:reason}:this.rules.evaluate(r.values[0],rule,r.data_environment);const fields=['id','factory_id','device_id','source_record_key','capture_session_id','capture_sequence','source_record_id','source_session_id','source_sequence','task_id','binding_id','binding_version','recipe_version_id','sample_kind','sample_time','time_source','position_m','position_quality','position_segment_id','source_type','data_environment','data_status','receipt_status','isolation_reason','raw_payload','payload_hash','schema_version'];
      const values=[id,ctx.actor.factory,r.device_id,r.record_id,r.capture_session_id,r.capture_sequence,r.source_record_id,r.source_session_id,r.source_sequence,assignment?r.task_id:null,r.binding_id,r.binding_version,r.recipe_version_id,r.sample_kind,r.sample_time,r.time_source,r.position_m??null,r.position_quality??'UNKNOWN',r.position_segment_id??null,r.source_type,r.data_environment,r.data_status,reason?'QUARANTINED':'STORED',reason,JSON.stringify(sampleRaw),hash,'1.0'];
      const stored=await db.query(`INSERT INTO m04.measurement_record(${fields.join(',')}) VALUES(${values.map((_,i)=>'$'+(i+1)).join(',')}) RETURNING *,${timestamp('received_at')} AS received`,values);const v=r.values[0];
      await db.query('INSERT INTO m04.measurement_value(record_id,metric_code,value,unit,data_status,source_quality_result,method_id,window_definition,reason_code,sample_storage) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[id,v.metric_code,external?null:v.value,v.unit,v.data_status,v.source_quality_result,v.method_id,JSON.stringify(v.window),v.reason_code,external?'INFLUXDB':'POSTGRESQL']);
@@ -198,8 +201,23 @@ export class MeasurementApi{
      if(v.metric_code==='OVALITY'&&assignment)await storeSheathResult(db,id,await this.tasks.sheathCompanion(ctx.actor.factory,r.task_id,db));
      await db.query("INSERT INTO m04.measurement_outbox(event_id,event_type,schema_version,factory_id,data_environment,aggregate_id,aggregate_version,payload) VALUES($1,'MeasurementStored.v1','1.0',$2,$3,$4,1,$5)",[randomUUID(),ctx.actor.factory,r.data_environment,id,JSON.stringify({record_id:id,task_id:assignment?r.task_id:null,eligibility:reason?'QUARANTINED':'EFFECTIVE',quality_result:evaluation.quality_result,evaluation_version:1})]);return this.receipt(stored.rows[0],index);
     });
+    prepared.push(entry);
    }catch(e){if(e instanceof ApiError&&e.status>=500)throw e;if(e instanceof ApiError)item=this.reject(index,typeof r?.record_id==='string'&&idPattern.test(r.record_id)?r.record_id:null,e.code,e.fields);else throw new ApiError(503,'DEPENDENCY_UNAVAILABLE','接收结果可能部分提交，请保留来源键后对账',[],'UNKNOWN');}
+   if(item)prepared.push({index,r,hash,item});
+  }
+  // Durable TS acknowledgement precedes PG transactions; replay uses deterministic IDs.
+  for(let offset=0;offset<prepared.length;offset+=50){
+   const group=prepared.slice(offset,offset+50);
+   // Known receipts (including conflicts) must remain available while TS is down.
+   const candidates=group.filter(e=>e.sample);
+   const existing=candidates.length?(await pool.query('SELECT device_id,source_record_key FROM m04.measurement_record WHERE factory_id=$1 AND device_id=ANY($2::text[]) AND source_record_key=ANY($3::text[])',[ctx.actor.factory,candidates.map(e=>e.r.device_id),candidates.map(e=>e.r.record_id)])).rows:[];
+   const known=new Set(existing.map(r=>JSON.stringify([r.device_id,r.source_record_key])));
+   await ovalityTimeseries.writePrepared(candidates.filter(e=>!known.has(JSON.stringify([e.r.device_id,e.r.record_id]))).map(e=>e.sample));
+   for(const entry of group){
+    const {index,r,hash}=entry;let item=entry.item;
+    if(entry.execute)try{item=await entry.execute();}catch(e){if(e instanceof ApiError&&e.status<500)item=this.reject(index,r.record_id,e.code,e.fields);else throw new ApiError(503,'DEPENDENCY_UNAVAILABLE','接收结果可能部分提交，请保留来源键后对账',[],'UNKNOWN');}
    await pool.query('INSERT INTO m04.ingestion_item(batch_id,input_index,source_id,stored_id,receipt_status,error_code,field_errors,payload_hash) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[batch,index,item.source_id,item.stored_id,item.receipt_status,item.error_code,JSON.stringify(item.field_errors),hash]);items.push(item);
+   }
   }
   const counts={total:items.length,stored:0,duplicate:0,quarantined:0,rejected:0};for(const item of items)counts[item.receipt_status.toLowerCase() as 'stored']++;
   await pool.query("UPDATE m04.ingestion_batch SET completed_at=now(),state='COMPLETED',stored=$2,duplicate=$3,quarantined=$4,rejected=$5 WHERE id=$1",[batch,counts.stored,counts.duplicate,counts.quarantined,counts.rejected]);return {schema_version:'1.0',batch_id:b.batch_id,counts,items};

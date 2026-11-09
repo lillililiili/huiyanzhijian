@@ -19,15 +19,28 @@ bundleBox.innerHTML=`<div class="preset-steps" aria-label="配置步骤"><span>1
 <div class="preset-footer"><span id="bundle-save-hint" class="muted">当前没有待确认的预设</span><div><button type="button" class="primary" id="bundle-confirm" disabled>确认四项预设</button><a id="bundle-go-feed" href="#feed" hidden>去送料 →</a></div></div></section>`;
 const bundleFields=[['tape_width_mm','铜带宽度 / mm'],['overlap_width_mm','搭盖宽度基准 / mm'],['wire_gap_mm','铜丝间隙基准 / mm'],['diameter_x_mm','A原始圆直径 / mm'],['b_x_mm','B X直径 / mm'],['b_y_mm','B Y直径 / mm（选填）'],['meter_delay_ms','计米器输出 / ms'],['tape_diameter','铜带工序直径 / mm'],['wire_diameter','铜丝工序直径 / mm'],['tape_pitch','铜带周期节距 / mm'],['wire_pitch','铜丝周期节距 / mm'],['extrusion_pitch','测径波动周期长度 / mm']];
 const bundleGroups=[['金属屏蔽搭盖率','铜带工序',['tape_diameter','tape_width_mm','overlap_width_mm','tape_pitch']],['铜丝屏蔽间隙','铜丝工序',['wire_diameter','wire_gap_mm','wire_pitch']],['圆整度 + 护套厚度','双测径 · 同源计算',['diameter_x_mm','b_x_mm','b_y_mm','meter_delay_ms','extrusion_pitch']]];
+// Editable simulation starting values, not approved production dimensions or limits.
+function bundleDefaults(existing={}){
+ const present=v=>v!==undefined&&v!==null&&String(v).trim()!=='';
+ const values=Object.fromEntries(Object.entries(existing).filter(([,v])=>present(v)));
+ const a=present(values.diameter_x_mm)?Number(values.diameter_x_mm):40;
+ const scaled=ratio=>String(Number((a*ratio).toFixed(6)));
+ return {tape_width_mm:'20',overlap_width_mm:'2.5',wire_gap_mm:'1.25',diameter_x_mm:'40',
+  tape_diameter:scaled(.9),wire_diameter:scaled(.9),tape_pitch:'20',wire_pitch:'300',extrusion_pitch:'1000',
+  b_x_mm:scaled(.95),b_y_mm:values.b_x_mm??scaled(.95),meter_delay_ms:'600',...values};
+}
+function fillBundleDefaults(existing={}){const values=bundleDefaults(existing);for(const [k] of bundleFields)$('bundle-'+k).value=values[k];}
 $('bundle-inputs').innerHTML=bundleGroups.map(([title,subtitle,fields])=>`<section class="preset-process"><h3>${title}</h3><p class="small muted">${subtitle}</p><div>${fields.map(k=>`<label>${bundleFields.find(v=>v[0]===k)[1]}<input id="bundle-${k}" type="number" min="0" step="${k==='meter_delay_ms'?'1':'0.000001'}" placeholder="按工序填写"></label>`).join('')}</div></section>`).join('');
+fillBundleDefaults();
+$('bundle-inputs').insertAdjacentHTML('afterend','<p class="small muted">已填入可编辑的模拟基准；选择线缆时优先读取已有值，仅补齐空项。周期用于模拟波动，实际判定以任务配方为准。</p>');
 function invalidateBundle(){bundlePreview=null;bundleRequest=null;$('bundle-confirm').disabled=true;$('bundle-charts').innerHTML='<div class="preset-empty">尚未生成预览，请选择一个档位。</div>';$('bundle-generation-details').hidden=true;$('bundle-go-feed').hidden=true;$('bundle-save-hint').textContent='当前没有待确认的预设';$('bundle-status').textContent='参数已变化，请重新选择档位生成。';}
 function readBundle(){
  const c=models.cables.find(c=>c.id===$('bundle-cable').value),d=models.detectors.filter(d=>d.data.metric==='OVALITY').length===1?models.detectors.find(d=>d.data.metric==='OVALITY'):null;
- if(!c){invalidateBundle();$('bundle-length').value='';for(const [k] of bundleFields)$('bundle-'+k).value='';$('bundle-status').textContent='请先选择线缆。';return;}
+ if(!c){invalidateBundle();$('bundle-length').value='';fillBundleDefaults();$('bundle-selection').textContent='已填入模拟基准，请选择线缆。';$('bundle-status').textContent='请先选择线缆。';return;}
  $('bundle-length').value=String(c.data.length_m||'').replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');$('bundle-selection').textContent=c.data.name+' · '+(c.source?.specification_code||'')+' · 基准版本 '+c.version;
  const values={...c.data.baseline,...(d?{b_x_mm:d.data.b_x_mm,b_y_mm:d.data.b_y_mm,meter_delay_ms:d.data.meter_delay_ms}:{})};
- for(const [k] of bundleFields)$('bundle-'+k).value=values[k]??'';
- invalidateBundle();$('bundle-status').textContent='已读取已有基准，请补齐各工序直径与周期长度，再选档位。';
+ fillBundleDefaults(values);
+ invalidateBundle();$('bundle-status').textContent='已读取已有基准，空项已补默认值；可直接选择档位生成，也可先调整参数。';
 }
 $('bundle-read').onclick=readBundle;$('bundle-cable').addEventListener('change',readBundle);
 $('bundle-inputs').addEventListener('input',invalidateBundle);

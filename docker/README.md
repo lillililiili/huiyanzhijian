@@ -1,5 +1,7 @@
 # 本地 Docker 部署
 
+> 2026-11-04 本机分组已合并：中心前台/后台/API/PG/InfluxDB统一使用 [center.compose.json](center.compose.json)，分组 `huiyan-center`；模拟器和边缘独立。启动停止命令见 [中心统一分组](CENTER-GROUP-DEPLOYMENT.md)。下方旧配置表是历史分拆入口，不要用它覆盖当前本机部署。
+
 运行入口及版本边界见 [运维说明](../docs/OPERATIONS.md)。本目录不是只有前端的演示工程，中心 API、数据库和时序服务已启用。
 
 | 配置 | 服务 |

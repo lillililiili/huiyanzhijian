@@ -1,5 +1,7 @@
 # 本地运行与部署
 
+> 2026-11-04 当前本机中心部署已合并为 `huiyan-center`，使用 `docker/center.compose.json`。模拟器与边缘分别保持 `huiyan-simulator` / `huiyan-edge`。具体命令和数据卷保护见 [中心分组部署说明](../docker/CENTER-GROUP-DEPLOYMENT.md)；下方旧b1/ts01命令保留作历史参考，不覆盖当前配置。
+
 端口与服务：4181 业务前台、4182 管理后台、4192 平台 API、4193 PostgreSQL、4196 模拟器、4198 边缘访问代理、4206 中心 InfluxDB。具体端口以 Compose 为准；3000 桌面容器不等于生产现场部署。
 
 ## 已配置环境的只读检查

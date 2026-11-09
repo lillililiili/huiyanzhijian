@@ -316,5 +316,5 @@ class ApiController{
  }
 }
 @Module({controllers:[ApiController]})class AppModule{}
-async function main(){requireValue(process.env.DATABASE_URL&&process.env.CURSOR_SECRET,'CONFIG_INVALID','数据库和游标签名配置缺失');await assertDatabaseViews(pool);const app=await NestFactory.create(AppModule,{bodyParser:false,logger:['error','warn']});app.enableShutdownHooks();await app.listen(Number(process.env.PORT||4192),process.env.BIND_HOST||'127.0.0.1');edgeSynchronization.start();await logEvent('API_READY','INFO');}
+async function main(){requireValue(process.env.DATABASE_URL&&process.env.CURSOR_SECRET,'CONFIG_INVALID','数据库和游标签名配置缺失');await assertDatabaseViews(pool);const app=await NestFactory.create(AppModule,{bodyParser:false,logger:['error','warn']});app.enableShutdownHooks();await app.listen(Number(process.env.PORT||4192),process.env.BIND_HOST||'127.0.0.1');if(!process.env.WORKLOAD_ROLE||process.env.WORKLOAD_ROLE==='online')edgeSynchronization.start();await logEvent('API_READY','INFO');}
 main().catch(async e=>{await logEvent('STARTUP_FAILED','ERROR',{error:e,code:e instanceof DatabaseReadinessError?e.code:'STARTUP_FAILED'});await pool.end();process.exitCode=1;});

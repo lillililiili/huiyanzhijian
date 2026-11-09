@@ -14,6 +14,17 @@ export function parseTaskBarcode(code:string){
  requireValue(m,'LABEL_INVALID','不是本平台任务条码',422);
  const h=m![1].toLowerCase();return {id:`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`,revision:m![2]};
 }
+// One printable credential per physical acquisition; never infer pairs from a spool name.
+export function printableTaskGroups(rows:any[]){
+ const byId=new Map(rows.map(t=>[t.id,t])),children=new Map<string,any>();
+ for(const t of rows.filter(t=>t.metric_code==='SHEATH_THICKNESS')){
+  const source=byId.get(t.acquisition_source_task_id);
+  requireValue(source&&source.metric_code==='OVALITY'&&['device_id','work_order_id','spool_id','process_id','data_environment'].every(k=>source[k]===t[k])&&!children.has(source.id),
+   'LABEL_PAIR_INVALID',`护套任务 ${t.task_code} 的不圆度关联不完整，请核对任务后下载合并条码`,409);
+  children.set(source.id,t);
+ }
+ return rows.filter(t=>t.metric_code!=='SHEATH_THICKNESS').map(t=>({task:t,related_tasks:[t,...(children.has(t.id)?[children.get(t.id)]:[])].map(r=>({task_id:r.id,task_code:r.task_code,metric_code:r.metric_code}))}));
+}
 export class TaskLabels {
  constructor(private tasks:TaskApi,private catalog:CatalogApi){}
  async list(actor:Actor,orderId:string){
@@ -24,7 +35,7 @@ export class TaskLabels {
    requireValue(order,'RESOURCE_NOT_FOUND','工单不存在或无权访问',404);
    const rows=(await db.query(`SELECT t.*,s.spool_code FROM m02.inspection_task t JOIN m02.cable_spool s ON s.id=t.spool_id WHERE t.factory_id=$1 AND t.work_order_id=$2 ORDER BY t.task_code,t.id LIMIT 1001`,[actor.factory,orderId])).rows;
    requireValue(rows.length<=1000,'LABEL_LIMIT','本工单超过1000个任务，请分批安排工单后下载',422);
-   return {order,as_of:new Date().toISOString(),items:rows.map(t=>({barcode:taskBarcode(t.id,String(t.association_version)),task_id:t.id,task_code:t.task_code,work_order_id:order.id,order_code:order.external_code,spool_code:t.spool_code,process_id:t.process_id,metric_code:t.metric_code,device_id:t.device_id,state:t.state,data_environment:t.data_environment,association_version:String(t.association_version),specification:t.context_snapshot.specification}))};
+   return {order,as_of:new Date().toISOString(),items:printableTaskGroups(rows).map(({task:t,related_tasks})=>({barcode:taskBarcode(t.id,String(t.association_version)),task_id:t.id,task_code:t.task_code,work_order_id:order.id,order_code:order.external_code,spool_code:t.spool_code,process_id:t.process_id,metric_code:t.metric_code,device_id:t.device_id,state:t.state,data_environment:t.data_environment,association_version:String(t.association_version),specification:t.context_snapshot.specification,related_tasks}))};
   });
  }
  async resolve(actor:Actor,device:string,code:string){

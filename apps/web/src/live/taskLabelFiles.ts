@@ -1,5 +1,7 @@
 import {names,specificationLabel,taskState,type Specification} from './api';
-export type TaskLabel={barcode:string;task_id:string;task_code:string;work_order_id:string;order_code:string;spool_code:string;process_id:string;metric_code:string;device_id:string;state:string;data_environment:string;association_version:string;specification:Specification};
+export type TaskLabel={barcode:string;task_id:string;task_code:string;work_order_id:string;order_code:string;spool_code:string;process_id:string;metric_code:string;device_id:string;state:string;data_environment:string;association_version:string;specification:Specification;related_tasks?:{task_id:string;task_code:string;metric_code:string}[]};
+export const labelTasks=(t:TaskLabel)=>t.related_tasks?.length?t.related_tasks:[{task_id:t.task_id,task_code:t.task_code,metric_code:t.metric_code}];
+export const labelMetricName=(t:TaskLabel)=>labelTasks(t).map(r=>names[r.metric_code]||r.metric_code).join(' + ');
 type BarcodeRenderer=(canvas:HTMLCanvasElement,value:string,options:Record<string,unknown>)=>void;
 declare global { interface Window { JsBarcode?:BarcodeRenderer } }
 let library:Promise<BarcodeRenderer>|undefined;
@@ -11,14 +13,14 @@ function barcodeLibrary(){
   script.onload=()=>window.JsBarcode?resolve(window.JsBarcode):fail();script.onerror=fail;document.head.appendChild(script);
  });
 }
-export function labelFilename(t:TaskLabel){return `${t.task_code}_${t.spool_code}_${names[t.metric_code]||t.metric_code}`.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').slice(0,160)+'.png';}
+export function labelFilename(t:TaskLabel){return `${t.task_code}_${t.spool_code}_${labelMetricName(t)}`.replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').slice(0,160)+'.png';}
 export async function labelPng(t:TaskLabel,process:string):Promise<Blob>{
  const render=await barcodeLibrary(),bars=document.createElement('canvas');
  render(bars,t.barcode,{format:'CODE128',width:3,height:170,margin:36,fontSize:23,background:'#fff',lineColor:'#000'});
  const canvas=document.createElement('canvas');canvas.width=Math.max(1240,bars.width);
  const ctx=canvas.getContext('2d');if(!ctx)throw Error('浏览器不支持条码图片生成');
  const lines:string[]=[];ctx.font='28px sans-serif';
- for(const text of [`工单：${t.order_code}`,`线缆 / 盘号：${t.spool_code}`,`工序：${process}    检测项：${names[t.metric_code]||t.metric_code}`,`设备：${t.device_id}    来源：${t.data_environment==='SIMULATED'?'外部输入':'设备采集'}`,`规格：${specificationLabel(t.specification)}`,...(['OVALITY','SHEATH_THICKNESS'].includes(t.metric_code)?['同次采集：不圆度 ＋ 护套厚度；扫描任一任务码同时启停']:[])]){
+ for(const text of [`工单：${t.order_code}`,`线缆 / 盘号：${t.spool_code}`,`工序：${process}    检测项：${labelMetricName(t)}`,`设备：${t.device_id}    来源：${t.data_environment==='SIMULATED'?'外部输入':'设备采集'}`,`规格：${specificationLabel(t.specification)}`,...(labelTasks(t).length>1?[...labelTasks(t).map(r=>`${names[r.metric_code]||r.metric_code}任务：${r.task_code}`),'同次采集合并条码：一次扫码同时检测不圆度与护套厚度']:[])]){
   let line='';for(const char of text){if(ctx.measureText(line+char).width>canvas.width-80){lines.push(line);line=char;}else line+=char;}lines.push(line);
  }
  canvas.height=110+bars.height+lines.length*44+78;

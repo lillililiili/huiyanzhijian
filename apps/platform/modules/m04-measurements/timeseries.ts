@@ -4,7 +4,7 @@ import Decimal from 'decimal.js';
 import {ApiError} from '../../infrastructure/errors';
 import {instantMicros} from '../../infrastructure/canonical';
 
-export type SampleReference={storage:'INFLUXDB';version:'ts01.1';point_id:string;content_hash:string};
+export type SampleReference={storage:'INFLUXDB';version:'ts01.1';point_id:string;content_hash:string;sample_ns?:string};
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 const unavailable=()=>new ApiError(503,'TIMESERIES_UNAVAILABLE','不圆度历史采样存储不可用或数据校验失败，请稍后重试',[],'UNKNOWN');
 export function isSampleReference(v:any):v is SampleReference{return v?.storage==='INFLUXDB'&&v?.version==='ts01.1';}
@@ -32,19 +32,28 @@ export function parseCsv(s:string){const rows:string[][]=[];let row:string[]=[],
 
 export class OvalityTimeseries {
  async health(){try{const c=configuration();await request('/api/v2/query?org='+encodeURIComponent(c.org),JSON.stringify({query:`from(bucket: ${JSON.stringify(c.bucket)}) |> range(start: -1ns) |> limit(n: 1)`,type:'flux',dialect:{annotations:[]}}),'application/json');return 'UP';}catch{return 'DOWN';}}
- async write(factory:string,device:string,sourceKey:string,payloadHash:string,raw:any,value:string|number|null):Promise<SampleReference>{
-  const c=configuration();
+ prepare(factory:string,device:string,sourceKey:string,payloadHash:string,raw:any,value:string|number|null):{reference:SampleReference;line:string}{
   let micros:bigint;try{micros=instantMicros(raw.sample_time);}catch{throw new ApiError(400,'SAMPLE_TIME_UNSUPPORTED','采样时间不受时序存储支持');}
   const ns=micros*1000n;if(ns<=-9223372036854775806n||ns>=9223372036854775806n)throw new ApiError(400,'SAMPLE_TIME_UNSUPPORTED','采样时间不受时序存储支持');
   const contents=JSON.stringify({raw_payload:raw,value:value===null?null:new Decimal(value).toFixed(10)});
   // Hash-derived tag IDs cannot inject line protocol or Flux. Same timestamp is
   // not identity: two samples at exactly the same instant remain distinct.
   const point=hash(JSON.stringify([factory,device,sourceKey,payloadHash]));
-  const reference:SampleReference={storage:'INFLUXDB',version:'ts01.1',point_id:point,content_hash:hash(contents)};
+  const reference:SampleReference={storage:'INFLUXDB',version:'ts01.1',point_id:point,content_hash:hash(contents),sample_ns:ns.toString()};
   const line=`ovality_sample,factory=${hash(factory)},point=${point} payload="${Buffer.from(contents).toString('base64')}" ${ns}\n`;
-  const result=await request(`/api/v2/write?org=${encodeURIComponent(c.org)}&bucket=${encodeURIComponent(c.bucket)}&precision=ns`,line,'text/plain');
-  if(result.status!==204)throw unavailable();
-  return reference;
+  return {reference,line};
+ }
+ async writePrepared(points:Array<{reference:SampleReference;line:string}>){
+  if(!points.length)return;
+  const c=configuration();
+  // Bounded wire batches, also used by legacy callers and recovery tools.
+  let lines:string[]=[],bytes=0;
+  const flush=async()=>{if(!lines.length)return;const result=await request(`/api/v2/write?org=${encodeURIComponent(c.org)}&bucket=${encodeURIComponent(c.bucket)}&precision=ns`,lines.join(''),'text/plain');if(result.status!==204)throw unavailable();lines=[];bytes=0;};
+  for(const point of points){const size=Buffer.byteLength(point.line);if(lines.length&&(bytes+size>1024*1024||lines.length>=100))await flush();lines.push(point.line);bytes+=size;}
+  await flush();
+ }
+ async write(factory:string,device:string,sourceKey:string,payloadHash:string,raw:any,value:string|number|null):Promise<SampleReference>{
+  const point=this.prepare(factory,device,sourceKey,payloadHash,raw,value);await this.writePrepared([point]);return point.reference;
  }
  async read(factory:string,refs:SampleReference[]){
   const out=new Map<string,{raw_payload:any;value:string|null}>();if(!refs.length)return out;
@@ -53,7 +62,11 @@ export class OvalityTimeseries {
    const group=unique.slice(i,i+50);
    if(group.some(r=>!/^\w{64}$/.test(r.point_id)||!/^[a-f0-9]{64}$/.test(r.content_hash)))throw unavailable();
    const condition=group.map(r=>`r.point == "${r.point_id}"`).join(' or ');
-   const query=`from(bucket: ${JSON.stringify(c.bucket)}) |> range(start: time(v: -9223372036854775806), stop: time(v: 9223372036854775806)) |> filter(fn: (r) => r._measurement == "ovality_sample" and r._field == "payload" and r.factory == "${hash(factory)}" and (${condition})) |> keep(columns: ["point", "_value"])`;
+   const times=group.map(r=>r.sample_ns);const bounded=times.every(t=>typeof t==='string'&&/^-?\d+$/.test(t));
+   const ns=bounded?times.map(t=>BigInt(t!)):[];
+   const start=bounded?ns.reduce((a,b)=>a<b?a:b).toString():'-9223372036854775806';
+   const stop=bounded?(ns.reduce((a,b)=>a>b?a:b)+1n).toString():'9223372036854775806';
+   const query=`from(bucket: ${JSON.stringify(c.bucket)}) |> range(start: time(v: ${start}), stop: time(v: ${stop})) |> filter(fn: (r) => r._measurement == "ovality_sample" and r._field == "payload" and r.factory == "${hash(factory)}" and (${condition})) |> keep(columns: ["point", "_value"])`;
    const response=await request('/api/v2/query?org='+encodeURIComponent(c.org),JSON.stringify({query,type:'flux',dialect:{annotations:[]}}),'application/json');
    let header:string[]=[];
    for(const row of parseCsv(response.text)){
